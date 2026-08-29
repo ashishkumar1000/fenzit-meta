@@ -10,7 +10,7 @@ for (const repo of catalog.repos) {
 	console.log(`\n${repo.path} (${repo.id})`);
 
 	if (!isGitRepo(targetPath)) {
-		console.log("  not cloned yet — run `pnpm run workspace:setup`");
+		console.log("  not cloned yet — run `bun run workspace:setup`");
 		continue;
 	}
 

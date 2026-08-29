@@ -21,11 +21,11 @@ This repo is not an application. It is the durable layer that gives an AI agent 
 1. Install dependencies and clone the registered child repos:
 
    ```bash
-   pnpm install
-   pnpm run workspace:setup
+   bun install
+   bun run workspace:setup
    ```
 
-   This repo uses **pnpm only** (enforced by a `preinstall` check) — don't use `npm`/`yarn`.
+   This repo uses **bun only** (enforced by a `preinstall` check) — don't use `npm`/`yarn`/`pnpm`.
 
    This clones:
    - `fenzo-app` → `workspace/core/frontend/fenzo-app`
@@ -34,7 +34,7 @@ This repo is not an application. It is the durable layer that gives an AI agent 
 2. BMAD is already installed at this repo's root (`_bmad/`, modules core+bmm+tea+cis, Claude Code tool integration). This is what gives the agent one shared skill/config layer that can see and edit both repos. To add more modules or update later:
 
    ```bash
-   pnpm dlx bmad-method install --directory . --action update --modules bmm,tea,cis --tools claude-code
+   bunx bmad-method install --directory . --action update --modules bmm,tea,cis --tools claude-code
    ```
 
 3. Create a feature branch here in the meta repo if you're tracking cross-repo initiative docs:
@@ -55,4 +55,4 @@ This repo is not an application. It is the durable layer that gives an AI agent 
 
 ## Adding Another Repo Later
 
-Add an entry to `docs/repo-catalog.yaml` (id, path, remote, role, default_branch, status, docs_dir) and create a matching `docs/repos/<repo-id>/` folder. Re-run `pnpm run workspace:setup` — it clones only what's missing and skips repos that already exist locally.
+Add an entry to `docs/repo-catalog.yaml` (id, path, remote, role, default_branch, status, docs_dir) and create a matching `docs/repos/<repo-id>/` folder. Re-run `bun run workspace:setup` — it clones only what's missing and skips repos that already exist locally.

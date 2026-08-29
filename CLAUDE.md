@@ -17,9 +17,9 @@ Never run one `git add -A && git commit` from the `fenzo-meta` root and expect i
 
 A pre-commit hook in this repo (`hooks/pre-commit`, wired up via `pnpm install`) rejects any commit here that touches `workspace/core/**` or `workspace/external/**` as a last-resort safety net — but don't rely on it catching mistakes; get the working directory right in the first place.
 
-## Rule: pnpm only
+## Rule: bun only
 
-This repo uses **pnpm**, never `npm` or `yarn` — enforced by a `preinstall` check in `package.json`. Always run `pnpm install`, `pnpm run <script>`, `pnpm dlx <pkg>` here. Don't generate or commit a `package-lock.json` or `yarn.lock`.
+This repo uses **bun**, never `npm`, `yarn`, or `pnpm` — enforced by a `preinstall` check in `package.json`. Always run `bun install`, `bun run <script>`, `bunx <pkg>` here. Don't generate or commit a `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. This applies to the child repos too — `fenzo-app` and `fenzit-be` are bun-only as well, each with their own `bun.lock`.
 
 ## Rule: cross-repo change ordering
 
