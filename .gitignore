@@ -7,6 +7,9 @@ __pycache__/
 package-lock.json
 yarn.lock
 
+# pnpm local store (machine-local cache, not shared).
+.pnpm-store/
+
 # Cloned child repos are local working trees, not part of this repo's history.
 workspace/core/*
 !workspace/core/.gitkeep
