@@ -1,4 +1,4 @@
-# Fenzo Meta — Agent Operating Rules
+# Fenzit Meta — Agent Operating Rules
 
 This repo is a control-plane meta repo. It coordinates two independent child repos, each with their own git history and remote:
 
@@ -11,9 +11,9 @@ Before running `git add`, `git commit`, or `git push`, check which repo the chan
 
 - Changed a file under `workspace/core/frontend/fenzo-app/`? Run the git commands with that directory as the working directory (or `git -C workspace/core/frontend/fenzo-app ...`), and push to its own remote.
 - Changed a file under `workspace/core/backend/fenzit-be/`? Same thing, scoped to that directory and its own remote.
-- Changed a file under `docs/`, `artifacts/`, `_bmad/custom/`, or another meta-repo-only path? That commit belongs here, in `fenzo-meta`.
+- Changed a file under `docs/`, `artifacts/`, `_bmad/custom/`, or another meta-repo-only path? That commit belongs here, in `fenzit-meta`.
 
-Never run one `git add -A && git commit` from the `fenzo-meta` root and expect it to capture frontend/backend changes — `workspace/core/*` is gitignored here on purpose, and each child repo has its own `.git`. If a commit needs to span a frontend change and a backend change, that means two separate commits in two separate repos (optionally noted together under `docs/initiatives/`), not one commit here.
+Never run one `git add -A && git commit` from the `fenzit-meta` root and expect it to capture frontend/backend changes — `workspace/core/*` is gitignored here on purpose, and each child repo has its own `.git`. If a commit needs to span a frontend change and a backend change, that means two separate commits in two separate repos (optionally noted together under `docs/initiatives/`), not one commit here.
 
 A pre-commit hook in this repo (`hooks/pre-commit`, wired up via `pnpm install`) rejects any commit here that touches `workspace/core/**` or `workspace/external/**` as a last-resort safety net — but don't rely on it catching mistakes; get the working directory right in the first place.
 
@@ -31,7 +31,7 @@ This repo uses **bun**, never `npm`, `yarn`, or `pnpm` — enforced by a `preins
 
 ## Rule: feature branches
 
-Before implementation work starts on a story that touches a child repo, create a matching feature branch inside that child repo's own working tree (not in `fenzo-meta`, unless the work is meta-repo-only, e.g. a catalog or docs change).
+Before implementation work starts on a story that touches a child repo, create a matching feature branch inside that child repo's own working tree (not in `fenzit-meta`, unless the work is meta-repo-only, e.g. a catalog or docs change).
 
 ## Where things live
 

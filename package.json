@@ -1,5 +1,5 @@
 {
-	"name": "fenzo-meta",
+	"name": "fenzit-meta",
 	"private": true,
 	"description": "Meta repo coordinating the Fenzo frontend (fenzo-app) and backend (fenzit-be) repos for AI-assisted, cross-repo development.",
 	"engines": {

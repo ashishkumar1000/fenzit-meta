@@ -1,6 +1,6 @@
-# Fenzo Meta
+# Fenzit Meta
 
-Fenzo Meta is the control-plane repo for AI-assisted work across the Fenzo product: the `fenzo-app` frontend and the `fenzit-be` backend.
+Fenzit Meta is the control-plane repo for AI-assisted work across the Fenzo product: the `fenzo-app` frontend and the `fenzit-be` backend.
 
 This repo is not an application. It is the durable layer that gives an AI agent (via BMAD) shared context and filesystem access to both child repos at once, so it can plan and make changes across both in a single session.
 
