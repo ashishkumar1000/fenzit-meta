@@ -13,22 +13,29 @@ This repo is not an application. It is the durable layer that gives an AI agent 
 - `docs/initiatives/` — durable notes for work that spans both repos
 - `scripts/setup-workspace.mjs` — clones every registered repo from `docs/repo-catalog.yaml` into `workspace/core/`
 - `workspace/core/` — local clones of the registered repos (gitignored — not part of this repo's history)
-- `_bmad/` — BMAD install, shared across both child repos (install separately, see below)
+- `_bmad/` — BMAD install (modules: core, bmm, tea, cis; tool: Claude Code), shared across both child repos
+- `CLAUDE.md` — operating rules for the agent, most importantly: which repo's git history a change belongs to
 
 ## Getting Started
 
 1. Install dependencies and clone the registered child repos:
 
    ```bash
-   npm install
-   npm run workspace:setup
+   pnpm install
+   pnpm run workspace:setup
    ```
+
+   This repo uses **pnpm only** (enforced by a `preinstall` check) — don't use `npm`/`yarn`.
 
    This clones:
    - `fenzo-app` → `workspace/core/frontend/fenzo-app`
    - `fenzit-be` → `workspace/core/backend/fenzit-be`
 
-2. Install BMAD at this repo's root (follow BMAD's own install instructions) so it lives in `_bmad/` alongside both child repos. This is what gives the agent one shared skill/config layer that can see and edit both repos.
+2. BMAD is already installed at this repo's root (`_bmad/`, modules core+bmm+tea+cis, Claude Code tool integration). This is what gives the agent one shared skill/config layer that can see and edit both repos. To add more modules or update later:
+
+   ```bash
+   pnpm dlx bmad-method install --directory . --action update --modules bmm,tea,cis --tools claude-code
+   ```
 
 3. Create a feature branch here in the meta repo if you're tracking cross-repo initiative docs:
 
@@ -48,4 +55,4 @@ This repo is not an application. It is the durable layer that gives an AI agent 
 
 ## Adding Another Repo Later
 
-Add an entry to `docs/repo-catalog.yaml` (id, path, remote, role, default_branch, status, docs_dir) and create a matching `docs/repos/<repo-id>/` folder. Re-run `npm run workspace:setup` — it clones only what's missing and skips repos that already exist locally.
+Add an entry to `docs/repo-catalog.yaml` (id, path, remote, role, default_branch, status, docs_dir) and create a matching `docs/repos/<repo-id>/` folder. Re-run `pnpm run workspace:setup` — it clones only what's missing and skips repos that already exist locally.

@@ -1,0 +1,19 @@
+{
+	"name": "fenzo-meta",
+	"private": true,
+	"description": "Meta repo coordinating the Fenzo frontend (fenzo-app) and backend (fenzit-be) repos for AI-assisted, cross-repo development.",
+	"engines": {
+		"node": ">=18",
+		"pnpm": ">=9"
+	},
+	"packageManager": "pnpm@11.24.0",
+	"scripts": {
+		"preinstall": "node -e \"if (!/pnpm/.test(process.env.npm_config_user_agent||'')) { console.error('\\nThis repo uses pnpm only. Run: pnpm install\\n'); process.exit(1); }\"",
+		"prepare": "git config core.hooksPath hooks",
+		"workspace:setup": "node scripts/setup-workspace.mjs",
+		"workspace:status": "node scripts/workspace-status.mjs"
+	},
+	"dependencies": {
+		"yaml": "^2.8.1"
+	}
+}

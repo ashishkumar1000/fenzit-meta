@@ -1,0 +1,24 @@
+# Team / enterprise overrides for _bmad/config.toml.
+# Committed to the repo — applies to every developer on the project.
+# Tables deep-merge over base config; keyed entries merge by key.
+# Example: override an agent descriptor, or add a new agent.
+#
+# [agents.bmad-agent-pm]
+# description = "Prefers short, bulleted PRDs over narrative drafts."
+
+# Pinned here because a later `bmad install --action update` can regenerate
+# config.toml from defaults whenever it re-touches the tea/cis module
+# config — these keep test artifacts under our own artifacts/ convention,
+# and point agents at the repo catalog and workspace layout this meta
+# repo already uses, so cross-repo tooling can find both child repos.
+[core]
+output_folder = "{project-root}/artifacts"
+workspace_root = "{project-root}/workspace"
+workspace_core = "{project-root}/workspace/core"
+workspace_external = "{project-root}/workspace/external"
+repo_registry = "{project-root}/docs/repo-catalog.yaml"
+
+[modules.tea]
+test_design_output = "artifacts/test-artifacts/test-design"
+test_review_output = "artifacts/test-artifacts/test-reviews"
+trace_output = "artifacts/test-artifacts/traceability"
