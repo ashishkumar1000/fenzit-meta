@@ -2,7 +2,18 @@
   "mcpServers": {
     "ios-simulator": {
       "command": "npx",
-      "args": ["-y", "ios-simulator-mcp"]
+      "args": [
+        "-y",
+        "ios-simulator-mcp"
+      ]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "cloudflare-api": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
     }
   }
 }
