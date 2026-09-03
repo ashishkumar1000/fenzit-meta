@@ -25,14 +25,28 @@ export interface RepoCatalog {
 	repos: RepoCatalogEntry[];
 }
 
+export type GitRepoState =
+	| "in-sync"
+	| "ahead"
+	| "behind"
+	| "diverged"
+	| "no-upstream"
+	| "no-commits"
+	| "not-a-repo"
+	| "git-error"
+	| "detached"
+	| "upstream-gone";
+
 export interface GitStatus {
 	branch: string | null;
 	upstream: string | null;
 	ahead: number;
 	behind: number;
+	/** Tracked modifications (staged/unstaged) — these block a push. */
 	dirtyCount: number;
-	/** "in-sync" | "ahead" | "behind" | "diverged" | "no-upstream" | "not-a-repo" */
-	state: "in-sync" | "ahead" | "behind" | "diverged" | "no-upstream" | "not-a-repo";
+	/** Untracked files — informational only, they never conflict with a push. */
+	untrackedCount: number;
+	state: GitRepoState;
 }
 
 export function absoluteFromRelative(relativePath: string): string {
@@ -41,8 +55,18 @@ export function absoluteFromRelative(relativePath: string): string {
 
 export function loadCatalog(): RepoCatalog {
 	const catalogPath = absoluteFromRelative("docs/repo-catalog.yaml");
-	const raw = fs.readFileSync(catalogPath, "utf8");
-	return YAML.parse(raw) as RepoCatalog;
+	let raw: string;
+	try {
+		raw = fs.readFileSync(catalogPath, "utf8");
+	} catch {
+		throw new Error(`Repo catalog not found at ${catalogPath}`);
+	}
+
+	const catalog = YAML.parse(raw) as RepoCatalog | null;
+	if (!catalog || !Array.isArray(catalog.repos)) {
+		throw new Error(`Invalid repo catalog at ${catalogPath}: "repos" list is missing or malformed.`);
+	}
+	return catalog;
 }
 
 export function ensureDir(absolutePath: string): void {
@@ -78,28 +102,57 @@ export function runCommand(command: string, args: string[], options: object = {}
 	}
 }
 
+/**
+ * Environment for git calls whose output we parse. Pinning LC_ALL=C keeps
+ * output like "ahead 1" and "No commits yet" in English regardless of the
+ * user's locale — translated git would defeat the regexes below.
+ */
+export const GIT_PARSE_ENV = { ...process.env, LC_ALL: "C" };
+
 /** Run a git command in a repo directory and return trimmed stdout, or null if git failed. */
 export function gitCapture(repoDir: string, args: string[]): string | null {
-	const result = spawnSync("git", args, { cwd: repoDir, encoding: "utf8" });
+	const result = spawnSync("git", args, { cwd: repoDir, encoding: "utf8", env: GIT_PARSE_ENV });
 	return result.status === 0 ? result.stdout.trim() : null;
 }
 
-/** Collect branch, upstream, ahead/behind and dirty-file counts for one repo. */
+const EMPTY_STATUS: Omit<GitStatus, "state"> = {
+	branch: null,
+	upstream: null,
+	ahead: 0,
+	behind: 0,
+	dirtyCount: 0,
+	untrackedCount: 0,
+};
+
+/** Collect branch, upstream, ahead/behind and change counts for one repo. */
 export function gitStatus(repoDir: string): GitStatus {
 	if (!isGitRepo(repoDir)) {
-		return {
-			branch: null, upstream: null, ahead: 0, behind: 0, dirtyCount: 0,
-			state: "not-a-repo",
-		};
+		return { ...EMPTY_STATUS, state: "not-a-repo" };
 	}
 
-	const branchInfo = gitCapture(repoDir, ["status", "--short", "--branch"]) ?? "";
-	const dirtyCount = branchInfo
-		.split("\n")
-		.filter((line) => line.length > 0 && !line.startsWith("##")).length;
+	const branchInfo = gitCapture(repoDir, ["status", "--short", "--branch"]);
+	if (branchInfo === null) {
+		// git itself failed (corrupt repo, permissions) — do not guess a state.
+		return { ...EMPTY_STATUS, state: "git-error" };
+	}
+
+	const lines = branchInfo.split("\n").filter(Boolean);
+	const dirtyCount = lines.filter((line) => !line.startsWith("##") && !line.startsWith("??")).length;
+	const untrackedCount = lines.filter((line) => line.startsWith("??")).length;
 
 	// First ## line, e.g. "## main...origin/main [ahead 1, behind 2]"
-	const header = (branchInfo.split("\n").find((line) => line.startsWith("##")) ?? "").slice(3);
+	const header = (lines.find((line) => line.startsWith("##")) ?? "").slice(3);
+
+	if (/no branch/.test(header)) {
+		return { ...EMPTY_STATUS, state: "detached" };
+	}
+
+	// Fresh repo: "## No commits yet on master" — the whole header is not a
+	// branch name, so handle it before branch parsing.
+	if (/No commits yet/.test(header)) {
+		return { ...EMPTY_STATUS, state: "no-commits" };
+	}
+
 	const [branchPart, upstreamPart = ""] = header.split("...");
 	const branch = branchPart.trim() || null;
 	const upstream = upstreamPart ? upstreamPart.replace(/\s*\[.*\]\s*$/, "").trim() : null;
@@ -108,9 +161,12 @@ export function gitStatus(repoDir: string): GitStatus {
 	const ahead = Number(note.match(/ahead (\d+)/)?.[1] ?? 0);
 	const behind = Number(note.match(/behind (\d+)/)?.[1] ?? 0);
 
-	let state: GitStatus["state"];
+	let state: GitRepoState;
 	if (!upstream) {
 		state = "no-upstream";
+	} else if (/\bgone\b/.test(note)) {
+		// Upstream branch was deleted on the remote.
+		state = "upstream-gone";
 	} else if (ahead > 0 && behind > 0) {
 		state = "diverged";
 	} else if (ahead > 0) {
@@ -121,7 +177,7 @@ export function gitStatus(repoDir: string): GitStatus {
 		state = "in-sync";
 	}
 
-	return { branch, upstream, ahead, behind, dirtyCount, state };
+	return { branch, upstream, ahead, behind, dirtyCount, untrackedCount, state };
 }
 
 export function childDirectoryNames(absolutePath: string): string[] {

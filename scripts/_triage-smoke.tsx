@@ -1,6 +1,4 @@
-// Temporary smoke test — exercises the triage UI under a pseudo-TTY with
-// fabricated reviews. Keystrokes are piped in: down, right (cycle decision),
-// v (details), enter. Delete after use.
+// Temporary smoke test for the triage UI with fabricated reviews. Delete after use.
 import { runPushTriage, type RepoReview } from "./lib/push-triage.tsx";
 
 const reviews: RepoReview[] = [
@@ -20,6 +18,7 @@ const reviews: RepoReview[] = [
 		defaultDecision: "push",
 		note: null,
 		advice: [],
+		fetchFailed: true,
 	},
 	{
 		id: "fenzo-app",
@@ -37,6 +36,7 @@ const reviews: RepoReview[] = [
 		defaultDecision: "skip",
 		note: "has uncommitted tracked changes — pushing anyway is safe (a push never touches the working tree), but committing first is cleaner",
 		advice: [],
+		fetchFailed: false,
 	},
 	{
 		id: "fenzit-meta",
@@ -54,6 +54,7 @@ const reviews: RepoReview[] = [
 		defaultDecision: "skip",
 		note: "local branch is behind origin — pull/rebase first, then re-run",
 		advice: ["git -C /fake/meta pull --rebase"],
+		fetchFailed: false,
 	},
 ];
 

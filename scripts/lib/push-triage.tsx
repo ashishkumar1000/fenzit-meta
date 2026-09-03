@@ -23,6 +23,8 @@ export interface RepoReview {
 	unpushedCommits: string[];
 	/** `git status --short` lines, for the detail view. */
 	statusLines: string[];
+	/** True when `git fetch` failed — ahead/behind may be based on stale refs. */
+	fetchFailed: boolean;
 	/** Decisions the user may cycle through, in ←/→ order. */
 	options: PushDecision[];
 	defaultDecision: PushDecision;
@@ -38,19 +40,24 @@ const DECISION_LABELS: Record<PushDecision, string> = {
 	"push-upstream": "push -u origin",
 };
 
-function stateNote(review: RepoReview): string {
+/** One shared state label for both the Ink UI and plain output, so the two
+ *  cannot drift. Null branch renders as "?" everywhere. */
+export function stateNote(review: RepoReview): string {
 	const dirty = review.dirtyCount > 0 ? `, ${review.dirtyCount} uncommitted` : "";
 	const untracked = review.untrackedCount > 0 ? `, ${review.untrackedCount} untracked` : "";
+	const branch = review.branch ?? "?";
 	switch (review.state) {
 		case "in-sync":
-			return `[${review.branch}: in sync${dirty}${untracked}]`;
+			return `[${branch}: in sync${dirty}${untracked}]`;
 		case "ahead":
-			return `[${review.branch}: ahead ${review.ahead}${dirty}${untracked}]`;
+			return `[${branch}: ahead ${review.ahead}${dirty}${untracked}]`;
 		case "behind":
 		case "diverged":
-			return `[${review.branch}: ahead ${review.ahead} / behind ${review.behind} (${review.state})${dirty}${untracked}]`;
+			return `[${branch}: ahead ${review.ahead} / behind ${review.behind} (${review.state})${dirty}${untracked}]`;
 		case "no-upstream":
-			return `[${review.branch}: no upstream${dirty}${untracked}]`;
+			return `[${branch}: no upstream${dirty}${untracked}]`;
+		case "no-commits":
+			return `[${branch}: no commits yet${dirty}${untracked}]`;
 		case "not-a-repo":
 			return "[not a git repo]";
 		case "git-error":
@@ -58,11 +65,11 @@ function stateNote(review: RepoReview): string {
 		case "detached":
 			return "[detached HEAD]";
 		case "upstream-gone":
-			return `[${review.branch}: upstream deleted on remote${dirty}${untracked}]`;
+			return `[${branch}: upstream deleted on remote${dirty}${untracked}]`;
 	}
 }
 
-function Details({ review }: { review: RepoReview }) {
+export function Details({ review }: { review: RepoReview }) {
 	const MAX_LINES = 10;
 	if (review.state === "not-a-repo" || review.state === "git-error") {
 		return (
@@ -123,6 +130,10 @@ function TriageApp({
 			setDecisions((current) => ({ ...current, [review.id]: next }));
 		} else if (input === "v") {
 			setShowDetails((shown) => !shown);
+		} else if (key.ctrl && input === "c") {
+			// Handled here because exitOnCtrlC is off: Ctrl+C quits with defaults
+			// instead of leaving the caller's promise unresolved.
+			onDone(Object.fromEntries(reviews.map((review) => [review.id, review.defaultDecision])));
 		} else if (key.return) {
 			onDone(decisions);
 		} else if (input === "q") {
@@ -153,6 +164,9 @@ function TriageApp({
 							{DECISION_LABELS[decisions[review.id]]}
 						</Text>
 					</Box>
+					{i === index && review.fetchFailed && (
+						<Text color="yellow">      ⚠ git fetch failed (offline?) — ahead/behind may be stale</Text>
+					)}
 					{i === index && review.note !== null && (
 						<Text dimColor>      {review.note}</Text>
 					)}
@@ -164,12 +178,25 @@ function TriageApp({
 	);
 }
 
-/** Renders the triage UI and resolves with the user's decisions once it closes. */
+/** Renders the triage UI and resolves with the user's decisions once it closes.
+ *  The app is unmounted on resolve, otherwise Ink keeps the process alive with
+ *  the frozen screen on it. */
 export function runPushTriage(
 	reviews: RepoReview[],
 ): Promise<Record<string, PushDecision>> {
 	return new Promise((resolve) => {
-		const instance = render(<TriageApp reviews={reviews} onDone={resolve} />);
-		void instance.waitUntilExit();
+		const instance = render(
+			<TriageApp
+				reviews={reviews}
+				onDone={(decisions) => {
+					instance.unmount();
+					resolve(decisions);
+				}}
+			/>,
+			// Ink's default Ctrl+C behavior unmounts without calling our callback,
+			// which would leave the caller's promise hanging — so it is off, and
+			// the Ctrl+C key is handled in TriageApp instead (quit with defaults).
+			{ exitOnCtrlC: false },
+		);
 	});
 }

@@ -12,6 +12,7 @@ import {
 	repoAbsolutePath,
 	runCommand,
 	type RepoCatalog,
+	type RepoCatalogEntry,
 } from "./lib/workspace-utils.ts";
 
 function pathExistsButNotGitRepo(absolutePath: string): boolean {

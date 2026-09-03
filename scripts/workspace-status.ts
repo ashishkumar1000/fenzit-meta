@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 
 import {
-	absoluteFromRelative,
 	gitCapture,
 	isGitRepo,
 	loadCatalog,
