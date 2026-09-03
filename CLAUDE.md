@@ -1,6 +1,6 @@
 # Fenzit Meta — Agent Operating Rules
 
-Control-plane meta repo. Two child repos, each with its own git history and remote:
+Control-plane meta-repo. Two child repos, each with its own git history and remote:
 
 - `workspace/core/frontend/fenzo-app` → https://github.com/ashishkumar1000/fenzo-app.git
 - `workspace/core/backend/fenzit-be` → https://github.com/ashishkumar1000/fenzit-be.git
