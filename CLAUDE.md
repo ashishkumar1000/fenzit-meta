@@ -25,10 +25,6 @@ This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforce
 - Breaking backend change (rename/remove a field, changed response shape) → three steps: (1) `fenzit-be` adds the new shape alongside the old, (2) `fenzo-app` switches to it, (3) only once nothing depends on the old shape, `fenzit-be` removes it in a separate change.
 - Never treat "edited both repos in one session" as "these ship together" — always state which repo merges/deploys first when handing off.
 
-## Feature branches
-
-Before implementation starts on a story touching a child repo, create a matching feature branch in that repo's own working tree (meta repo only for meta-only work, e.g. a catalog or docs change).
-
 ## Where things live
 
 Full model in `README.md`: `docs/repo-catalog.yaml`, `docs/repos/<id>/`, `docs/initiatives/`, `workspace/core/`. Use BMAD skills under `.claude/skills` (installed via the `bmad-method` package: core, bmm, tea, cis) for planning and dev workflows.
