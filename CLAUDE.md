@@ -1,38 +1,34 @@
 # Fenzit Meta — Agent Operating Rules
 
-This repo is a control-plane meta repo. It coordinates two independent child repos, each with their own git history and remote:
+Control-plane meta repo. Two child repos, each with its own git history and remote:
 
 - `workspace/core/frontend/fenzo-app` → https://github.com/ashishkumar1000/fenzo-app.git
 - `workspace/core/backend/fenzit-be` → https://github.com/ashishkumar1000/fenzit-be.git
 
-## Rule: commit and push in the repo the change belongs to — never here
+## Commit in the repo the change belongs to — never here
 
-Before running `git add`, `git commit`, or `git push`, check which repo the changed files are actually in:
+- Files under `workspace/core/frontend/fenzo-app/` → run git with that directory as cwd (or `git -C workspace/core/frontend/fenzo-app ...`), push to its own remote. Same for `workspace/core/backend/fenzit-be/`.
+- Files under `docs/`, `artifacts/`, `_bmad/custom/`, or other meta-repo-only paths → commit here in `fenzit-meta`.
+- Never `git add -A && git commit` from the meta-repo root — `workspace/core/*` is gitignored here on purpose. A change spanning both repos = two commits in two repos (optionally noted together under `docs/initiatives/`).
+<!-- Why: each child repo has its own .git, so a root-level add/commit can never capture their changes. -->
+- Last-resort net: `hooks/pre-commit` (installed via the husky `prepare` script) rejects commits here touching `workspace/core/**` or `workspace/external/**` — but don't rely on it; get the cwd right.
 
-- Changed a file under `workspace/core/frontend/fenzo-app/`? Run the git commands with that directory as the working directory (or `git -C workspace/core/frontend/fenzo-app ...`), and push to its own remote.
-- Changed a file under `workspace/core/backend/fenzit-be/`? Same thing, scoped to that directory and its own remote.
-- Changed a file under `docs/`, `artifacts/`, `_bmad/custom/`, or another meta-repo-only path? That commit belongs here, in `fenzit-meta`.
+## Bun only
 
-Never run one `git add -A && git commit` from the `fenzit-meta` root and expect it to capture frontend/backend changes — `workspace/core/*` is gitignored here on purpose, and each child repo has its own `.git`. If a commit needs to span a frontend change and a backend change, that means two separate commits in two separate repos (optionally noted together under `docs/initiatives/`), not one commit here.
+This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml` — each repo keeps its own `bun.lock`.
 
-A pre-commit hook in this repo (`hooks/pre-commit`, wired up via `pnpm install`) rejects any commit here that touches `workspace/core/**` or `workspace/external/**` as a last-resort safety net — but don't rely on it catching mistakes; get the working directory right in the first place.
+## Cross-repo change ordering
 
-## Rule: bun only
+`fenzo-app` and `fenzit-be` deploy independently — a story touching both is one BMAD session but never one atomic release.
 
-This repo uses **bun**, never `npm`, `yarn`, or `pnpm` — enforced by a `preinstall` check in `package.json`. Always run `bun install`, `bun run <script>`, `bunx <pkg>` here. Don't generate or commit a `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. This applies to the child repos too — `fenzo-app` and `fenzit-be` are bun-only as well, each with their own `bun.lock`.
+- Additive backend change (new field/endpoint, existing behavior untouched) → merge/deploy `fenzit-be` first, then `fenzo-app`.
+- Breaking backend change (rename/remove a field, changed response shape) → three steps: (1) `fenzit-be` adds the new shape alongside the old, (2) `fenzo-app` switches to it, (3) only once nothing depends on the old shape, `fenzit-be` removes it in a separate change.
+- Never treat "edited both repos in one session" as "these ship together" — always state which repo merges/deploys first when handing off.
 
-## Rule: cross-repo change ordering
+## Feature branches
 
-`fenzo-app` and `fenzit-be` deploy independently, on their own timelines — a story that touches both is never one atomic release, even though it can be one BMAD session.
-
-- If the change is additive/backward-compatible on the backend (new field, new endpoint, existing behavior untouched): land and merge the `fenzit-be` side first, then the `fenzo-app` side that consumes it.
-- If the backend change is breaking (renaming/removing a field, changing a response shape): split it into two backend-safe steps — (1) `fenzit-be` adds the new shape *alongside* the old one, (2) `fenzo-app` switches to the new shape, (3) only afterward, once nothing depends on the old shape, remove it from `fenzit-be` in a separate change.
-- Never treat "I edited both repos in this session" as "these ship together." Say explicitly which one should merge/deploy first when handing off a cross-repo story.
-
-## Rule: feature branches
-
-Before implementation work starts on a story that touches a child repo, create a matching feature branch inside that child repo's own working tree (not in `fenzit-meta`, unless the work is meta-repo-only, e.g. a catalog or docs change).
+Before implementation starts on a story touching a child repo, create a matching feature branch in that repo's own working tree (meta repo only for meta-only work, e.g. a catalog or docs change).
 
 ## Where things live
 
-See `README.md` for the full model (`docs/repo-catalog.yaml`, `docs/repos/<id>/`, `docs/initiatives/`, `workspace/core/`). Use BMAD skills under `.claude/skills` (installed via the `bmad-method` npm package: core, bmm, tea, cis) for planning and dev workflows.
+Full model in `README.md`: `docs/repo-catalog.yaml`, `docs/repos/<id>/`, `docs/initiatives/`, `workspace/core/`. Use BMAD skills under `.claude/skills` (installed via the `bmad-method` package: core, bmm, tea, cis) for planning and dev workflows.
