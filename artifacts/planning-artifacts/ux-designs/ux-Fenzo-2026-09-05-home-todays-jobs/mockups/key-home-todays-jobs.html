@@ -1,0 +1,194 @@
+<!doctype html>
+<!--
+  Key-screen mock: Fenzo owner Home — "Today & needs attention" section.
+  Governing spine sections: DESIGN.md → Components (OverdueStrip, TodayJobCard,
+  Empty state), Layout & Spacing, Colors. EXPERIENCE.md → Component Patterns,
+  State Patterns (strip-alone / empty), Key Flow "Morning dispatch".
+  Illustrative only — the spines are the contract.
+  Three columns: canonical state (strip + cards) · unassigned variant · empty state.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fenzo — Today &amp; needs attention (mock)</title>
+<style>
+  /* Fenzit tokens (src/theme/colors.ts), applied verbatim */
+  :root {
+    --surface-page:#F9FAFB; --surface-card:#FFFFFF;
+    --border-subtle:#E5E7EB; --border-default:#D1D5DB;
+    --text-strong:#111827; --text-body:#374151; --text-muted:#6B7280;
+    --primary:#1A56DB; --primary-soft:#EFF4FE; --primary-hover:#1645B2;
+    --amber-fg:#92490A; --amber-bg:#FEF6EB; --amber-border:#F9CF94;
+    --green-fg:#0A6B4F; --green-bg:#EBF7F2;
+    --blue-fg:#1645B2; --blue-bg:#EFF4FE; --blue-border:#C7D8F9;
+    --red-fg:#A61F1F; --red-bg:#FEF2F2;
+    --radius-card:14px; --radius-pill:999px;
+    --shadow-sm:0 1px 2px rgba(17,24,39,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#E9ECEF; font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+    display:flex; gap:32px; padding:32px; justify-content:center; flex-wrap:wrap;
+  }
+  .phone {
+    width:340px; background:var(--surface-page); border-radius:36px;
+    box-shadow:0 8px 30px rgba(17,24,39,.15); overflow:hidden; flex-shrink:0;
+  }
+  .phone > .inner { padding:16px 16px 24px; }
+  .caption {
+    width:340px; text-align:center; font-size:13px; color:#4B5563; margin-top:10px;
+  }
+  .col { display:flex; flex-direction:column; }
+  h2.state { font-size:15px; font-weight:600; color:#374151; margin:0 0 4px; text-align:center; }
+
+  /* Section header — typography.title @20, Home section-title style */
+  .section-title { font-size:20px; font-weight:600; color:var(--text-strong); margin:8px 0 12px; }
+
+  /* Card base — surfaceCard, 1px borderSubtle, radius.lg, shadow.sm */
+  .card {
+    background:var(--surface-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-card); box-shadow:var(--shadow-sm);
+  }
+
+  /* OverdueStrip — one row, ≥44px, amber attention vocabulary */
+  .strip {
+    display:flex; align-items:center; gap:10px; padding:12px 16px; min-height:44px;
+    cursor:pointer; margin-bottom:12px;
+  }
+  .strip .label { font-size:14px; font-weight:600; color:var(--text-strong); }
+  .strip .count-chip {
+    font-size:14px; font-weight:600; color:var(--amber-fg); background:var(--amber-bg);
+    border-radius:var(--radius-pill); padding:2px 10px;
+  }
+  .strip .chevron { margin-left:auto; color:var(--text-muted); font-size:18px; }
+  .strip .alert-icon { color:var(--amber-fg); font-size:18px; font-weight:700; }
+
+  /* JobCard anatomy — header / meta / divider / footer */
+  .job { padding:16px; margin-bottom:12px; cursor:pointer; }
+  .header-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .customer { font-size:18px; font-weight:600; color:var(--text-strong); flex:1; min-width:0;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badge { font-size:12px; font-weight:600; border-radius:var(--radius-pill); padding:3px 10px;
+           display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+  .badge.dot::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .badge.scheduled { color:var(--blue-fg); background:var(--blue-bg); }
+  .badge.progress  { color:var(--blue-fg); background:var(--blue-bg); }
+  .badge.urgent    { color:var(--red-fg); background:var(--red-bg); font-size:12px; padding:2px 8px; }
+  .meta-row { display:flex; align-items:center; gap:8px; margin-top:6px;
+              font-size:14px; color:var(--text-muted); }
+  .meta-row .icon { width:15px; text-align:center; }
+  .divider { border-top:1px solid var(--border-subtle); margin:12px 0 10px; }
+  .footer { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:var(--text-body); }
+  .avatar {
+    width:26px; height:26px; border-radius:50%; background:var(--primary-soft);
+    color:var(--primary-hover); font-size:12px; font-weight:600;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .footer.assign { color:var(--primary); font-weight:600; cursor:pointer; }
+  .footer.assign .plus { font-weight:700; }
+
+  /* Empty state */
+  .empty { padding:24px 16px; text-align:center; margin-top:12px; }
+  .empty .icon-badge {
+    width:56px; height:56px; border-radius:50%; background:var(--primary-soft);
+    color:var(--primary); font-size:24px; display:inline-flex; align-items:center;
+    justify-content:center; margin-bottom:8px;
+  }
+  .empty .title { font-size:16px; font-weight:600; color:var(--text-strong); }
+  .empty .body { font-size:14px; color:var(--text-muted); margin-top:4px; }
+  .empty .btn {
+    display:inline-block; margin-top:14px; padding:11px 20px; border-radius:10px;
+    border:1px solid var(--border-default); background:var(--surface-card);
+    color:var(--text-strong); font-size:14px; font-weight:600;
+  }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="phone"><div class="inner">
+    <div class="section-title">Today &amp; needs attention</div>
+
+    <div class="card strip">
+      <span class="alert-icon">⚠</span>
+      <span class="label">Overdue</span>
+      <span class="count-chip">2</span>
+      <span class="chevron">›</span>
+    </div>
+
+    <div class="card job">
+      <div class="header-row">
+        <span class="customer">Sharma Residency</span>
+        <span class="badge urgent">Urgent</span>
+        <span class="badge dot scheduled">Scheduled</span>
+      </div>
+      <div class="meta-row"><span class="icon">❄</span> AC gas refill — 2nd floor outdoor unit</div>
+      <div class="meta-row"><span class="icon">🕘</span> 10:00 AM – 12:00 PM</div>
+      <div class="meta-row"><span class="icon">📍</span> Whitefield, Bengaluru</div>
+      <div class="divider"></div>
+      <div class="footer"><span class="avatar">R</span> Ramesh Kumar</div>
+    </div>
+
+    <div class="card job">
+      <div class="header-row">
+        <span class="customer">Green Leaf Café</span>
+        <span class="badge dot progress">In Progress</span>
+      </div>
+      <div class="meta-row"><span class="icon">🔧</span> Pest control — kitchen and storage</div>
+      <div class="meta-row"><span class="icon">🕘</span> 2:00 PM – 3:30 PM</div>
+      <div class="meta-row"><span class="icon">📍</span> Indiranagar, Bengaluru</div>
+      <div class="divider"></div>
+      <div class="footer"><span class="avatar">S</span> Suresh Patel</div>
+    </div>
+  </div></div>
+  <div class="caption">Canonical state — OverdueStrip + two today cards (dispatch view)</div>
+</div>
+
+<div class="col">
+  <div class="phone"><div class="inner">
+    <div class="section-title">Today &amp; needs attention</div>
+
+    <div class="card job">
+      <div class="header-row">
+        <span class="customer">Mehta Villa</span>
+        <span class="badge dot scheduled">Scheduled</span>
+      </div>
+      <div class="meta-row"><span class="icon">💧</span> Plumbing — bathroom leak</div>
+      <div class="meta-row"><span class="icon">🕘</span> 4:00 PM – 5:00 PM</div>
+      <div class="meta-row"><span class="icon">📍</span> HSR Layout, Bengaluru</div>
+      <div class="divider"></div>
+      <div class="footer assign"><span class="plus">＋</span> Assign technician</div>
+    </div>
+
+    <div class="card job">
+      <div class="header-row">
+        <span class="customer">Lotus Apartments</span>
+        <span class="badge dot scheduled">Scheduled</span>
+      </div>
+      <div class="meta-row"><span class="icon">⚡</span> Electrical — panel inspection</div>
+      <div class="meta-row"><span class="icon">🕘</span> 5:30 PM – 6:30 PM</div>
+      <div class="meta-row"><span class="icon">📍</span> Koramangala, Bengaluru</div>
+      <div class="divider"></div>
+      <div class="footer"><span class="avatar">R</span> Ramesh Kumar</div>
+    </div>
+  </div></div>
+  <div class="caption">Action hub — unassigned card's footer becomes "Assign technician"</div>
+</div>
+
+<div class="col">
+  <div class="phone"><div class="inner">
+    <div class="section-title">Today &amp; needs attention</div>
+
+    <div class="card empty">
+      <span class="icon-badge">📅</span>
+      <div class="title">Nothing scheduled today</div>
+      <div class="body">You're all clear. Overdue or upcoming work shows in the tiles above.</div>
+      <span class="btn">Create a job</span>
+    </div>
+  </div></div>
+  <div class="caption">Empty state — overdue 0, no today jobs, CTA (≥1 technician)</div>
+</div>
+
+</body>
+</html>
