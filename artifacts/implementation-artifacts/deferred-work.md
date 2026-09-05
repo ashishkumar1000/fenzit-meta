@@ -64,3 +64,7 @@
 - source_spec: `artifacts/implementation-artifacts/spec-1-4-frontend-address-search-screen.md`
   summary: `AddressPickerScreen`'s header back button has no explicit min touch-target sizing (~40px effective via icon + hitSlop), under the design system's ≥44px minimum.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Copied verbatim from `NewJobScreen.tsx`'s existing back button — a pre-existing gap in that screen that this story's pattern-reuse propagates, not a defect newly introduced by this story's own logic.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-5-frontend-return-selection-to-add-customer-bottomsheet.md`
+  summary: File a follow-up story for `AddressPickerSheet`'s suggestion list rendering without a `ScrollView`/`FlatList` (plain `.map()` into a `View`, no in-sheet scrolling for a long result list).
+  evidence: Surfaced during step-04 review (Blind Hunter layer). A deliberate, accepted trade-off made live during this session after `react-native-true-sheet`'s `scrollable` binding was found to leave real, successfully-fetched results invisible on-device (see the file's own doc comment and git history) — not a regression, but the "real fix pending an upstream resolution" has no tracked follow-up ticket today.
