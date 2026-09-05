@@ -52,3 +52,15 @@
 - source_spec: `artifacts/implementation-artifacts/spec-google-places-live-provider.md`
   summary: Add unit tests for two untested-but-plausibly-correct edge cases in `GooglePlacesProvider`: a malformed `suggestions[]` entry (missing `placePrediction`, or only one of `placeId`/`text` present) silently dropped rather than surfaced; and multiple `addressComponents` entries typed `locality` (currently the first one wins via `.find()`).
   evidence: Surfaced during step-04 review (Edge Case Hunter layer). Neither is a known defect — the current behavior (drop malformed suggestions, take first `locality` match) is reasonable and matches the spec's intent — but there's no regression test pinning either choice today.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-4-frontend-address-search-screen.md`
+  summary: After an autosuggest error/no-results/resolve-failed phase, the stale error banner/EmptyState stays on screen for the full ~300ms debounce window after the owner resumes typing, before clearing — reads as briefly unresponsive.
+  evidence: Surfaced during step-04 review (Blind Hunter layer). `autosuggestError`/`resolveError` only clear inside `fetchSuggestions` or the below-threshold branch, not immediately on `query` change. Not a spec violation (no AC covers this), a UX polish item for a later pass.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-4-frontend-address-search-screen.md`
+  summary: `useAddressAutosuggest.ts`'s local `isAbort` helper duplicates logic the code comment says already exists in `JobDetailScreen` — extract to a shared `utils/` helper so a future abort-detection fix only needs to land in one place.
+  evidence: Surfaced during step-04 review (Blind Hunter layer). Not a functional defect today; a simplification that would touch `JobDetailScreen.tsx`, outside this story's file boundary.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-4-frontend-address-search-screen.md`
+  summary: `AddressPickerScreen`'s header back button has no explicit min touch-target sizing (~40px effective via icon + hitSlop), under the design system's ≥44px minimum.
+  evidence: Surfaced during step-04 review (Blind Hunter layer). Copied verbatim from `NewJobScreen.tsx`'s existing back button — a pre-existing gap in that screen that this story's pattern-reuse propagates, not a defect newly introduced by this story's own logic.
