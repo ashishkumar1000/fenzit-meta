@@ -20,3 +20,15 @@
 - source_spec: `artifacts/implementation-artifacts/spec-1-1-backend-address-autosuggest-endpoint.md`
   summary: Move the autosuggest rate-limit budget (`RATE_LIMIT_WINDOW_SECONDS = 60`, `RATE_LIMIT_MAX = 30` in `places.service.ts`) from hardcoded module constants to config/env, so it can be retuned without a redeploy.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Already flagged transparently as a judgment call in the spec's own Spec Change Log at implementation time ("easy to retune later") — this entry just tracks the follow-up so it isn't forgotten. Low priority; not a defect, a tunability nice-to-have.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
+  summary: Add format/length validation on the `placeId` path parameter of `GET /places/resolve/:placeId` (and URL-encoding/charset handling for real Google Place IDs), as defense-in-depth before the real `GooglePlacesProvider` makes an actual network call per request.
+  evidence: Surfaced during step-04 review (Blind Hunter + Edge Case Hunter layers). Today `MockPlacesProvider`'s prototype-safe fixture lookup (fixed in this story's patch pass) already maps any bad `placeId` to the documented 502 path, so there's no defect with the mock — but once the deferred `GooglePlacesProvider` lands, an unbounded/malformed `placeId` reaching Google's API becomes a real billing/network-cost exposure, mirroring the already-deferred min-query-length item for autosuggest.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
+  summary: Give `PlacesService`'s rate-limit-store-failure log message per-endpoint/per-branch specificity (it currently logs the identical text `'Places rate-limit store failed to increment:'` for both `autosuggest()` and `resolve()`, and doesn't distinguish a store failure from a provider failure in the log line itself).
+  evidence: Surfaced during step-04 review (Blind Hunter layer). Both endpoints already map to the correct `502 PLACES_UPSTREAM_ERROR` response, so this is a production log-triage clarity improvement, not a functional defect — low priority polish.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
+  summary: Add a runtime guard (e.g. `Number.isFinite`) on `ResolvedPlace.latitude`/`longitude` before `PlacesService.resolve()` returns, so a provider bug can't silently violate the documented "always real numbers, never null/placeholder" contract.
+  evidence: Surfaced during step-04 review (Blind Hunter layer). Currently an unenforced doc-comment-only invariant on the `ResolvedPlace` interface; not exploitable via `MockPlacesProvider` (its fixtures are fixed, valid numbers), but becomes a real risk once the deferred `GooglePlacesProvider` parses external JSON and could return `NaN`/`undefined` for a malformed upstream response.
