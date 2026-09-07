@@ -2,8 +2,8 @@
 title: 'Frontend — Precise maps navigation from job detail'
 type: 'feature'
 created: '2026-09-07'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 context: []
 baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 ---
@@ -21,7 +21,7 @@ baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 **Always:**
 - Extend `JobDetailCustomer` (`src/services/resources/jobs.ts:212-220`) with `latitude: number | null; longitude: number | null;` — an exact mirror of Story 2.1's response shape (camelCase, both always present, null when absent). Update every local `JobDetail` fixture TypeScript forces.
 - `openMaps` gains one optional third parameter — `coords?: { latitude: number | null; longitude: number | null } | null` (a plain object literal typed inline in `linking.ts`; the util must not import from `services`). Coordinates are **usable only when both fields are non-null** — Story 1.3 allows independently-optional columns, so a half-present coordinate pair is not a location.
-- Coordinate deep link forms (AC-fixed): iOS `maps:{lat},{lng}?q={lat},{lng}`, Android `geo:{lat},{lng}?q={lat},{lng}` — plain numeric interpolation, no rounding, no `encodeURIComponent` (numbers need no escaping; the `0,0` prefix is deliberately dropped — the device centers on the point itself, not a search box). Text-fallback URL forms stay byte-identical to today.
+- Coordinate deep link forms (AC-fixed; iOS form renegotiated 2026-09-07 per review Decision 1): iOS `maps://?q={lat},{lng}` (Apple's documented query form — the `maps:{lat},{lng}` path variant is an undocumented community pattern), Android `geo:{lat},{lng}?q={lat},{lng}` — plain numeric interpolation, no rounding, no `encodeURIComponent` (numbers need no escaping; the `0,0` prefix is deliberately dropped — the device centers on the point itself, not a search box). Text-fallback URL forms stay byte-identical to today.
 - Call site (`TechJobDetailContent.tsx:126`) passes `{ latitude: detail.customer.latitude, longitude: detail.customer.longitude }` as the third argument; everything else about the row — MapPin, address text, Navigation icon, `accessibilityLabel="Open in maps"`, press styling — stays untouched (UX-DR6: no "precise vs. approximate" badge).
 - Keep `openMaps`' self-swallowing failure contract: `try`/`catch` → `console.warn('[linking] openMaps failed →', ...)`, no throw into the rendering row. Same for the coordinate branch.
 - The maps row's render gate stays on `customerAddress` exactly as today. Coordinates improve the link of the row; they never create, hide, or restyle the row.
@@ -39,7 +39,7 @@ baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| Customer with coordinates | Job whose customer has non-null `latitude` + `longitude` (Story 2.1) | Maps row opens `maps:{lat},{lng}?q={lat},{lng}` (iOS) / `geo:{lat},{lng}?q={lat},{lng}` (Android); row visually identical to today | `openURL` rejection → `console.warn`, no throw |
+| Customer with coordinates | Job whose customer has non-null `latitude` + `longitude` (Story 2.1) | Maps row opens `maps://?q={lat},{lng}` (iOS) / `geo:{lat},{lng}?q={lat},{lng}` (Android); row visually identical to today | `openURL` rejection → `console.warn`, no throw |
 | Customer without coordinates | Both `null` (legacy customer, or free-text creation) | Exact today's fallback: `maps:0,0?q=<address, city>` / `geo:0,0?q=...` text query — unchanged bytes | Same as today |
 | Half-present coordinates | Only `latitude` or only `longitude` non-null (allowed by Story 1.3) | Not usable → text-query fallback, identical to the null case; never a fabricated or zero-padded coordinate | N/A |
 | No address text, coordinates present | `customer.address` null (row not rendered) | Row stays unrendered — existing gate unchanged; coordinates alone never summon the row | N/A |
@@ -50,7 +50,7 @@ baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 
 ## Code Map
 
-- `src/utils/linking.ts:40-55` -- `openMaps`: add optional third `coords` param (inline `{ latitude: number | null; longitude: number | null }` type); usable-coords branch builds the coordinate URL (prefix `maps:`/`geo:` per `Platform.select` + `{lat},{lng}?q={lat},{lng}`), else falls through to the existing text-query logic unchanged; update the function doc-comment to describe both modes
+- `src/utils/linking.ts:40-55` -- `openMaps`: add optional third `coords` param (named `MapCoordinates` type, exported from `linking.ts` — renegotiated wording per review Decision 2); usable-coords branch builds the coordinate URL (iOS `maps://?q={point}`, Android `geo:{point}?q={point}` per `Platform.select`), else falls through to the existing text-query logic unchanged; update the function doc-comment to describe both modes
 - `src/services/resources/jobs.ts:212-220` -- `JobDetailCustomer`: add `latitude: number | null; longitude: number | null;` with the same "null when…" doc-comment style as `address`/`city`
 - `src/features/technicianApp/components/TechJobDetailContent.tsx:126` -- maps row `onPress`: pass `{ latitude: detail.customer.latitude, longitude: detail.customer.longitude }` as `openMaps`'s third argument; nothing else in the component changes
 - `src/utils/linking.test.ts` (new) -- unit tests with `Linking` mocked: coordinate URL per platform, null-coords text URL, half-present-coords fallback, blank-everything no-op; `openTel` contract pinned too (cheap while the mock is up)
@@ -61,17 +61,27 @@ baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/utils/linking.ts` -- `openMaps` coordinate branch + optional `coords` param; doc-comment updated
-- [ ] `src/utils/linking.test.ts` -- new unit suite for `openMaps` (both modes + fallbacks) and `openTel` contract
-- [ ] `src/services/resources/jobs.ts` -- `JobDetailCustomer` gains the two nullable fields
-- [ ] `src/features/technicianApp/components/TechJobDetailContent.tsx` -- pass coordinates through on the maps row
-- [ ] `src/features/technicianApp/components/TechJobDetailContent.test.tsx` -- fixture + press-the-row assertions for both URL modes
+- [x] `src/utils/linking.ts` -- `openMaps` coordinate branch + optional `coords` param; doc-comment updated
+- [x] `src/utils/linking.test.ts` -- new unit suite for `openMaps` (both modes + fallbacks) and `openTel` contract
+- [x] `src/services/resources/jobs.ts` -- `JobDetailCustomer` gains the two nullable fields
+- [x] `src/features/technicianApp/components/TechJobDetailContent.tsx` -- pass coordinates through on the maps row
+- [x] `src/features/technicianApp/components/TechJobDetailContent.test.tsx` -- fixture + press-the-row assertions for both URL modes
 
 **Acceptance Criteria:**
-- Given a job whose customer has saved coordinates, when the technician taps the maps row, then `openURL` is called with `maps:{lat},{lng}?q={lat},{lng}` (iOS) / `geo:{lat},{lng}?q={lat},{lng}` (Android)
+- Given a job whose customer has saved coordinates, when the technician taps the maps row, then `openURL` is called with `maps://?q={lat},{lng}` (iOS) / `geo:{lat},{lng}?q={lat},{lng}` (Android)
 - Given a customer with no (or half-present) coordinates, when the row is tapped, then `openURL` is called with exactly today's `maps:0,0?q=...` / `geo:0,0?q=...` text query — unchanged bytes
 - Given either case, the row renders identically — no visual difference, no badge (UX-DR6)
 - Given any other `openMaps`/`openTel` consumer, the signatures are backward-compatible (new param optional) and their behavior is unchanged
+
+### Review Findings
+
+- [x] [Review][Decision] iOS coordinate URL form is not Apple's documented maps scheme — Apple documents `maps://?q=lat,lng`-style forms; the AC-fixed `maps:{lat},{lng}?q={lat},{lng}` (lat,lng as the path) is a community pattern, unverified on a real device. Options: device-verify the current form, or renegotiate the AC (e.g. `maps://?ll={lat},{lng}&q={lat},{lng}`). Android `geo:` form is documented and fine. → **Resolved 2026-09-07 (owner):** renegotiated to iOS `maps://?q={lat},{lng}` — Apple's documented form; Android unchanged. Code + tests updated.
+- [x] [Review][Decision] Named `MapCoordinates` type vs frozen spec's "plain object literal typed inline" [src/utils/linking.ts:40] — the exported named type deviates from the frozen Always bullet's letter; the constraint's intent (self-contained util, no `services` import) is fully satisfied. Keep + record renegotiation, or revert to an inline literal type. → **Resolved 2026-09-07 (owner):** keep the named `MapCoordinates` export; the spec's Always bullet and Code Map were updated to record the renegotiated wording.
+- [x] [Review][Patch] Deduplicate `openMaps`' two near-identical open+catch blocks [src/utils/linking.ts:52-87] — one `Platform.select` prefix computation and a single try/catch serve both the coordinate and text branches (also absorbs the `default: 'maps:'` nit). → **Skipped 2026-09-07 (owner-approved):** after Decision 1 renegotiated the iOS form, the two branches build URLs structurally differently — merging them needs abstraction for no real gain.
+- [x] [Review][Patch] Add a rejection test for the coordinate branch's try/catch [src/utils/linking.test.ts] — added: a rejected `openURL` with usable coords is logged, never thrown.
+- [x] [Review][Patch] openTel contract coverage in the new suite [src/utils/linking.test.ts] — added: rejection-swallow, `canOpenURL` false → nothing dialled, `canOpenURL` scheme-check assertion on the dial path.
+- [x] [Review][Patch] Await `openMaps`/`openTel` promises in the sync-assert tests [src/utils/linking.test.ts] — every test now awaits its helper call (survives implementation reordering).
+- [x] [Review][Patch] Missing trailing newline in `src/utils/linking.test.ts` — fixed.
 
 ## Design Notes
 
@@ -80,6 +90,47 @@ baseline_commit: 'e7a3189b9c7b3cdd00c326c14e2f41f78375cf62'
 - `openMaps` keeps swallowing its own failures — a rejected maps URL must never break a render-only row (file-level convention, documented at the top of `linking.ts`).
 - Cross-repo ordering: Story 2.1 (`fenzit-be`, additive) already merged/deploys first; this story (`fenzo-app`) consumes the field. The FE type treats both fields as always-present-but-nullable, mirroring the backend's stable shape.
 - Test note from the repo: jest runs via `bun run test` (never bare `bun test` — RN Flow types break it); add `--watchman=false` if watchman is sandbox-blocked.
+
+## Dev Agent Record
+
+**Agent Model Used:** claude (GLM) via Claude Code, BMAD dev-story workflow — 2026-09-07
+
+**Implementation Plan:**
+
+TDD red-green-refactor. RED: wrote `src/utils/linking.test.ts` first (mocked `react-native` wholesale — `Linking` + a `Platform.select` controlled by a `mockOS` variable, since modern RN exposes `Platform.OS` as a getter) and confirmed 5 coordinate-mode failures against today's `openMaps`. GREEN: implemented the usable-coordinates branch + optional third param in `openMaps`; 14/14 passing. Then type (`JobDetailCustomer`), call site, and component press tests. Two early test-suite issues caught and fixed during RED: the mock initially lacked `canOpenURL` (openTel awaits it before dialing), and the `openTel` dial assertion had to await the promise (the guard-then-await path means `openURL` fires a tick later).
+
+**Debug Log References:**
+
+- `tsc --noEmit` caught 3 additional `JobDetail` fixtures under the root `__tests__/` dir beyond the 2 in `src/` that TS forced at edit time — all 5 updated with `latitude: null, longitude: null`.
+- `bun run lint` fails with "no configuration file found" at baseline — the repo has no eslint config file on disk (`eslint .` has nothing to load). Pre-existing, unrelated to this story; not fixed here (adding a config is out of scope).
+- Full suite: 71 suites / 618 tests, all passing. `tsc --noEmit` exit 0.
+
+**Completion Notes List:**
+
+- ✅ `openMaps(address, city?, coords?)`: usable coords (both non-null) → `maps:{lat},{lng}?q={lat},{lng}` (iOS) / `geo:...` (Android), verbatim numbers, no `0,0` prefix, no encoding; otherwise byte-identical text-query fallback. Failure-swallowing contract preserved in both branches.
+- ✅ `JobDetailCustomer` mirrors Story 2.1's shape exactly (`latitude`/`longitude` always present, nullable). `MapCoordinates` type exported from `linking.ts` (no `services` import in the util).
+- ✅ Maps row passes the customer's coordinates through; zero visual change (UX-DR6) — render gate stays on `customerAddress`, no badge.
+- ✅ 18 new tests: 14 in `linking.test.ts` (both URL modes, half-present fallbacks, blank no-op, verbatim numbers, rejection swallowing, openTel contract), 4 in `TechJobDetailContent.test.tsx` (press-the-row for coords/null/half-present + identical-render assertion).
+- ✅ ACs 1–4 satisfied; no new dependency; no other consumer touched.
+
+### File List
+
+- `src/utils/linking.ts` (modified — `openMaps` coordinate branch, optional `coords` param, exported `MapCoordinates`, doc-comment)
+- `src/utils/linking.test.ts` (new — 14 tests)
+- `src/services/resources/jobs.ts` (modified — `JobDetailCustomer` gains `latitude`/`longitude`)
+- `src/features/technicianApp/components/TechJobDetailContent.tsx` (modified — maps row passes coordinates)
+- `src/features/technicianApp/components/TechJobDetailContent.test.tsx` (modified — fixture + 4 new press/render tests)
+- `src/features/jobDetail/editJobModel.test.ts` (modified — fixture gains the two fields)
+- `src/features/technicianApp/workflowActionBarModel.test.ts` (modified — fixture gains the two fields)
+- `__tests__/edit-job-sheet.test.tsx` (modified — fixture gains the two fields)
+- `__tests__/job-detail-screen.test.tsx` (modified — fixture gains the two fields)
+- `__tests__/tech-job-detail-screen.test.tsx` (modified — fixture gains the two fields)
+
+### Change Log
+
+- 2026-09-07 — Story 2.2 implemented: coordinate deep link in `openMaps` with text-query fallback, coordinates threaded from `JobDetailCustomer` through the technician maps row. 18 new tests; full suite 618 passing; `tsc --noEmit` clean. Lint not runnable (no repo eslint config — pre-existing).
+- 2026-09-07 — Review decisions resolved: iOS coordinate form renegotiated to `maps://?q={lat},{lng}` (Apple's documented form; the `maps:{lat},{lng}` path variant was undocumented); named `MapCoordinates` type kept (spec wording renegotiated). Code + tests updated to the new iOS form.
+- 2026-09-07 — Review patches applied (4 of 5; dedupe skipped owner-approved): coordinate-branch rejection test, openTel rejection + `canOpenURL`-false + scheme-check coverage, all sync-assert tests now await their helpers, trailing newline fixed. `linking.test.ts` now 17 tests; full suite 71 suites / 621 tests passing; `tsc --noEmit` clean.
 
 ## Verification
 
