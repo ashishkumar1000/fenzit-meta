@@ -68,3 +68,11 @@
 - source_spec: `artifacts/implementation-artifacts/spec-1-5-frontend-return-selection-to-add-customer-bottomsheet.md`
   summary: File a follow-up story for `AddressPickerSheet`'s suggestion list rendering without a `ScrollView`/`FlatList` (plain `.map()` into a `View`, no in-sheet scrolling for a long result list).
   evidence: Surfaced during step-04 review (Blind Hunter layer). A deliberate, accepted trade-off made live during this session after `react-native-true-sheet`'s `scrollable` binding was found to leave real, successfully-fetched results invisible on-device (see the file's own doc comment and git history) — not a regression, but the "real fix pending an upstream resolution" has no tracked follow-up ticket today.
+
+- source_spec: `artifacts/implementation-artifacts/spec-2-1-backend-expose-customer-coordinates-in-job-detail-response.md`
+  summary: No technician-role coverage for the new `latitude`/`longitude` fields in `getJobDetail` — the e2e/unit technician path asserts only the job `id`, while the customer mapping is a shared code path covered only via owner tests.
+  evidence: Surfaced during step-04 review (Blind Hunter layer). Pre-existing repo-wide pattern (the AC4 e2e test has always asserted just the id); not a defect in this story's change, a general test-depth gap.
+
+- source_spec: `artifacts/implementation-artifacts/spec-2-1-backend-expose-customer-coordinates-in-job-detail-response.md`
+  summary: Job-detail read now hard-codes `latitude, longitude` in the customers select — any environment where the Story 1.3 migration hasn't applied gets a PostgREST schema error → 500 on the whole endpoint, with no integration test that would catch schema drift (both suites mock Supabase).
+  evidence: Surfaced during step-04 review (Verification Gap layer). Same coupling exists for Story 1.3's own read-back and every other select in the repo; live project verified clean via Supabase MCP during review. Migration-before-deploy is the repo workflow.
