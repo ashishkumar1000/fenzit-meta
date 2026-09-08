@@ -26,14 +26,14 @@
   evidence: Surfaced during step-04 review (Blind Hunter + Edge Case Hunter layers). Today `MockPlacesProvider`'s prototype-safe fixture lookup (fixed in this story's patch pass) already maps any bad `placeId` to the documented 502 path, so there's no defect with the mock — but once the deferred `GooglePlacesProvider` lands, an unbounded/malformed `placeId` reaching Google's API becomes a real billing/network-cost exposure, mirroring the already-deferred min-query-length item for autosuggest.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
-  summary: Give `PlacesService`'s rate-limit-store-failure log message per-endpoint/per-branch specificity (it currently logs the identical text `'Places rate-limit store failed to increment:'` for both `autosuggest()` and `resolve()`, and doesn't distinguish a store failure from a provider failure in the log line itself).
+  summary: RESOLVED (2026-09-08) — `PlacesService`'s rate-limit-store-failure log line is now per-endpoint: `enforceRateLimit` interpolates its `label` param into the message (`Places rate-limit store failed to increment (autosuggest|resolve):`), so autosuggest vs resolve store failures are distinguishable in logs. Provider-failure branches already had distinct messages.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
   summary: `Retry-After` header on places 429s reports the full window (e.g. 60s), not the time actually remaining in the window when the limit tripped — RFC-allowed conservative value, but a client backing off 60s when only 5s remained is slower to recover than necessary.
   evidence: Surfaced during the 2026-09-08 places-hardening review (Blind Hunter layer, deferred). Computing the remaining time needs `PlacesRateLimitStore.increment()` to also return (or expose) the key's TTL, a store API change; deferred as not worth the surface growth now.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
-  summary: `PlacesService.resolve()`'s runtime guard checks only that `latitude`/`longitude` are finite (NaN/Infinity → 502), not that they are geographically valid (`[-90,90]` / `[-180,180]`) — a provider returning `lat=999` would pass through to clients.
+  summary: RESOLVED (2026-09-08) — `PlacesService.resolve()`'s runtime guard now also rejects geographically-invalid coordinates (latitude outside `[-90,90]`, longitude outside `[-180,180]`) to the same 502 `PLACES_UPSTREAM_ERROR` as the NaN/Infinity check, with unit tests for the out-of-range and boundary-value (±90/±180 accepted) cases.
   evidence: Surfaced during the 2026-09-08 places-hardening review (Blind Hunter layer, deferred). No known provider path produces out-of-range-but-finite values; the range check is defense-in-depth beyond the requested NaN guard.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Both endpoints already map to the correct `502 PLACES_UPSTREAM_ERROR` response, so this is a production log-triage clarity improvement, not a functional defect — low priority polish.
 
@@ -50,7 +50,7 @@
   evidence: Surfaced during step-04 review (Verification Gap layer). Today nothing stops a client from submitting a `placeId` that doesn't correspond to the given coordinates/address — `createCustomer` never calls `PlacesProvider.resolve()` again to cross-check. Not a blocker (the resolve endpoint already validated the data once, client-side, in the same user flow), but worth a security/data-integrity look once the real `GooglePlacesProvider` is live and re-validation has a real cost/benefit tradeoff to weigh.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-3-backend-persist-structured-address-on-customer-creation.md`
-  summary: Add a `type:`/schema reference to the `GET /customers` list endpoint's `@ApiResponse` decorator (it has none today, unlike the detail endpoint which references `CustomerDetailResponseDto`), so the new structured-address fields (and existing `jobCount`/`lastJobDate`) are documented in the OpenAPI schema.
+  summary: RESOLVED (2026-09-08) — `GET /customers` list 200 response now documents its schema: new `CustomerListItemDto` (mirrors the service's `CustomerListItem`, including the 5 structured-address fields plus `jobCount`/`lastJobDate`), composed into the generic `PaginatedResponse` envelope via the allOf/`getSchemaPath` pattern (no swagger CLI plugin, so `type:` can't take a generic).
   evidence: Surfaced during step-04 review (Blind Hunter layer). Pre-existing gap on the list endpoint that this story's fields fall into — cosmetic/documentation only, not a functional defect.
 
 - source_spec: `artifacts/implementation-artifacts/spec-google-places-live-provider.md`
@@ -58,7 +58,7 @@
   evidence: Run via a throwaway bun script (deleted after use) instantiating the provider directly from the user's terminal. New environment fact: the TLS interception (`SELF_SIGNED_CERT_IN_CHAIN`) is machine-wide, NOT sandbox-only — the user's own terminal hits the same corporate proxy; the one-off ran with `NODE_TLS_REJECT_UNAUTHORIZED=0`. No code change needed; deployed runtime unaffected.
 
 - source_spec: `artifacts/implementation-artifacts/spec-google-places-live-provider.md`
-  summary: Add unit tests for two untested-but-plausibly-correct edge cases in `GooglePlacesProvider`: a malformed `suggestions[]` entry (missing `placePrediction`, or only one of `placeId`/`text` present) silently dropped rather than surfaced; and multiple `addressComponents` entries typed `locality` (currently the first one wins via `.find()`).
+  summary: RESOLVED (2026-09-08) — Both edge cases now pinned in `google-places.provider.spec.ts`: a malformed `suggestions[]` entry (null/absent `placePrediction`, missing `placeId` or `text`) is silently dropped while well-formed entries survive; and the FIRST `locality` component wins when Google returns several (documents the `.find()` behaviour).
   evidence: Surfaced during step-04 review (Edge Case Hunter layer). Neither is a known defect — the current behavior (drop malformed suggestions, take first `locality` match) is reasonable and matches the spec's intent — but there's no regression test pinning either choice today.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-4-frontend-address-search-screen.md`
@@ -93,7 +93,7 @@
 
 - Dedup path drops supplied structured-address data when the phone already exists (`customers.service.ts` found-customer branch) — pre-existing for `address`/`city`, widened by the 5 new fields; decide update-vs-ignore when the fenzo-app FE wiring story lands.
 - Whitespace-only strings pass validation and persist as `''` instead of null for `formattedAddress`/`placeId` (and pre-existing `address`/`city`) — fix at a shared transform, not per-DTO.
-- No validator-rejection tests for the new `NewCustomerDto` fields on the jobs path — a copy-paste divergence from `CreateCustomerDto` would go unnoticed.
+- RESOLVED (2026-09-08) — Validator-rejection tests for the new `NewCustomerDto` fields on the jobs path: 5 parametrized e2e cases in `jobs.e2e-spec.ts` (5-digit pincode, latitude > 90, longitude < -180, whitespace-only name, 2-digit phoneNumber) all assert 422 `VALIDATION_ERROR`, guarding against DTO copy-paste divergence.
 - Third file-local copy of the `trim` helper (create-customer.dto.ts, new-customer.dto.ts, create-job.dto.ts) — extract a shared transform.
 - No runtime range/NaN guard on `FindOrCreateCustomerInput.latitude`/`longitude` at the service interface (defense-in-depth; pairs with the existing ResolvedPlace guard item).
 - Four-way duplication of the structured-address field list (2 DTOs + `FindOrCreateCustomerInput` + insert object) — a shared optional-field group would collapse it.
