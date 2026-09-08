@@ -236,3 +236,87 @@ So that I get accurate turn-by-turn directions instead of a text-match guess.
 **And** when coordinates are absent, `openMaps` falls back to today's exact `maps:0,0?q=<address, city>` / `geo:0,0?q=<address, city>` text-search behavior — unchanged
 **And** the row's visual appearance is identical in both cases — no "precise vs. approximate" badge (UX-DR6); only the underlying deep link differs
 **And** `src/services/resources/jobs.ts`'s customer type (~lines 218-219) is updated to carry the new optional `latitude`/`longitude` fields matching Story 2.1's response shape
+
+## Epic 3: Notify Owner When Technician Changes Job Status
+
+When a technician advances a job's workflow (on_my_way → … → completed), the owner currently learns about it only by pulling to refresh. This epic adds live notification: the change is written as a per-recipient `notifications` row inside the existing RPC transaction, broadcast to the owner's app via Supabase Realtime (Broadcast from Database — the 2026-recommended pattern; Postgres Changes is explicitly discouraged for new apps due to single-threaded, per-subscriber RLS authorization), and the owner app force-refetches jobs on the event. No push notifications, no Redis — Phase 1 of the architecture discussion (2026-09-08, conversation-driven; no PRD; REST read endpoints for the bell/list page were added to scope 2026-09-09 as Story 3.2).
+
+Requirements & constraints (conversation-derived, 2026-09-09; mixed functional requirements and constraints — the NFR-x labels are historical):
+- NFR-A: On every successful technician workflow advance, exactly one `notifications` row is written for the tenant owner, atomically with the job UPDATE (same RPC transaction).
+- NFR-B: The owner app receives the event live while foregrounded via a private Realtime channel authorized by RLS on `realtime.messages` keyed on `auth.jwt() ->> 'sub'` (recipient-only).
+- NFR-C: Delivery is treated as a refetch hint, never a source of truth — existing focus-refetch (15s TTL) and pull-to-refresh remain the correctness net (Realtime is at-most-once).
+- NFR-D: The anon/publishable key ships in the app (by design, not a secret); the `service_role` key and JWT secret stay server-side.
+- NFR-E: Notifications are pruned (pg_cron, third job) so the table stays small.
+- Out of scope: notifications for the owner's own cancel/edit path (`rpc_update_job_with_log`) — technician workflow advances only (recorded in Story 3.1's Never; a separate story if ever wanted).
+
+- NFR-F: The owner's Jobs screen gets a bell icon opening a notifications list page (paginated, unread badge); tapping a notification marks it read and deep-links to that job's `JobDetail` screen.
+- NFR-G (push-readiness): every piece ships so Phase 2 push (FCM/APNs) is additive-only — the `notifications` table doubles as the push outbox (`event_type` + self-sufficient `payload` + `pushed_at` delivery marker, written atomically from day 1); FE event handling is a single source-agnostic `handleJobStatusEvent(payload)` the socket calls today and the FCM handler calls tomorrow; the tap deep-link (`JobDetail`, `{ jobId }`) is the same one a push tap uses on cold start. Phase 2 adds a `device_tokens` table + registration endpoint, an FCM worker beside the broadcast, and nothing else changes.
+
+Sequenced backend-first (cross-repo rule: additive BE changes merge/deploys first, then FE consumes them). Stories:
+1. **3.1 (BE, pure SQL):** notifications table + in-RPC insert + Realtime broadcast trigger + pg_cron pruning.
+2. **3.2 (BE):** REST endpoints — `GET /notifications` (paginated), `GET /notifications/unread-count`, `POST /notifications/mark-read`, `POST /notifications/mark-all-read`.
+3. **3.3 (FE):** live updates — supabase-js client, foreground-only private-channel subscription on the owner's topic, force-refetch + banner on event.
+4. **3.4 (FE):** bell icon + unread badge on the Jobs screen header, Notifications list screen, tap → mark-read → `JobDetail` deep link.
+
+### Story 3.1: Backend — Notifications table + in-RPC insert + Realtime broadcast trigger
+
+As the system,
+I want every technician workflow advance to atomically write a notification row for the tenant owner and broadcast it to their Realtime topic,
+So that the owner app can be notified live without any backend event-delivery module.
+
+**Acceptance Criteria:**
+
+**Given** a technician successfully advances a workflow step (RPC `advance_workflow_step`)
+**When** the RPC's job UPDATE and activity_logs INSERT commit
+**Then** exactly one `notifications` row for the tenant's owner (`tenants.owner_id`) is written in the same transaction, with `event_type` = the workflow step and a payload containing `job_number` and the technician's name
+**And** a DB trigger on the notifications table calls `realtime.broadcast_changes('user:<owner_id>:notifications', ...)` so the event reaches a private Realtime channel
+**And** the Realtime authorization policy on `realtime.messages` allows a JWT to receive only topics for its own `sub` (recipient-only), following the live project's `TO public` policy convention
+**And** a subscriber holding only the anon key (no user JWT) receives nothing
+**And** a pg_cron job prunes notifications older than 30 days
+
+### Story 3.2: Backend — Notifications REST endpoints
+
+As an Owner app,
+I want REST endpoints to list notifications, get an unread count, and mark notifications read,
+So that the bell icon and notifications page have data even when the app was offline when events fired.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated owner JWT
+**When** `GET /notifications` is called (with `limit`/`cursor` keyset pagination, house `cursor.util.ts` machinery)
+**Then** it returns that user's notifications (newest first) with job number and step metadata resolved into the payload — tenant-scoped, RLS-equivalent filtering by `user_id = sub`
+**When** `GET /notifications/unread-count` is called, then it returns the count of rows with `read_at IS NULL` for that user
+**When** `POST /notifications/mark-read` is called with notification ids, or `POST /notifications/mark-all-read` with none, then the matching rows' `read_at` is set (idempotent)
+**And** a technician JWT sees only their own (always-empty) set — the endpoints are recipient-scoped, not role-gated
+
+### Story 3.3: Frontend — Owner live job-status updates via Supabase Realtime
+
+As an Owner,
+I want my app to react live when a technician changes a job's status,
+So that I see updated job state without pulling to refresh.
+
+**Acceptance Criteria:**
+
+**Given** the owner app is foregrounded and a technician advances a workflow step on any of the owner's jobs
+**When** the broadcast event arrives on the owner's private Realtime topic
+**Then** the app force-refetches jobs (`loadJobs(..., { force: true })`) so the list reflects the new status within the same tick, and shows a brief banner naming the job and new step
+**And** the subscription is foreground-only (torn down on background via `AppState`, resubscribed on foreground) and re-subscribes after a reconnect, with the existing focus-refresh remaining the correctness net
+**And** the session's existing bearer JWT authorizes the channel via supabase-js's `accessToken` option — no Supabase auth, no stored Supabase session
+**And** the subscription is cleaned up on global session reset (401 resetRegistry), and technicians get none of this (mounted only in the owner branch)
+
+### Story 3.4: Frontend — Bell icon, notifications page, deep link to job
+
+As an Owner,
+I want a bell icon with an unread badge that opens a list of notifications, each tapping through to the job it's about,
+So that I have a history of technician activity even for events that fired while my app was closed or offline.
+
+**Acceptance Criteria:**
+
+**Given** the owner's Jobs screen header
+**When** the bell icon is rendered
+**Then** it shows the unread count from `GET /notifications/unread-count` as a badge, refreshed on screen focus and after each live event from Story 3.3
+**When** the bell is tapped
+**Then** a Notifications screen opens: newest-first paginated list (cursor pagination, pull-to-refresh), each row showing the step, job number, technician name and relative time; unread rows visually distinguished
+**When** a notification row is tapped
+**Then** it is marked read (optimistically; badge updates), and the app navigates to `navigation.navigate('JobDetail', { jobId })` — the existing owner route — for the notification's job
+**And** marking all read is available on the list screen, and technicians get no bell (owner-only surface)

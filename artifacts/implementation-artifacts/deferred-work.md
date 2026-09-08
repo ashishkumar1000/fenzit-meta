@@ -114,3 +114,7 @@ Still open (structural / flake-risk — not actionable now):
 - Identity fields (`name`/`countryCode`/`phoneNumber`) and their validators are still copy-pasted between `CreateCustomerDto` and `NewCustomerDto`. TS classes are single-inheritance and both already extend `StructuredAddressDto` — an identity base would have to sit ABOVE the address base, putting identity fields on the address DTO. Needs composition-based validators or a decorators-per-mixin approach.
 - e2e Retry-After assertion is a `[1, WINDOW]` range, so it passes on the pre-fix full-window behaviour too; exact behaviour is pinned only at the unit layer (`retryAfterSeconds: 7`). Tightening to a fresh-window band risks CI flake.
 - `PlacesRateLimitStore.increment` (and now `InMemoryOtpSessionStore.increment`) are get-then-set (non-atomic): two concurrent increments can both read undefined and undercount — pre-existing single-process design; serialize per-key or move to atomic INCR when the Phase 2 Redis store lands.
+
+## Deferred from: code review of Epic 3 story specs (2026-09-09)
+
+- Uncommitted-but-applied migration `workspace/core/backend/fenzit-be/supabase/migrations/20260909000001_enable_rls_users_country_codes.sql` (users + country_codes RLS) has no owner commit — it is applied to the live project but exists only in the working tree. Needs its own fenzit-be commit (with its own BMAD code review), never bundled into Story 3.1's commits (spec-3-1 explicitly forbids bundling).
