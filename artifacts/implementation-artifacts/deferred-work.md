@@ -10,27 +10,35 @@
     - The sandboxed dev environment's egress proxy does TLS interception (`curl` needed `-k` to reach `googleapis.com`); this is a local dev-sandbox artifact only, not expected in the deployed backend's runtime.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-1-backend-address-autosuggest-endpoint.md`
-  summary: Consider a backend-side minimum query length (defense-in-depth) on `GET /places/autosuggest`, not just the frontend's client-side 3-character debounce gate (Story 1.4 / UX-DR3).
+  summary: RESOLVED (2026-09-08) — Backend-side minimum query length on `GET /places/autosuggest`: `AutosuggestQueryDto.q` now carries `@MinLength(3)` (exported as `MIN_AUTOSUGGEST_QUERY_LENGTH`), mirroring the FE 3-char debounce gate; sub-3-char queries get 422 before any provider call.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Today only the frontend enforces the 3-char minimum before firing a call; a direct API caller (buggy client, script, or future integration) could bypass that and fire single/two-character queries straight at the backend. Once the real `GooglePlacesProvider` is wired in, this becomes a real billing exposure, not just a wasted mock call. Not blocking for Story 1.1 (mock-only, no real Google cost yet) — worth adding when the deferred `GooglePlacesProvider` item is picked up.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-1-backend-address-autosuggest-endpoint.md`
-  summary: Add a `Retry-After` response header on the `429 RATE_LIMITED` response from `GET /places/autosuggest`.
+  summary: RESOLVED (2026-09-08) — `Retry-After` header on places 429s: the 429 body now carries `retryAfterSeconds` (the window), which `GlobalExceptionFilter` lifts into a `Retry-After` response header (never sent as a body field). Applied to both autosuggest and resolve limiters.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Without it, a typeahead client has no signal for how long to back off before retrying, and will likely just retry immediately, defeating the point of the limiter. Not required by Story 1.1's approved AC/I-O matrix (which only specifies the 429 status + error code), so not blocking — a client-experience polish for a later pass.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-1-backend-address-autosuggest-endpoint.md`
-  summary: Move the autosuggest rate-limit budget (`RATE_LIMIT_WINDOW_SECONDS = 60`, `RATE_LIMIT_MAX = 30` in `places.service.ts`) from hardcoded module constants to config/env, so it can be retuned without a redeploy.
+  summary: RESOLVED (2026-09-08) — Rate-limit budgets moved to config/env: 4 optional Joi-validated vars (`PLACES_{AUTOSUGGEST,RESOLVE}_RATE_LIMIT_{MAX,WINDOW_SECONDS}`, declared in app.module.ts, documented in .env.example), read via ConfigService in `PlacesService.rateLimitBudget()` with fallback to the exported default constants (60s; 30 autosuggest / 10 resolve).
   evidence: Surfaced during step-04 review (Blind Hunter layer). Already flagged transparently as a judgment call in the spec's own Spec Change Log at implementation time ("easy to retune later") — this entry just tracks the follow-up so it isn't forgotten. Low priority; not a defect, a tunability nice-to-have.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
-  summary: Add format/length validation on the `placeId` path parameter of `GET /places/resolve/:placeId` (and URL-encoding/charset handling for real Google Place IDs), as defense-in-depth before the real `GooglePlacesProvider` makes an actual network call per request.
+  summary: RESOLVED (2026-09-08) — Format/length validation on the `placeId` path parameter of `GET /places/resolve/:placeId`: new `PlaceIdParamsDto` (regex `^[A-Za-z0-9_-]{10,255}$`, validated by the global ValidationPipe) rejects malformed IDs with 422 before any provider call. Pattern verified compatible with real Google IDs, all mock fixtures, and the `__simulate_resolve_error__` sentinel; well-formed-but-unknown IDs still take the 502 path.
   evidence: Surfaced during step-04 review (Blind Hunter + Edge Case Hunter layers). Today `MockPlacesProvider`'s prototype-safe fixture lookup (fixed in this story's patch pass) already maps any bad `placeId` to the documented 502 path, so there's no defect with the mock — but once the deferred `GooglePlacesProvider` lands, an unbounded/malformed `placeId` reaching Google's API becomes a real billing/network-cost exposure, mirroring the already-deferred min-query-length item for autosuggest.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
   summary: Give `PlacesService`'s rate-limit-store-failure log message per-endpoint/per-branch specificity (it currently logs the identical text `'Places rate-limit store failed to increment:'` for both `autosuggest()` and `resolve()`, and doesn't distinguish a store failure from a provider failure in the log line itself).
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
+  summary: `Retry-After` header on places 429s reports the full window (e.g. 60s), not the time actually remaining in the window when the limit tripped — RFC-allowed conservative value, but a client backing off 60s when only 5s remained is slower to recover than necessary.
+  evidence: Surfaced during the 2026-09-08 places-hardening review (Blind Hunter layer, deferred). Computing the remaining time needs `PlacesRateLimitStore.increment()` to also return (or expose) the key's TTL, a store API change; deferred as not worth the surface growth now.
+
+- source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
+  summary: `PlacesService.resolve()`'s runtime guard checks only that `latitude`/`longitude` are finite (NaN/Infinity → 502), not that they are geographically valid (`[-90,90]` / `[-180,180]`) — a provider returning `lat=999` would pass through to clients.
+  evidence: Surfaced during the 2026-09-08 places-hardening review (Blind Hunter layer, deferred). No known provider path produces out-of-range-but-finite values; the range check is defense-in-depth beyond the requested NaN guard.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Both endpoints already map to the correct `502 PLACES_UPSTREAM_ERROR` response, so this is a production log-triage clarity improvement, not a functional defect — low priority polish.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-2-backend-address-resolve-endpoint.md`
-  summary: Add a runtime guard (e.g. `Number.isFinite`) on `ResolvedPlace.latitude`/`longitude` before `PlacesService.resolve()` returns, so a provider bug can't silently violate the documented "always real numbers, never null/placeholder" contract.
+  summary: RESOLVED (2026-09-08) — Runtime guard added in `PlacesService.resolve()`: non-finite (`NaN`/`Infinity`) `latitude`/`longitude` from any provider now maps to the documented 502 `PLACES_UPSTREAM_ERROR` (with a specific log line) instead of silently violating the "always real numbers" contract.
   evidence: Surfaced during step-04 review (Blind Hunter layer). Currently an unenforced doc-comment-only invariant on the `ResolvedPlace` interface; not exploitable via `MockPlacesProvider` (its fixtures are fixed, valid numbers), but becomes a real risk once the deferred `GooglePlacesProvider` parses external JSON and could return `NaN`/`undefined` for a malformed upstream response.
 
 - source_spec: `artifacts/implementation-artifacts/spec-1-3-backend-persist-structured-address-on-customer-creation.md`
