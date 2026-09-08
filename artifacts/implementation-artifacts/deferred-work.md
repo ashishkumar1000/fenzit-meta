@@ -117,4 +117,4 @@ Still open (structural / flake-risk — not actionable now):
 
 ## Deferred from: code review of Epic 3 story specs (2026-09-09)
 
-- Uncommitted-but-applied migration `workspace/core/backend/fenzit-be/supabase/migrations/20260909000001_enable_rls_users_country_codes.sql` (users + country_codes RLS) has no owner commit — it is applied to the live project but exists only in the working tree. Needs its own fenzit-be commit (with its own BMAD code review), never bundled into Story 3.1's commits (spec-3-1 explicitly forbids bundling).
+- ~~Uncommitted-but-applied migration `workspace/core/backend/fenzit-be/supabase/migrations/20260909000001_enable_rls_users_country_codes.sql` (users + country_codes RLS) has no owner commit~~ **Resolved 2026-09-09** — committed in fenzit-be as `9af01bb` (own commit, not bundled into Story 3.1).
