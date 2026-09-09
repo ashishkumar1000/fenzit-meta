@@ -2,7 +2,7 @@
 title: 'Backend — Notifications REST endpoints (list, unread count, mark read)'
 type: 'feature'
 created: '2026-09-09'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 context: []
 baseline_commit: '81a0abae8d0acad7bf3acf4f9ea58e5dd1f25031'
@@ -78,12 +78,12 @@ Deliberately **not** role-gated to OWNER: rows are recipient-scoped by `user_id 
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/notifications/` module: service with the 4 operations, controller with routes, DTOs
-- [ ] `cursor.util.ts`: add the `'notifications-list'` scope
-- [ ] `src/app.module.ts`: register the module
-- [ ] Unit tests (`src/notifications/notifications.service.spec.ts` — co-located, jest `rootDir: "src"` + `testRegex: .*\.spec\.ts$`): list pagination + cursor, unread count, mark-read idempotency + foreign-id no-op, double-scoping assertions (tenant + user filters on every call), null-tenantId short-circuit
-- [ ] e2e (`test/notifications.e2e-spec.ts` — jest-e2e.json also matches `.integration.spec.ts` files; specs live flat in `test/` beside `jobs.e2e-spec.ts`): owner happy path (list → unread-count → mark-read → count drops → mark-all-read → count 0), technician sees empty, validation 422s, malformed cursor 400. **Seeding:** insert fixture rows directly through `supabaseClientFactory.createAdmin()` — in this story nothing else writes `notifications` (the RPC INSERT is Story 3.1's, already deployed); do not drive full workflow advances per test
-- [ ] `docs/api-contracts.md`: `### Notifications` section
+- [x] `src/notifications/` module: service with the 4 operations, controller with routes, DTOs
+- [x] `cursor.util.ts`: add the `'notifications-list'` scope
+- [x] `src/app.module.ts`: register the module
+- [x] Unit tests (`src/notifications/notifications.service.spec.ts` — co-located, jest `rootDir: "src"` + `testRegex: .*\.spec\.ts$`): list pagination + cursor, unread count, mark-read idempotency + foreign-id no-op, double-scoping assertions (tenant + user filters on every call), null-tenantId short-circuit
+- [x] e2e (`test/notifications.e2e-spec.ts` — jest-e2e.json also matches `.integration.spec.ts` files; specs live flat in `test/` beside `jobs.e2e-spec.ts`): owner happy path (list → unread-count → mark-read → count drops → mark-all-read → count 0), technician sees empty, validation 422s, malformed cursor 400. **Seeding:** insert fixture rows directly through `supabaseClientFactory.createAdmin()` — in this story nothing else writes `notifications` (the RPC INSERT is Story 3.1's, already deployed); do not drive full workflow advances per test
+- [x] `docs/api-contracts.md`: `### Notifications` section
 
 **Acceptance Criteria:**
 - Given an owner JWT, `GET /notifications` returns only that recipient's rows, newest first, cursor-paginated, with payload/readAt/createdAt per row
@@ -91,6 +91,14 @@ Deliberately **not** role-gated to OWNER: rows are recipient-scoped by `user_id 
 - Given `POST /notifications/mark-read` / `mark-all-read`, matching own rows get `read_at` set idempotently; foreign or missing ids never error and never leak
 - Given any JWT, every query is scoped by tenant **and** recipient — no cross-recipient or cross-tenant read is possible
 - Given the rest of the API, nothing existing changes — strictly additive module
+
+### Review Findings
+
+- [x] [Review][Patch] `trimArray` behavior untested — no test sends a whitespace-padded UUID and expects 200 `markedCount: 1`; the one behavior the shared transformer was written for is unverified (if `@Transform` is dropped or regresses, padded ids become 422s and no test fails) [test/notifications.e2e-spec.ts] — FIXED: padded-UUID success test added (asserts the trimmed id reaches `.in()`)
+- [x] [Review][Patch] No 500-mapping unit tests for `markRead` / `markAllRead` — only `listNotifications` and `getUnreadCount` cover the DB-error → 500 path [src/notifications/notifications.service.spec.ts] — FIXED: 2 tests added
+- [x] [Review][Patch] `limit` boundary values 1 and 50 never tested — validation batch covers only invalid values, so the `@Min(1)/@Max(50)` acceptance edge is untested [src/notifications/notifications.service.spec.ts] — FIXED: boundary test added (limit 1 → fetch 2, limit 50 → fetch 51)
+- [x] [Review][Patch] No 401 test in the notifications e2e spec — house e2e specs (customers/jobs) assert `401` with no JWT; the documented contract for these routes is untested [test/notifications.e2e-spec.ts] — FIXED: parametrized 401 batch over all four endpoints added
+- [x] [Review][Patch] Comment references a non-existent name — `toResponse` says "(toDetailResponse convention)" but the house mapper name is `toResponse` (as in `customers.service.ts`); `toDetailResponse` exists nowhere [src/notifications/notifications.service.ts:191] — FIXED: comment corrected
 
 ## Design Notes
 
@@ -124,3 +132,60 @@ Deliberately **not** role-gated to OWNER: rows are recipient-scoped by `user_id 
 4. Module registration.
 5. Specs — pagination + idempotency + scoping coverage.
 6. `docs/api-contracts.md`.
+
+## Dev Agent Record
+
+### Completion Notes
+
+- All 4 operations implemented in one service; every Supabase call is double-scoped
+  (`.eq('tenant_id', ...)` + `.eq('user_id', user.userId)`) — verified by dedicated
+  assertions in both spec levels. `tenantId === null` short-circuits all four
+  operations to empty/0 **before** any DB call (asserted via `from` never called).
+- `mark-read` / `mark-all-read` update with `.is('read_at', null)` and count the
+  rows the UPDATE actually returned (`markedCount`) — foreign/missing/already-read
+  ids are silent no-ops by construction, no read-then-write round trip.
+- Pagination mirrors `customers.service.ts` keyset template exactly: `limit(N+1)`
+  peek row, `hasMore` slice, cursor minted from the last page row under scope
+  `'notifications-list'`.
+- One deviation-shaped addition: added a **shared `trimArray`** transformer to
+  `src/common/utils/trim.transformer.ts` (spec prescribed the shared-trimmer rule;
+  the existing `trim` helper is per-string and its `TransformFnParams` type does
+  not support per-element mapping — a shared array variant honors the "no seventh
+  local trim copy" rule better than an inline copy in `MarkReadDto`).
+- House e2e debt followed as prescribed: `notifications.e2e-spec.ts` uses the
+  file-wide `JSON.parse → any` convention (lint `no-unsafe-*` errors accepted,
+  same as customers/jobs e2e specs); `src/notifications/` itself is lint-clean
+  (verified with targeted eslint run).
+- Validation results: unit 16/16 (`bun run test -- notifications`), e2e 24/24
+  (`bun run test:e2e -- notifications`), full unit suite 436/436 (no regressions),
+  `bun run build` clean, `bun run typecheck` clean, lint clean on all new `src/`
+  files. (Note: jest needs `--no-watchman` under the sandbox — watchman state
+  dir is blocked; not a code issue.)
+- No e2e/live-DB verification of the endpoints against the deployed Supabase
+  project — per owner decision 2026-09-09 (no e2e/DB test suite), manual live
+  verification is the accepted coverage if the owner wants it before commit.
+
+### File List
+
+- `src/notifications/notifications.module.ts` — NEW
+- `src/notifications/notifications.controller.ts` — NEW
+- `src/notifications/notifications.service.ts` — NEW
+- `src/notifications/dto/notification-response.dto.ts` — NEW
+- `src/notifications/dto/list-notifications-query.dto.ts` — NEW
+- `src/notifications/dto/mark-read.dto.ts` — NEW
+- `src/notifications/dto/notification-count-response.dto.ts` — NEW
+- `src/notifications/notifications.service.spec.ts` — NEW (16 unit tests)
+- `test/notifications.e2e-spec.ts` — NEW (24 e2e tests)
+- `src/common/utils/cursor.util.ts` — `'notifications-list'` added to `CursorScope`
+- `src/common/utils/trim.transformer.ts` — shared `trimArray` transformer added
+- `src/app.module.ts` — `NotificationsModule` registered (after `PlacesModule`)
+- `docs/api-contracts.md` — `### Notifications` section added
+
+### Change Log
+
+- 2026-09-09: Story 3.2 implemented end-to-end (module + tests + docs); status → review.
+- 2026-09-09: BMAD code review run (4 layers: blind-hunter, edge-case-hunter, verification-gap, acceptance-auditor). 5 patch findings, all fixed
+  (padded-UUID e2e test, 500-mapping unit tests for mark-read/mark-all-read, limit boundary unit test, 401 e2e batch, stale comment); 15 dismissed
+  after verification against code (cursor-injection and null-payload false positives — `decodeCursor` validates and `payload` is `NOT NULL DEFAULT '{}'`;
+  index exists from Story 3.1; mock-based e2e accepted per owner decision 2026-09-09; rest house-consistent/cosmetic). Post-fix validation: unit 19/19,
+  e2e 29/29, full suite 439/439, typecheck clean, `src/notifications/` lint-clean. Status → done.
