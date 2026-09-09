@@ -2,8 +2,8 @@
 title: 'Frontend — Bell icon, notifications page, deep link to job'
 type: 'feature'
 created: '2026-09-09'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 context: []
 baseline_commit: 'efb3d35daf15b429b5e25cb4c3e3bf83e5d573fe'
 ---
@@ -75,15 +75,15 @@ Data flows through the standard pattern: new `src/services/resources/notificatio
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/services/resources/notifications.ts` API module (4 calls, types matching Story 3.2's `{ data, nextCursor }` shapes exactly)
-- [ ] `useNotifications.ts` store + hook (cursor pagination, TTL focus refresh, optimistic mark-read with rollback, unreadCount)
-- [ ] `src/utils/relativeTime.ts` helper + barrel re-export (none exists today — verified)
-- [ ] `NotificationsScreen.tsx` + `NotificationRow.tsx` + barrel — all states from the I/O matrix
-- [ ] Navigation: `Notifications` route in `types.ts` + `RootNavigator.tsx`
-- [ ] JobsScreen header: bell + badge → navigate
-- [ ] `HomeHeader.tsx`: wire the existing dead bell to `navigate('Notifications')` + real unread dot
-- [ ] Story 3.3 integration: live broadcast also refreshes `unreadCount`
-- [ ] Unit tests: store logic (pagination cursor walk, optimistic mark-read rollback, TTL) with the API module mocked (the `__tests__/useJobs.test.ts` pattern: `jest.mock('../src/services', ...)` + `react-test-renderer` probe); row/banner-free pure models where extractable
+- [x] `src/services/resources/notifications.ts` API module (4 calls, types matching Story 3.2's `{ data, nextCursor }` shapes exactly)
+- [x] `useNotifications.ts` store + hook (cursor pagination, TTL focus refresh, optimistic mark-read with rollback, unreadCount)
+- [x] `src/utils/relativeTime.ts` helper + barrel re-export (none exists today — verified)
+- [x] `NotificationsScreen.tsx` + `NotificationRow.tsx` + barrel — all states from the I/O matrix
+- [x] Navigation: `Notifications` route in `types.ts` + `RootNavigator.tsx`
+- [x] JobsScreen header: bell + badge → navigate
+- [x] `HomeHeader.tsx`: wire the existing dead bell to `navigate('Notifications')` + real unread dot
+- [x] Story 3.3 integration: live broadcast also refreshes `unreadCount`
+- [x] Unit tests: store logic (pagination cursor walk, optimistic mark-read rollback, TTL) with the API module mocked (the `__tests__/useJobs.test.ts` pattern: `jest.mock('../src/services', ...)` + `react-test-renderer` probe); row/banner-free pure models where extractable
 
 **Acceptance Criteria:**
 - Given the owner's Jobs screen, the bell shows the live unread count and opens the Notifications screen on tap
@@ -126,3 +126,122 @@ Data flows through the standard pattern: new `src/services/resources/notificatio
 4. `JobsScreen` header diff — smallest possible change to a complex screen.
 5. Screen + row — design-system compliance (tokens, touch targets, states).
 6. Tests + Story 3.3 integration line.
+
+## Dev Agent Record
+
+### Completion Notes
+
+- All 9 execution tasks implemented per spec. Validation: **jest 691/691
+  (79/79 suites) green** — includes 17 new store tests (`__tests__/
+  useNotifications.test.ts`, the `useJobs.test.ts` probe pattern) and the two
+  touched suites (`JobsScreen.test.tsx`, `useOwnerNotifications.test.ts`) kept
+  green with `notificationService.unreadCount` stubs in their services mocks.
+- `bunx tsc --noEmit` clean except ONE pre-existing baseline error
+  (`src/config/index.ts(27) TS2591` — verified identical on the clean tree at
+  HEAD `96edb46`; not from this change). `bun run lint` cannot run: **no
+  ESLint config exists in fenzo-app at all** (baseline, pre-existing —
+  `eslint .` fails on the clean tree too). Test suite + tsc were used as the
+  quality gates.
+- **One deliberate spec deviation — relative imports.** The spec's Code Map
+  mandates absolute imports (`@components`, …), but fenzo-app's CLAUDE.md
+  carries a 2026-09-09 reality note overriding that: no source file uses a
+  project alias and jest has no `moduleNameMapper`; the whole codebase
+  (including Story 3.3's files) imports relatively. All new files follow the
+  repo doc, not the spec bullet.
+- Store design detail: the shared store carries TWO independently
+  TTL-throttled loads — the list (Notifications screen only) and the unread
+  count (every bell surface). The hook's first-mount effect loads ONLY the
+  badge, so mounting `useNotifications` on Jobs/Home never pulls the list.
+  Both use the shared `FOCUS_REFRESH_TTL_MS` constant (not useJobs' copied
+  `15_000` literal), per spec.
+- Optimistic mark-read reconciliation per spec: `ApiError.status > 0`
+  (definitive 4xx/5xx) rolls the snapshot back; `status === 0`
+  (offline/timeout — POST may have landed) force-refetches unread-count and
+  list instead of guessing. The mark-all rollback re-pairs read-state BY ID
+  against the live list so a concurrent refetch's new rows survive — and it
+  branches on map presence (`has()`), NOT `??`, because a snapshot's
+  `readAt: null` (unread) is a real value; the `??` version was a real bug
+  the store test caught before it shipped.
+- Story 3.3 integration: `useOwnerNotifications.handleJobStatusEvent` now
+  also calls `loadUnreadCount({ force: true })` — one handler line + import;
+  the 3.3 hook's existing tests pass unchanged (stub added to their mock).
+- Step vocabulary is shared, not duplicated within the feature:
+  `notificationStepLabel()` was extracted in `notificationBannerModel.ts`
+  (3.3's file) and both the banner text and the new `NotificationRow` use it —
+  cross-FEATURE duplication stays per the house rule; cross-FILE duplication
+  inside one feature does not.
+- Row tap order: navigate first, optimistic mark-read alongside (the deep
+  link is the user's intent; read-state is cosmetic). Read rows skip the POST.
+- NOT done here (by design / out of scope): manual device verification of the
+  ACs (owner app → bell → list → tap → JobDetail; airplane mode; technician
+  no-bell) — jest cannot exercise the navigator; same accepted split as 3.3.
+  Push/background delivery remains Phase 2.
+
+### File List
+
+- `src/services/resources/notifications.ts` — NEW (API module, 4 calls)
+- `src/services/resources/index.ts` — barrel: `notificationService` + types
+- `src/features/notifications/useNotifications.ts` — NEW (shared store + hook)
+- `src/features/notifications/NotificationsScreen.tsx` — NEW
+- `src/features/notifications/components/NotificationRow.tsx` — NEW
+- `src/features/notifications/index.ts` — NEW (feature barrel)
+- `src/features/notifications/notificationBannerModel.ts` — `notificationStepLabel()` extracted + shared
+- `src/features/notifications/useOwnerNotifications.ts` — 3.3/3.4 integration line (badge refresh per broadcast)
+- `src/features/notifications/useOwnerNotifications.test.ts` — services mock gains `notificationService` stub
+- `src/utils/relativeTime.ts` — NEW (relative-time helper)
+- `src/utils/index.ts` — barrel re-export
+- `src/navigation/types.ts` — `Notifications: undefined` route
+- `src/navigation/RootNavigator.tsx` — `Notifications` screen registration
+- `src/features/jobs/JobsScreen.tsx` — bell + 99+-capped badge in header; count refresh on focus
+- `src/components/HomeHeader.tsx` — dead bell wired (`onBellPress` prop, real unread dot)
+- `src/screens/HomeScreen.tsx` — passes bell props; count refresh on focus
+- `__tests__/useNotifications.test.ts` — NEW (17 store tests)
+- `__tests__/JobsScreen.test.tsx` — services mock gains `notificationService` stub
+
+### Change Log
+
+- 2026-09-09: Story 3.4 implemented end-to-end (API module, store, screen/row,
+  navigation, both bells, 3.3 integration, tests); status → review. Suite
+  691/691; tsc clean vs. pre-existing baseline; no ESLint config exists in
+  the repo (baseline).
+- 2026-09-09: BMAD code review (full mode) — all 18 patch findings applied
+  (forced-refresh no-op, snapshot-free rollbacks with post-mutation badge
+  re-ask, Jobs-tab CTA, error/mutation banners, Home refresh + bell a11y,
+  hasMore drift guard, reset slot nulling, EOF newlines) plus the missing
+  test coverage (wire, relativeTime, screen/row, bells, broadcast assert,
+  reset-registry, home barrel mock). 1 defer (stale row timestamps) moved to
+  deferred-work.md; 6 findings dismissed. Status → done. Suite 730/730;
+  tsc unchanged vs. baseline.
+
+### Review Findings
+
+BMAD code review 2026-09-09 (full mode: blind-hunter, edge-case-hunter,
+verification-gap, acceptance-auditor). 0 decision-needed, 18 patch, 1 defer,
+6 dismissed.
+
+Patches:
+
+- [x] [Review][Patch] Pull-to-refresh can no-op while a page-2 fetch is in flight — `loadNotifications` returns the shared `listInFlight` promise before the `force` check, so a forced refresh during pagination resolves without refetching page 1 [src/features/notifications/useNotifications.ts:102]
+- [x] [Review][Patch] Rollback restores a stale `unreadCount` snapshot — a live force-refetch landing mid-POST is clobbered by `previous.unreadCount`; re-derive the count from the current rows instead [src/features/notifications/useNotifications.ts:283,302]
+- [x] [Review][Patch] Empty-state CTA says "Go to jobs" but calls `navigation.goBack()` — from the Home bell it lands on Home, not Jobs; navigate to the Jobs tab per the spec's "CTA back to jobs" [src/features/notifications/NotificationsScreen.tsx:176]
+- [x] [Review][Patch] No server badge refetch after a successful mark-read mutation — spec requires the badge refreshed "after any mark-read mutation"; add `loadUnreadCount({ force: true })` on the success path [src/features/notifications/useNotifications.ts:228,266]
+- [x] [Review][Patch] A failed page-2/refresh while rows are on screen shows no error — `error && hasData` renders the bare FlatList; show an InlineError banner (JobsScreen precedent) [src/features/notifications/NotificationsScreen.tsx:145]
+- [x] [Review][Patch] A failed mark-read/mark-all gives no user feedback anywhere — rollback is silent; surface the failure (e.g. via the screen's error banner) [src/features/notifications/useNotifications.ts:229,267]
+- [x] [Review][Patch] Home pull-to-refresh doesn't refresh the unread count — Jobs and Notifications both do; add `loadUnreadCount({ force: true })` to HomeScreen's `handleRefresh` [src/screens/HomeScreen.tsx:52]
+- [x] [Review][Patch] Home bell's accessibility label is static "Notifications" — it never conveys unread state; include the count ("Notifications, 3 unread") [src/components/HomeHeader.tsx:119]
+- [x] [Review][Patch] `hasMore` should be derived with `nextCursor !== null` so the pair can't disagree (server shape drift guard) [src/features/notifications/useNotifications.ts:115-116]
+- [x] [Review][Patch] `clearNotifications` doesn't null `listInFlight`/`countInFlight` — a load requested right after a reset returns the stale (gen-discarded) promise and no fresh GET fires [src/features/notifications/useNotifications.ts:307]
+- [x] [Review][Patch] Seven new files are missing the end-of-file newline (pre-commit style failure)
+- [x] [Review][Patch] `__tests__/home-screen.test.tsx` doesn't mock the services barrel — the mounted screen now fires a real (unmocked) `unreadCount` request through the apiClient module graph [__tests__/home-screen.test.tsx]
+- [x] [Review][Patch] No wire test for `notificationService` — add `notifications.test.ts` in the `jobs.test.ts` mold (mocked apiClient, assert URL/method/params/body per endpoint) [src/services/resources/notifications.ts]
+- [x] [Review][Patch] No unit tests for `relativeTime` — pin bucket boundaries (60s, hours, 7d, 4w, date fallback, negative elapsed) with a fixed `nowMs`, as its own docstring advertises [src/utils/relativeTime.ts]
+- [x] [Review][Patch] No tests for NotificationsScreen/NotificationRow — cover the row-tap deep-link contract (`JobDetail { jobId }` + mark-read), "Mark all read" disabled state, error Retry, empty-state CTA [src/features/notifications/NotificationsScreen.tsx]
+- [x] [Review][Patch] Bell regression coverage missing on both host screens — no test asserts bell press → `navigate('Notifications')`, badge/dot rendering, or focus → `loadUnreadCount` (a reverted bell passes all 75 suites) [__tests__/JobsScreen.test.tsx, __tests__/home-screen.test.tsx]
+- [x] [Review][Patch] The broadcast handler's new `loadUnreadCount({ force: true })` is stubbed but never asserted — delete the line and the suite stays green [src/features/notifications/useOwnerNotifications.test.ts]
+- [x] [Review][Patch] The notifications store never joined `reset-registry-stores.test.tsx` — `registerReset(clearNotifications)` is unverified; a dropped line would leave the next session the previous account's rows [__tests__/reset-registry-stores.test.tsx]
+
+Deferred:
+
+- [x] [Review][Defer] Row timestamps don't update while the screen sits open ("Just now" persists until data changes) — deferred, polish requiring an interval tick; focus/pull-to-refresh already refreshes labels [src/features/notifications/components/NotificationRow.tsx]
+
+Dismissed (6): Jobs pill vs Home dot badge difference (spec designs Home as a dot, "no second badge surface"); `BELL_BADGE_CAP` living in JobsScreen (Home needs no badge vocab); raw snake_case step values for unknown enums (documented 3.3 banner-model behavior); hardcoded `barStyle="dark-content"` (app has no dark theme); 5xx-rollback assumption (spec-mandated, documented, self-heals via re-ask path); mixed module-level vs hook import styles in NotificationsScreen (same module functions, cosmetic).

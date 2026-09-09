@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-09-2026 21:30
+last_updated: 09-09-2026 23:59
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -50,9 +50,8 @@ development_status:
   2-2-frontend-precise-maps-navigation-from-job-detail: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress  # owner notifications on job-status change (conversation-driven, no PRD)
+  epic-3: done  # all stories 3-1..3-4 done; closed 2026-09-09
   3-1-backend-notifications-table-and-realtime-broadcast: done
   3-2-backend-notifications-rest-endpoints: done
   3-3-frontend-owner-live-job-status-updates: done  # BMAD code review 2026-09-09: 3 decisions resolved, 12 patches applied, 3 deferred to 3.4
-  3-4-frontend-notifications-bell-list-deeplink: ready-for-dev
-  epic-3-retrospective: optional
+  3-4-frontend-notifications-bell-list-deeplink: done  # BMAD code review 2026-09-09: 18 patches applied, 1 deferred, 6 dismissed

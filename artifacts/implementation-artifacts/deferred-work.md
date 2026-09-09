@@ -124,3 +124,10 @@ Still open (structural / flake-risk — not actionable now):
 - No recovery path for a dead socket — `CHANNEL_ERROR`/`TIMED_OUT` are log-only and `CLOSED` is unhandled in the subscribe callback (`useOwnerNotifications.ts:154-158`); supabase-js auto-reconnect covers most transient drops, auth-rejection loops would not recover until a background/foreground cycle. Revisit when Story 3.4 adds push.
 - No event-type filtering — every INSERT broadcast on the owner topic renders a job-status banner (`useOwnerNotifications.ts:106`); fine while the trigger fans only job-status rows, but Story 3.4's notification list will need type/operation filtering.
 - `handleJobStatusEvent` is a closure inside the hook with a `(topic, message)` signature, not the exported pure `handleJobStatusEvent(payload)` the Design Note prescribed as the Phase 2 seam — reshape it when the FCM data-message handler lands in Story 3.4.
+
+## Deferred from: code review of spec-3-4-frontend-notifications-bell-list-deeplink (2026-09-09)
+
+- Notifications list rows never re-render their relative timestamps while the
+  screen sits open — a row showing "Just now" stays that way until the data
+  changes (focus/pull-to-refresh fixes it). Polish: needs an interval tick;
+  accepted as cosmetic for now. [fenzo-app src/features/notifications/components/NotificationRow.tsx]
