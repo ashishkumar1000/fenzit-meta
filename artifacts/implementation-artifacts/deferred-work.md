@@ -118,3 +118,9 @@ Still open (structural / flake-risk — not actionable now):
 ## Deferred from: code review of Epic 3 story specs (2026-09-09)
 
 - ~~Uncommitted-but-applied migration `workspace/core/backend/fenzit-be/supabase/migrations/20260909000001_enable_rls_users_country_codes.sql` (users + country_codes RLS) has no owner commit~~ **Resolved 2026-09-09** — committed in fenzit-be as `9af01bb` (own commit, not bundled into Story 3.1).
+
+## Deferred from: code review of spec-3-3-frontend-owner-live-job-status-updates (2026-09-09)
+
+- No recovery path for a dead socket — `CHANNEL_ERROR`/`TIMED_OUT` are log-only and `CLOSED` is unhandled in the subscribe callback (`useOwnerNotifications.ts:154-158`); supabase-js auto-reconnect covers most transient drops, auth-rejection loops would not recover until a background/foreground cycle. Revisit when Story 3.4 adds push.
+- No event-type filtering — every INSERT broadcast on the owner topic renders a job-status banner (`useOwnerNotifications.ts:106`); fine while the trigger fans only job-status rows, but Story 3.4's notification list will need type/operation filtering.
+- `handleJobStatusEvent` is a closure inside the hook with a `(topic, message)` signature, not the exported pure `handleJobStatusEvent(payload)` the Design Note prescribed as the Phase 2 seam — reshape it when the FCM data-message handler lands in Story 3.4.
