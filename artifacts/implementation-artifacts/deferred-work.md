@@ -140,3 +140,9 @@ Still open (structural / flake-risk — not actionable now):
 
 - E2E mocks are never reset between tests — `mockCreate`/`mockCreateAdmin` are created once in `beforeAll`, `jest-e2e.json` has no `clearMocks`, and `mockJwtClient` only replaces return values, so mock state and call history leak across the GET and POST/DELETE blocks in `test/skills.e2e-spec.ts`. Harmless today by coincidence (POST/DELETE use `createAdmin`), fragile for Story 4.2's edits. Pre-existing harness pattern (beforeAll mocks pre-date this story's diff).
 - Mint-contract duplication — `SkillsService.listGlobalSkills` re-implements `AuthService.mintRealtimeToken`'s claim shape and the jsonwebtoken gotcha (payload `exp`, no `expiresIn` option) from scratch, and `POSTGREST_TOKEN_TTL_SECONDS` is exported but unconsumed. Both sites currently document that they mirror each other, so drift risk is noted, not hidden; a shared mint helper (and dropping/using the export) is a refactor candidate for a later story.
+
+## Deferred from: code review of spec-4-2-technician-skills-cut-over-to-the-global-catalog (2026-09-11)
+
+- source_spec: `artifacts/implementation-artifacts/spec-4-2-technician-skills-cut-over-to-the-global-catalog.md`
+  summary: The retargeted FK `user_skills.skill_id → skills(id) ON DELETE RESTRICT` has no test asserting its guard behaviour — a DELETE of a skill row that technicians still reference must fail (23503), not silently strip assignments (the whole rationale for RESTRICT over CASCADE in migration 35). The RLS suite covers reads/writes of user_skills but never attempts a skill DELETE.
+  evidence: `supabase/migrations/20260911000001_tenant_skills_cutover.sql:16-19` (RESTRICT), `test/integration/rls-isolation.integration.spec.ts` (no DELETE probe on skills); surfaced by the Story 4.2 blind-hunter review layer, judged low severity — the constraint is declarative and the migration applied cleanly.
