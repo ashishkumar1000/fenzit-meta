@@ -131,3 +131,12 @@ Still open (structural / flake-risk — not actionable now):
   screen sits open — a row showing "Just now" stays that way until the data
   changes (focus/pull-to-refresh fixes it). Polish: needs an interval tick;
   accepted as cosmetic for now. [fenzo-app src/features/notifications/components/NotificationRow.tsx]
+
+- source_spec: `artifacts/implementation-artifacts/spec-4-1-global-skills-catalog-with-read-only-api.md`
+  summary: Repo-wide — real-DB integration tests (`test/integration/*.spec.ts`) are skipped in every normal verification run (`jest.env.setup.ts` stubs `SUPABASE_URL`, and the unit jest config never collects `test/integration`), so schema/RLS drift is caught only when someone sets real credentials or via manual Supabase MCP spot-checks; no CI exists to run them. Surfaced by Story 4.1's verification-gap review layer; the pattern pre-dates this story (it is the AR-20 harness pattern).
+  evidence: `test/jest.env.setup.ts:3` sets `SUPABASE_URL='https://test.supabase.co'` for the whole e2e config, `IS_REAL_DB` gates every `maybeIt`, `package.json` unit config has `rootDir: "src"`, and the pre-push hook runs only typecheck. Story 4.1 mitigated its own drift risk by asserting the exact six seeded rows in order inside the `maybeIt` block (they fail the moment real creds are provided), but a standing way to run them regularly (a bun script, a pre-deploy hook, or CI) is still missing repo-wide.
+
+## Deferred from: code review of spec-4-1-global-skills-catalog-with-read-only-api (2026-09-10)
+
+- E2E mocks are never reset between tests — `mockCreate`/`mockCreateAdmin` are created once in `beforeAll`, `jest-e2e.json` has no `clearMocks`, and `mockJwtClient` only replaces return values, so mock state and call history leak across the GET and POST/DELETE blocks in `test/skills.e2e-spec.ts`. Harmless today by coincidence (POST/DELETE use `createAdmin`), fragile for Story 4.2's edits. Pre-existing harness pattern (beforeAll mocks pre-date this story's diff).
+- Mint-contract duplication — `SkillsService.listGlobalSkills` re-implements `AuthService.mintRealtimeToken`'s claim shape and the jsonwebtoken gotcha (payload `exp`, no `expiresIn` option) from scratch, and `POSTGREST_TOKEN_TTL_SECONDS` is exported but unconsumed. Both sites currently document that they mirror each other, so drift risk is noted, not hidden; a shared mint helper (and dropping/using the export) is a refactor candidate for a later story.
