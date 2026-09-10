@@ -29,29 +29,44 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-09-2026 23:59
+last_updated: 09-10-2026 12:00
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
-story_location:
+story_location: 
   /Users/ashish.kumar/workspace/fenzo-meta/artifacts/implementation-artifacts
 development_status:
-  epic-1: done  # all stories 1-1..1-5 done; closed 2026-09-08
+  epic-1: done
   1-1-backend-address-autosuggest-endpoint: done
   1-2-backend-address-resolve-endpoint: done
   1-3-backend-persist-structured-address-on-customer-creation: done
   1-4-frontend-address-search-screen: done
   1-5-frontend-return-selection-to-add-customer-bottomsheet: done
-  # Owner decision 2026-09-07: retrospectives will not be run for this sprint
   epic-1-retrospective: optional
 
-  epic-2: done  # all stories 2-1..2-2 done; closed 2026-09-08
+  epic-2: done
   2-1-backend-expose-customer-coordinates-in-job-detail-response: done
   2-2-frontend-precise-maps-navigation-from-job-detail: done
   epic-2-retrospective: optional
 
-  epic-3: done  # all stories 3-1..3-4 done; closed 2026-09-09
-  3-1-backend-notifications-table-and-realtime-broadcast: done
+  epic-3: done
+  3-1-backend-notifications-table-in-rpc-insert-realtime-broadcast: done
   3-2-backend-notifications-rest-endpoints: done
-  3-3-frontend-owner-live-job-status-updates: done  # BMAD code review 2026-09-09: 3 decisions resolved, 12 patches applied, 3 deferred to 3.4
-  3-4-frontend-notifications-bell-list-deeplink: done  # BMAD code review 2026-09-09: 18 patches applied, 1 deferred, 6 dismissed
+  3-3-frontend-owner-live-job-status-updates-via-supabase-realtime: done
+  3-4-frontend-bell-icon-notifications-page-deep-link-to-job: done
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-global-skills-catalog-with-read-only-api: backlog
+  4-2-technician-skills-cut-over-to-the-global-catalog: backlog
+  4-3-workflow-templates-and-skill-tagged-jobs: backlog
+  4-4-generic-workflow-engine-and-attachment-auto-advance: backlog
+  4-5-read-surfaces-docs-and-test-cutover: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-job-creation-with-skill-picker-and-exact-technician-matching: backlog
+  5-2-dynamic-technician-workflow-from-template-steps: backlog
+  5-3-owner-side-step-display-and-edit-flow-cleanup: backlog
+  5-4-deletions-docs-and-fe-test-cutover: backlog
+  epic-5-retrospective: optional
