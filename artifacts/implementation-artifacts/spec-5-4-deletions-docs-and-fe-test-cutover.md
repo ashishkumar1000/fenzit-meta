@@ -151,3 +151,45 @@ The backend (Epic 4) already shipped the new shapes. This story is FE-only cutov
 
 - **Done:** All AC met, `bun run test` green, code review passed, sprint status updated
 - **Deployed:** Story 5-4 merged to main in fenzo-app, pushed to the fenzo-app remote
+
+---
+
+## Review Findings
+
+### Decision Needed (RESOLVED)
+
+- [x] [Review][Decision] **Scope: Should AC3 & AC5 be in this story?** — **RESOLVED:** AC3 (draft toggles) and AC5 (graceful fallback) are already implemented in prior stories. EditJobDraft has no photo/signature fields; ActivityTimeline and notificationBannerModel both have graceful fallback for unknown step keys. No additional implementation needed.
+
+- [x] [Review][Decision] **Scope: Are documentation updates (AC7) in this commit?** — **RESOLVED:** User chose "include in this commit". Updated epic-5-context.md to mark all stories 5-1 through 5-4 as done. API-contracts re-spec deferred to future story (not critical for this cutover).
+
+### Patches (ALL APPLIED)
+
+- [x] [Review][Patch] **Empty string customer name doesn't fall back to skill** — **FIXED:** Restored `|| job.skill?.name` fallback in TodaysJobsSection.tsx:58 to handle both null and empty string cases.
+
+- [x] [Review][Patch] **Test fixtures have dual old/new fields** — **FIXED:** Removed `serviceType` field from ApiJob, JobHistoryItem type definitions and all test fixtures (editJobModel.test.ts, useWorkflowAdvance.test.ts, workflowActionBarModel.test.ts, TechJobDetailContent.test.tsx, jobs.test.ts, customer-detail-screen.test.tsx).
+
+- [x] [Review][Patch] **Missing tests for null skill fallback** — **FIXED:** Added test case in JobCard.test.tsx: "falls back to 'Service' when no customer name and skill is null".
+
+- [x] [Review][Patch] **Test assertion removed without replacement** — **FIXED:** Updated customer-detail-screen.test.tsx to remove service-label reference from the test itself (no assertion was needed; HistoryRow only renders job data, not skill labels).
+
+- [x] [Review][Patch] **Test name no longer matches assertions** — **FIXED:** Updated test name from "renders history rows as given: jobNumber, badge, date, service label" to "renders history rows as given: jobNumber, badge, date".
+
+- [x] [Review][Patch] **SkillsScreen deletion incomplete** — **VERIFIED:** Both SkillsScreen.tsx and SkillsScreen.test.tsx are deleted. AddSkillSheet.tsx and test also deleted.
+
+- [x] [Review][Patch] **Icon removal not exhaustively verified** — **VERIFIED:** `grep -r "SERVICE_ICON" src/` returns zero results.
+
+- [x] [Review][Patch] **Comments reference old vocabulary** — **FIXED:** Comments already updated to reference "skill name" instead of "service type/label".
+
+### Deferred
+
+(None at this time.)
+
+## Final Status
+
+✅ **Story 5.4 Complete** — 2026-09-11
+- All 8 patch findings applied
+- AC3 & AC5 verified working (no changes needed)
+- AC7 documentation updated
+- All 766 tests passing
+- Commit: fenzo-app 61030eb
+- Sprint status updated in meta repo
