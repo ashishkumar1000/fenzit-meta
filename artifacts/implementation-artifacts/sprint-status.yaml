@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-11-2026 12:00  # 4-5 review patches applied → done
+last_updated: 09-11-2026 22:00  # 5-1 done — committed fenzo-app e4de130 + docs
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -56,16 +56,16 @@ development_status:
   3-4-frontend-bell-icon-notifications-page-deep-link-to-job: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done  # marked done 2026-09-11 by user decision — retro skipped
   4-1-global-skills-catalog-with-read-only-api: done
   4-2-technician-skills-cut-over-to-the-global-catalog: done
   4-3-workflow-templates-and-skill-tagged-jobs: done
   4-4-generic-workflow-engine-and-attachment-auto-advance: done
   4-5-read-surfaces-docs-and-test-cutover: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: optional  # skipped by user decision 2026-09-11
 
-  epic-5: backlog
-  5-1-job-creation-with-skill-picker-and-exact-technician-matching: backlog
+  epic-5: in-progress
+  5-1-job-creation-with-skill-picker-and-exact-technician-matching: done  # 4-layer review (11 patches), 2026-09-11; fenzo-app e4de130
   5-2-dynamic-technician-workflow-from-template-steps: backlog
   5-3-owner-side-step-display-and-edit-flow-cleanup: backlog
   5-4-deletions-docs-and-fe-test-cutover: backlog
