@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-11-2026 12:30  # 4-5 spec created (read surfaces + docs + test cutover), ready-for-dev
+last_updated: 09-11-2026 12:00  # 4-5 review patches applied → done
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -61,7 +61,7 @@ development_status:
   4-2-technician-skills-cut-over-to-the-global-catalog: done
   4-3-workflow-templates-and-skill-tagged-jobs: done
   4-4-generic-workflow-engine-and-attachment-auto-advance: done
-  4-5-read-surfaces-docs-and-test-cutover: ready-for-dev
+  4-5-read-surfaces-docs-and-test-cutover: done
   epic-4-retrospective: optional
 
   epic-5: backlog
