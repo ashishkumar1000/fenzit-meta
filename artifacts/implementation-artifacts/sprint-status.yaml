@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-11-2026 23:35  # 5-2 in-progress — spec ready-for-dev, build step-03 launched
+last_updated: 09-11-2026 23:55  # 5-2 done — code review (1 decision + 14 patches applied), 797 tests passing
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -66,7 +66,7 @@ development_status:
 
   epic-5: in-progress
   5-1-job-creation-with-skill-picker-and-exact-technician-matching: done  # 4-layer review (11 patches), 2026-09-11; fenzo-app e4de130
-  5-2-dynamic-technician-workflow-from-template-steps: review  # 4-layer review (6 patches applied, 795 tests passing), 2026-09-11; fenzo-app 3b36b5e
+  5-2-dynamic-technician-workflow-from-template-steps: done  # 4-layer review (1 decision resolved + 14 patches applied, 797 tests passing), 2026-09-11
   5-3-owner-side-step-display-and-edit-flow-cleanup: backlog
   5-4-deletions-docs-and-fe-test-cutover: backlog
   epic-5-retrospective: optional
