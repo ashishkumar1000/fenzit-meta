@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-11-2026 23:56  # 5-3 done — code review (2 patches applied), 790 tests passing
+last_updated: 09-11-2026 23:59  # 5-4 done — code review (8 patches + AC3/AC5 verified), 766 tests passing
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -64,11 +64,11 @@ development_status:
   4-5-read-surfaces-docs-and-test-cutover: done
   epic-4-retrospective: optional  # skipped by user decision 2026-09-11
 
-  epic-5: in-progress
+  epic-5: done
   5-1-job-creation-with-skill-picker-and-exact-technician-matching: done  # 4-layer review (11 patches), 2026-09-11; fenzo-app e4de130
   5-2-dynamic-technician-workflow-from-template-steps: done  # 4-layer review (1 decision resolved + 14 patches applied, 797 tests passing), 2026-09-11
   5-3-owner-side-step-display-and-edit-flow-cleanup: done  # 4-layer review (2 patches applied), 2026-09-11; fenzo-app 804c034
-  5-4-deletions-docs-and-fe-test-cutover: backlog
+  5-4-deletions-docs-and-fe-test-cutover: done  # 4-layer review (8 patches + AC3/AC5 verified, 766 tests passing), 2026-09-11; fenzo-app 61030eb
   epic-5-retrospective: optional
 
   # Epic 6: Carryover — pending work imported from the repo-local sprints

@@ -8,10 +8,10 @@ The backend (Epic 4, already shipped) replaced the old hardcoded 6-step workflow
 
 ## Stories
 
-- Story 5.1: Job creation with skill picker and exact technician matching
-- Story 5.2: Dynamic technician workflow from template steps
-- Story 5.3: Owner-side step display and edit flow cleanup
-- Story 5.4: Deletions, docs, and FE test cutover
+- Story 5.1: ✓ Job creation with skill picker and exact technician matching (DONE)
+- Story 5.2: ✓ Dynamic technician workflow from template steps (DONE)
+- Story 5.3: ✓ Owner-side step display and edit flow cleanup (DONE)
+- Story 5.4: ✓ Deletions, docs, and FE test cutover (DONE)
 
 ## Requirements & Constraints
 
