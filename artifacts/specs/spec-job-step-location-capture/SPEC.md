@@ -33,7 +33,7 @@ Owners need proof that a technician was physically present when a job step was c
 ## Constraints
 
 - Must reuse the existing per-step "divert to a dedicated capture screen" pattern already used for signature capture (`useWorkflowAdvance.ts`: `requiresSignature` → navigate away before posting) — a `requiresLocation` step follows the identical divert-then-advance shape, not an inline capture.
-- Must use `react-native-geolocation-service` — `fenzo-app` is a bare React Native CLI app (no Expo runtime, no `expo-location` available).
+- Must use `react-native-nitro-geolocation` (via its `/compat` API) — `fenzo-app` runs RN 0.86 with React Native's New Architecture enabled (`newArchEnabled=true`) and already depends on `react-native-nitro-modules` (via `react-native-mmkv`), so this adds no new native runtime. `react-native-geolocation-service` is bridge-only and unmaintained (last published ~4 years ago), a poor fit for this architecture; `expo-location` is unavailable (no Expo runtime).
 - Location data is persisted via the existing `activity_logs.metadata` JSONB column on the per-step-advance insert already performed by `advance_workflow_step` — no new `step_completions` table.
 - Any new workflow-step JSONB attribute (`requires_location`) must update BOTH the Postgres `workflow_steps_valid()` CHECK function AND the TypeScript `parseStep()` mirror in the same change, or the two silently disagree.
 - Location-requirement validation (required? provided? valid range?) happens in NestJS `WorkflowService.advanceWorkflowStep` before the RPC call — `advance_workflow_step` performs no content validation today, and that division of responsibility must hold.

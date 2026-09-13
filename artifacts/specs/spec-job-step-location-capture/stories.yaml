@@ -56,12 +56,16 @@
 - id: "5"
   title: "Frontend: add geolocation dependency + native permission config"
   description: >-
-    Add react-native-geolocation-service to fenzo-app. Add ACCESS_FINE_LOCATION to the
-    Android manifest and NSLocationWhenInUseUsageDescription to iOS Info.plist.
+    Add react-native-nitro-geolocation to fenzo-app (uses its /compat API). Add
+    ACCESS_FINE_LOCATION to the Android manifest and NSLocationWhenInUseUsageDescription
+    to iOS Info.plist.
   spec_checkpoint: false
   invoke_dev_with: >-
-    See frontend-architecture.md section 2.1. Not expo-location — fenzo-app is bare RN
-    CLI, no Expo runtime. Repo: fenzo-app.
+    See frontend-architecture.md section 2.1 and library docs
+    https://react-native-nitro-geolocation.pages.dev/guide/index.html. Not
+    react-native-geolocation-service (unmaintained, bridge-only) or expo-location (no
+    Expo runtime) — fenzo-app runs New Architecture and already has
+    react-native-nitro-modules via mmkv. Repo: fenzo-app.
 
 - id: "6"
   title: "Frontend: location permission/consent flow"

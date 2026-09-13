@@ -85,16 +85,20 @@ Convention: `PermissionsAndroid.request`, Android-gated, denial short-circuits i
 
 **No geolocation library, no `AsyncStorage`, no `NetInfo`** exist in this codebase today (verified: zero grep hits for `geolocation|expo-location|getCurrentPosition` across `src/`; `package.json` has neither `@react-native-async-storage/async-storage` nor `@react-native-community/netinfo`). Local persistence uses `react-native-mmkv`. Offline handling is explicitly deferred via `EPIC4` TODO markers in `useWorkflowAdvance.ts` and `useSignatureSave.ts` (e.g., "EPIC4: enqueue here... until the offline queue exists, surface the failure inline; the button doubles as the retry").
 
+**Architecture context (verified):** `fenzo-app` runs RN 0.86.0 with React Native's New Architecture enabled (`android/gradle.properties:35`, `newArchEnabled=true`). `package.json` already lists `react-native-nitro-modules@^0.35.10` as a dependency (pulled in transitively by `react-native-mmkv` v4, which is itself a Nitro module) — the Nitro JSI runtime is already present and working in this app.
+
 ## 2. Changes required
 
 ### 2.1 Add geolocation dependency
-Add `react-native-geolocation-service` (not `expo-location` — no Expo runtime here). Requires native config: Android `ACCESS_FINE_LOCATION` manifest permission, iOS `NSLocationWhenInUseUsageDescription` in `Info.plist`.
+Docs: https://react-native-nitro-geolocation.pages.dev/guide/index.html
+
+Add `react-native-nitro-geolocation` (using its `/compat` subpath API, which mirrors `@react-native-community/geolocation`'s callback shape). Not `react-native-geolocation-service` — that library is bridge-only, last published ~4 years ago, and a poor fit for a New-Architecture app; not `expo-location` — no Expo runtime here. `react-native-nitro-geolocation` requires `react-native-nitro-modules` as a peer dependency, which this app already has (see above) — no new native runtime is added, only the geolocation package itself. Requires native config: Android `ACCESS_FINE_LOCATION` (and `ACCESS_COARSE_LOCATION`) manifest permissions, iOS `NSLocationWhenInUseUsageDescription` in `Info.plist`.
 
 ### 2.2 Permission flow (consent shown once)
 New module mirroring `photoPicker.ts`'s conventions:
 - Check current permission status first.
 - `granted` → proceed directly, no modal.
-- `undetermined` → show consent copy once ("Location required to verify step completion"), then request OS permission (`PermissionsAndroid.request(ACCESS_FINE_LOCATION, ...)` on Android; the geolocation library's explicit authorization call on iOS).
+- `undetermined` → show consent copy once ("Location required to verify step completion"), then request OS permission (`PermissionsAndroid.request(ACCESS_FINE_LOCATION, ...)` on Android; `Geolocation.requestAuthorization(...)` from `react-native-nitro-geolocation/compat` on iOS).
 - `denied` (previously) → skip consent modal, show a Settings-redirect prompt instead.
 - Denial outcome shape follows the same `{ error: <message> }` pattern as `photoPicker.ts`, not a thrown exception.
 
@@ -112,7 +116,7 @@ if (targetStep?.requiresLocation) {
 ```
 `SignatureScreen` (whichever container/hook currently ends its flow by calling `advanceWorkflow`) must check the `thenRequiresLocation` flag it's handed: if true, after a successful signature capture it navigates onward to `LocationCaptureScreen` instead of calling `advanceWorkflow` itself; `LocationCaptureScreen` is then the one that finally calls `advanceWorkflow`, carrying both the signature reference and the location fields in one request. If `thenRequiresLocation` is false/absent, `SignatureScreen` keeps its current behavior unchanged (capture → upload → advance directly). A step with `requiresLocation` alone (no signature) reaches `LocationCaptureScreen` directly via the second branch, exactly as before.
 
-A new `LocationCaptureScreen` (or inline sheet, matching whichever the signature flow uses) owns: permission check → GPS fetch (15s timeout, per field-service norms) → on success or graceful failure (CAP-4) → call `advanceWorkflow` with the coordinates attached (plus the signature reference, when it was diverted here after a signature capture).
+A new `LocationCaptureScreen` (or inline sheet, matching whichever the signature flow uses) owns: permission check → GPS fetch (`Geolocation.getCurrentPosition(...)` from `react-native-nitro-geolocation/compat`, 15s timeout, per field-service norms) → on success or graceful failure (CAP-4) → call `advanceWorkflow` with the coordinates attached (plus the signature reference, when it was diverted here after a signature capture).
 
 ### 2.4 Extend `advanceWorkflow` request
 ```ts
