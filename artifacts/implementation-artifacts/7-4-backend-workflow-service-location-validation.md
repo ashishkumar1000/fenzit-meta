@@ -2,7 +2,7 @@
 epic: 7
 story_id: "7-4"
 title: "Backend: WorkflowService location validation"
-status: in-progress
+status: done
 created: 2026-09-13
 updated: 2026-09-13
 acceptance_criteria:

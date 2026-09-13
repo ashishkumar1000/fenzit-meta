@@ -2,7 +2,7 @@
 epic: 7
 story_id: "7-3"
 title: "Backend: advance_workflow_step RPC accepts location"
-status: in-progress
+status: done
 created: 2026-09-13
 updated: 2026-09-13
 acceptance_criteria:

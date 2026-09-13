@@ -77,9 +77,9 @@ development_status:
   # per fenzo-meta CLAUDE.md cross-repo ordering rule (additive BE ships before FE).
   epic-7: in-progress
   7-1-backend-job-level-location-capture-toggle: done
-  7-2-backend-per-step-requires-location-schema: in-progress  # code review done; test patches remaining
-  7-3-backend-advance-workflow-step-rpc-location-params: in-progress  # code review done; test patches remaining
-  7-4-backend-workflow-service-location-validation: in-progress  # code review done; 4 test patches remaining (E2E, unit, assertions, defaults)
+  7-2-backend-per-step-requires-location-schema: done  # code review + 7 patches applied; all tests passing
+  7-3-backend-advance-workflow-step-rpc-location-params: done  # code review + 7 patches applied; all tests passing
+  7-4-backend-workflow-service-location-validation: done  # code review + 7 patches applied + location test suite; all tests passing
   7-5-frontend-geolocation-dependency-and-permission-config: backlog
   7-6-frontend-location-permission-consent-flow: backlog
   7-7-frontend-location-capture-divert-flow: backlog

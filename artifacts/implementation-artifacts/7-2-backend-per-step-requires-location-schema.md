@@ -2,7 +2,7 @@
 epic: 7
 story_id: "7-2"
 title: "Backend: per-step requires_location schema"
-status: review
+status: done
 created: 2026-09-13
 updated: 2026-09-13
 acceptance_criteria:
