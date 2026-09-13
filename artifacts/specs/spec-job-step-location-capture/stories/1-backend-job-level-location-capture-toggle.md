@@ -37,3 +37,14 @@ None — first story in the epic, no upstream story required.
 - DTO unit test: `captureLocationOnSteps` omitted → validation passes, no DTO-level default asserted (server/DB default is what's under test at the integration layer, not here).
 - Integration/e2e test: create a job with `captureLocationOnSteps: false`, then fetch job detail — assert the field is `false`. Create a second job omitting the field — assert detail shows `true`.
 - Regression check: existing job-creation tests that don't reference this field must still pass unmodified (additive field, no behavior change for callers that ignore it).
+
+## Review Findings
+
+### Patch (actionable, fixable)
+
+- [x] [Review][Patch] Missing RPC parameter assertion in tests [src/jobs/jobs.service.spec.ts:268]
+- [x] [Review][Patch] Mock jobRow missing `capture_location_on_steps` field [src/jobs/jobs.service.spec.ts:120]
+- [x] [Review][Patch] getJobDetail test doesn't verify new response field [src/jobs/jobs.service.spec.ts:1187]
+- [x] [Review][Patch] Missing `description` in @ApiPropertyOptional decorator [src/jobs/dto/create-job.dto.ts:85]
+- [x] [Review][Patch] Two migrations with same date prefix [supabase/migrations/20260913000000 + 20260913000001]
+- [x] [Review][Patch] CreateJobDto test fixture omits `captureLocationOnSteps` [src/jobs/jobs.service.spec.ts:100]
