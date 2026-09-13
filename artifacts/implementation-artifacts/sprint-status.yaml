@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-11-2026 23:59  # 5-4 done — code review (8 patches + AC3/AC5 verified), 766 tests passing
+last_updated: 09-13-2026 00:00  # location capture epic added as epic-7 (offline-sync carryover renumbered to epic-8)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -79,11 +79,27 @@ development_status:
   6-1-fe-error-envelope-consistency: ready-for-dev  # moved from fenzo-app 5-4 (was ready-for-dev there)
   epic-6-retrospective: optional
 
-  # Epic 7: Carryover (deferred) — fenzo-app offline-first sync, deferred by
+  # Epic 7: Technician GPS location capture on job step completion.
+  # Spec: artifacts/specs/spec-job-step-location-capture/ (SPEC.md + stories.yaml).
+  # Execution order = backend stories 7-1..7-4 first, then frontend 7-5..7-9,
+  # per fenzo-meta CLAUDE.md cross-repo ordering rule (additive BE ships before FE).
+  epic-7: backlog
+  7-1-backend-job-level-location-capture-toggle: backlog
+  7-2-backend-per-step-requires-location-schema: backlog
+  7-3-backend-advance-workflow-step-rpc-location-params: backlog
+  7-4-backend-workflow-service-location-validation: backlog  # done_checkpoint in stories.yaml — BE deploys before FE starts
+  7-5-frontend-geolocation-dependency-and-permission-config: backlog
+  7-6-frontend-location-permission-consent-flow: backlog
+  7-7-frontend-location-capture-divert-flow: backlog
+  7-8-frontend-wire-location-into-advance-workflow-and-types: backlog
+  7-9-frontend-new-job-screen-location-toggle: backlog  # done_checkpoint in stories.yaml — feature complete
+  epic-7-retrospective: optional
+
+  # Epic 8: Carryover (deferred) — fenzo-app offline-first sync, deferred by
   # user decision on 2026-09-11 ("not doing"). Carried here for the record
   # only; NOT scheduled. Story files remain in the fenzo-app repo (historical).
-  epic-7: backlog  # deferred 2026-09-11 — offline-first sync not being done
-  7-1-fe-delta-sync-hydration-store: backlog  # deferred (was fenzo-app 4-1)
-  7-2-fe-offline-action-queue-idempotent-replay: backlog  # deferred (was fenzo-app 4-2)
-  7-3-fe-connectivity-ux: backlog  # deferred (was fenzo-app 4-3)
-  epic-7-retrospective: optional
+  epic-8: backlog  # deferred 2026-09-11 — offline-first sync not being done
+  8-1-fe-delta-sync-hydration-store: backlog  # deferred (was fenzo-app 4-1)
+  8-2-fe-offline-action-queue-idempotent-replay: backlog  # deferred (was fenzo-app 4-2)
+  8-3-fe-connectivity-ux: backlog  # deferred (was fenzo-app 4-3)
+  epic-8-retrospective: optional

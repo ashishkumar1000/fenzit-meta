@@ -1,0 +1,112 @@
+- id: "1"
+  title: "Backend: job-level location-capture toggle"
+  description: >-
+    Add capture_location_on_steps boolean column to jobs (default true), extend
+    CreateJobDto and job response DTOs to accept/surface it. Backend half of CAP-1.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    See backend-architecture.md section 2.1 and 2.5. Migration is additive only
+    (NOT NULL DEFAULT true) — no backfill needed, pre-launch. Add @ApiPropertyOptional()
+    to the new CreateJobDto field, matching this DTO's existing style. Repo: fenzit-be.
+
+- id: "2"
+  title: "Backend: per-step requires_location schema"
+  description: >-
+    Extend workflow_steps_valid() CHECK function and the parseStep() TS mirror to
+    accept an optional requires_location boolean (default true if absent — matches
+    the product's "required unless opted out" intent). Backend half of CAP-3.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    See backend-architecture.md section 2.2. The CHECK function and parseStep() must
+    change in the same commit or they silently drift (SPEC.md Constraints). Also update
+    stepToResponse() to map requires_location -> requiresLocation — without it the field
+    never reaches the frontend. Repo: fenzit-be.
+
+- id: "3"
+  title: "Backend: advance_workflow_step RPC accepts location"
+  description: >-
+    Add p_latitude, p_longitude, p_accuracy, p_location_captured, p_reason,
+    p_accuracy_flagged (all optional) to advance_workflow_step; merge into the existing
+    activity_logs metadata insert via jsonb_build_object. No other RPC logic changes.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    See backend-architecture.md section 2.3. Keep the existing lock/guard/status-update
+    logic untouched — this story only adds parameters and the metadata merge. Guard
+    against partial lat/long (one set, one NULL). Repo: fenzit-be.
+
+- id: "4"
+  title: "Backend: WorkflowService location validation"
+  description: >-
+    In WorkflowService.advanceWorkflowStep, check job.capture_location_on_steps and the
+    target step's requires_location; validate provided lat/long range (reuse
+    hasInvalidCoordinates); never hard-block on missing/invalid/low-accuracy location
+    (CAP-4) — flag accuracyFlagged: true when accuracy > 100m instead of rejecting.
+    Extend AdvanceWorkflowDto with optional latitude/longitude/accuracy.
+  spec_checkpoint: false
+  done_checkpoint: true
+  invoke_dev_with: >-
+    See backend-architecture.md section 2.4 and SPEC.md Constraints (accuracy never
+    gates; no bespoke retention policy). This is new validation logic, not a mirror of
+    an existing pattern — requires_photo/requires_signature are never enforced server-side
+    today. Add @ApiPropertyOptional() to the new AdvanceWorkflowDto fields. Closes out the
+    backend slice — do not start frontend stories until this is merged and deployed
+    (fenzo-meta CLAUDE.md cross-repo ordering rule: additive BE change ships before FE
+    consumes it). Repo: fenzit-be.
+
+- id: "5"
+  title: "Frontend: add geolocation dependency + native permission config"
+  description: >-
+    Add react-native-geolocation-service to fenzo-app. Add ACCESS_FINE_LOCATION to the
+    Android manifest and NSLocationWhenInUseUsageDescription to iOS Info.plist.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    See frontend-architecture.md section 2.1. Not expo-location — fenzo-app is bare RN
+    CLI, no Expo runtime. Repo: fenzo-app.
+
+- id: "6"
+  title: "Frontend: location permission/consent flow"
+  description: >-
+    New permission module mirroring photoPicker.ts's conventions: check status first,
+    show the consent copy only when undetermined, skip it when already granted, and
+    show a Settings-redirect (not the consent modal) when previously denied.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    See frontend-architecture.md section 2.2. Denial outcome shape follows the same
+    { error: <message> } pattern as photoPicker.ts, not a thrown exception. iOS needs an
+    explicit authorization call unlike camera. Repo: fenzo-app.
+
+- id: "7"
+  title: "Frontend: location-capture divert flow"
+  description: >-
+    Add requiresLocation to WorkflowTemplateStep; add the divert branch in
+    useWorkflowAdvance.ts's advance callback (mirrors the existing requiresSignature
+    branch); build the capture screen that runs permission check -> GPS fetch (15s
+    timeout) -> advance on success or graceful failure (CAP-4).
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    See frontend-architecture.md section 2.3. Follow the exact shape of the signature
+    divert already in useWorkflowAdvance.ts — same divert-then-advance pattern, not an
+    inline capture. Depends on stories 5 and 6. Repo: fenzo-app.
+
+- id: "8"
+  title: "Frontend: wire location into advanceWorkflow + job types"
+  description: >-
+    Extend advanceWorkflow() to accept an optional location param and pass it in the
+    POST body, reusing the existing keyRef idempotency mechanism unchanged. Add
+    captureLocationOnSteps to CreateJobRequest and ApiJob.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    See frontend-architecture.md sections 2.4 and 2.6. No new retry/queue mechanism —
+    reuse keyRef as-is (SPEC.md Constraints). Repo: fenzo-app.
+
+- id: "9"
+  title: "Frontend: NewJobScreen location toggle"
+  description: >-
+    Add a single switch to NewJobScreen ("Require technician location when completing
+    steps", default ON) wired to captureLocationOnSteps on the create-job payload. No
+    location-picker UI is added.
+  spec_checkpoint: false
+  done_checkpoint: true
+  invoke_dev_with: >-
+    See frontend-architecture.md section 2.5. This is the last story — feature-complete
+    checkpoint. Repo: fenzo-app.
