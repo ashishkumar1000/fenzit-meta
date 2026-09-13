@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-05-2026 12:00
-last_updated: 09-13-2026 00:00  # location capture epic added as epic-7 (offline-sync carryover renumbered to epic-8)
+last_updated: 09-13-2026 11:50  # epic-7 moved to in-progress, epic-6 deferred to after epic-7
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -71,19 +71,11 @@ development_status:
   5-4-deletions-docs-and-fe-test-cutover: done  # 4-layer review (8 patches + AC3/AC5 verified, 766 tests passing), 2026-09-11; fenzo-app 61030eb
   epic-5-retrospective: optional
 
-  # Epic 6: Carryover — pending work imported from the repo-local sprints
-  # (fenzo-app / fenzit-be), 2026-09-11. From now on this meta sprint is the
-  # ONLY active sprint; the repo-local sprint-status.yaml files are retired
-  # (historical, read-only).
-  epic-6: in-progress
-  6-1-fe-error-envelope-consistency: ready-for-dev  # moved from fenzo-app 5-4 (was ready-for-dev there)
-  epic-6-retrospective: optional
-
   # Epic 7: Technician GPS location capture on job step completion.
   # Spec: artifacts/specs/spec-job-step-location-capture/ (SPEC.md + stories.yaml).
   # Execution order = backend stories 7-1..7-4 first, then frontend 7-5..7-9,
   # per fenzo-meta CLAUDE.md cross-repo ordering rule (additive BE ships before FE).
-  epic-7: backlog
+  epic-7: in-progress
   7-1-backend-job-level-location-capture-toggle: backlog
   7-2-backend-per-step-requires-location-schema: backlog
   7-3-backend-advance-workflow-step-rpc-location-params: backlog
@@ -94,6 +86,12 @@ development_status:
   7-8-frontend-wire-location-into-advance-workflow-and-types: backlog
   7-9-frontend-new-job-screen-location-toggle: backlog  # done_checkpoint in stories.yaml — feature complete
   epic-7-retrospective: optional
+
+  # Epic 6: Carryover — pending work imported from the repo-local sprints
+  # (fenzo-app / fenzit-be), 2026-09-11. Deferred to after Epic 7 (2026-09-13).
+  epic-6: backlog
+  6-1-fe-error-envelope-consistency: backlog  # moved from fenzo-app 5-4; deferred after epic-7
+  epic-6-retrospective: optional
 
   # Epic 8: Carryover (deferred) — fenzo-app offline-first sync, deferred by
   # user decision on 2026-09-11 ("not doing"). Carried here for the record
