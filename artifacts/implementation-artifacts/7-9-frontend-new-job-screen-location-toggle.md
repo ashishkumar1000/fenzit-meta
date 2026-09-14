@@ -2,7 +2,8 @@
 epic: 7
 story_id: "7-9"
 title: "Frontend: NewJobScreen location toggle"
-status: ready-for-dev
+status: done
+superseded: "2026-09-13 — commit d4ec3c9 removed the job-level toggle from NewJobScreen; step-level requires_location is the single source of truth. Historical record only."
 created: 2026-09-13
 updated: 2026-09-13
 acceptance_criteria:

@@ -33,7 +33,6 @@ Source files (in the cloned repo, `workspace/core/backend/fenzit-be/`):
 - `_bmad-output/planning-artifacts/architecture.md` — architecture doc
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — per-story status, source of truth for what's done
 - `_bmad-output/implementation-artifacts/deferred-work.md` — real known gaps from past code reviews (see below)
-- `_bmad-output/implementation-artifacts/epic-*-retro-*.md` — retrospectives
 
 ### Known deferred work (genuinely pending, from `deferred-work.md`)
 
