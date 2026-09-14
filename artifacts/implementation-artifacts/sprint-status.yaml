@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-14-2026  # story 7-10 done; epic-7 closed; retrospectives removed project-wide (not doing them)
+last_updated: 09-14-2026  # story 9-1 done (code review applied: 11 patches + 2 decisions; bun install verified; device checklist pending user-side)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -88,3 +88,14 @@ development_status:
   8-1-fe-delta-sync-hydration-store: backlog  # deferred (was fenzo-app 4-1)
   8-2-fe-offline-action-queue-idempotent-replay: backlog  # deferred (was fenzo-app 4-2)
   8-3-fe-connectivity-ux: backlog  # deferred (was fenzo-app 4-3)
+
+  # Epic 9: Full-screen attachment viewer (gallery view) — tap a captured
+  # photo or the customer signature tile on either job detail screen to open
+  # a full-screen viewer with standard image-viewer gestures. Frontend-only
+  # in fenzo-app (no backend change — presigned URLs already arrive in the
+  # job detail response). Epic 8 is reserved for the deferred offline-first
+  # sync carryover above. Story designed via BMAD UX + research agents
+  # (2026-09-14): react-native-image-viewing@0.2.2 taken as a dependency
+  # (installed by the user) with a small bun patch for onError/loading styling.
+  epic-9: in-progress
+  9-1-frontend-full-screen-attachment-viewer: done

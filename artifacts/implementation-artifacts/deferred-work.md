@@ -508,3 +508,8 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 
 - source_spec: `artifacts/implementation-artifacts/7-10-frontend-technician-distance-from-job-site.md`
   summary: Audience asymmetry on Direction — the owner app enables Direction from saved customer coordinates alone; the technician app's maps row requires a customer address (`TechJobDetailContent.tsx:111-117`). Pre-existing gate unchanged by story 7-10; align the two when the technician customer card is next touched.
+
+## Deferred from: code review of 9-1-frontend-full-screen-attachment-viewer (2026-09-14)
+
+- iOS VoiceOver announcement of page changes — the counter Text carries `accessibilityLiveRegion="polite"` which is an Android-only prop, so iOS VoiceOver users get no page-change announcement from the viewer header ([fenzo-app src/components/AttachmentViewer.tsx:142]). AC6 is met as written (the AC mandates the live region, which is present); the defer is the iOS parity enhancement. If taken up: evaluate `AccessibilityInfo.announceForAccessibility` on the page-change effect alongside the existing announcement hook-up.
+- Viewer-list derivation is triplicated across the three call sites (photos-in-arrival-order + last signature + null-URL exclusion) — `AttachmentGrid.tsx:31-40` (`viewerListOf`), `TechJobDetailContent.tsx:90-98` (useMemo), and `PhotoSection.tsx`'s viewable-photo mapping. The three agree today (a behavior defect in one was already caught and fixed in triage), so this is a pure refactor with no behavior defect; if taken up, extract one shared helper exported from `src/components/AttachmentViewer.tsx` and have all three sites consume it.
