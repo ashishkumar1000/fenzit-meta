@@ -513,3 +513,13 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 
 - iOS VoiceOver announcement of page changes — the counter Text carries `accessibilityLiveRegion="polite"` which is an Android-only prop, so iOS VoiceOver users get no page-change announcement from the viewer header ([fenzo-app src/components/AttachmentViewer.tsx:142]). AC6 is met as written (the AC mandates the live region, which is present); the defer is the iOS parity enhancement. If taken up: evaluate `AccessibilityInfo.announceForAccessibility` on the page-change effect alongside the existing announcement hook-up.
 - Viewer-list derivation is triplicated across the three call sites (photos-in-arrival-order + last signature + null-URL exclusion) — `AttachmentGrid.tsx:31-40` (`viewerListOf`), `TechJobDetailContent.tsx:90-98` (useMemo), and `PhotoSection.tsx`'s viewable-photo mapping. The three agree today (a behavior defect in one was already caught and fixed in triage), so this is a pure refactor with no behavior defect; if taken up, extract one shared helper exported from `src/components/AttachmentViewer.tsx` and have all three sites consume it.
+
+## Deferred from: code review (2026-09-16)
+
+- source_spec: none (ad-hoc review — Docker/Render setup + stale story 7-1 test cleanup, fenzit-be)
+  summary: No real-DB integration test covers the `create_job_with_log` RPC signature or the `JOB_COLUMNS` select shape. All supabase-js calls are mocked in unit and e2e suites, so a drift between app code and the migrated DB function/columns (e.g. a param renamed in a migration, a column dropped like `capture_location_on_steps` was by `20260913000003`) is invisible to CI and surfaces only as a 500 on the first real request.
+  evidence: This exact failure class shipped to main — story 7-1's spec asserted `p_capture_location_on_steps: false` against a mocked rpc long after commit b9f219c (migration `20260913000003_remove_capture_location_on_steps.sql`) dropped the column and the RPC param; the test failed on every run but nothing else caught the drift. Verified live via Supabase MCP: function has 12 params, column is gone.
+  followup_note: |
+    Extend the existing real-DB-gated integration spec pattern (`test/integration/rls-isolation.integration.spec.ts` — self-skips without real SUPABASE_URL):
+    - boot `JobsService` against the migrated Supabase, create a job via the real `create_job_with_log`, read it back through a real `JOB_COLUMNS` select — pins both the RPC signature and the select shape against the actual schema.
+    - Same treatment eventually for the Docker image: a CI step that builds the image and boots it against `/health`.
