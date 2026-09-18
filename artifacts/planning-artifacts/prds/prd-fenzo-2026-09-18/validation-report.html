@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: Real OTP Delivery via MSG91 SMS (DLT)</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Real OTP Delivery via MSG91 SMS (DLT) — Validation Report</h1>
+        <div class="subtitle">artifacts/planning-artifacts/prd-otp-sms-msg91-2026-09-18.md</div>
+      </div>
+      <div class="grade grade-fair">FAIR</div>
+    </header>
+
+    <div class="synthesis">
+      <p><strong>Overall verdict (rubric):</strong> This is a strong, unusually well-grounded PRD: every brownfield claim checked is accurate (all §2 file/line references verified against the working tree), decisions are logged with dates in the frontmatter, the Non-Goals section does real work with reasons, and §11's architecture section constrains actual code rather than decorating. All seven rubric dimensions judge <strong>strong</strong>. The risks are concentrated in three places: FR-BE5's dev/prod <code>otp</code>-field gate is stated two conflicting ways (security-adjacent), the T2–T5 notification-sender backend work implied by §10 is never explicitly de-scoped or owned, and the §7 "≥ 98% signup success rate" metric has no instrumentation anywhere in the FRs to make it measurable.</p>
+      <p><strong>Adversarial shift:</strong> The adversarial reviewer materially changes the picture. No dimension drops below strong, but six findings rank high by impact: OTP generation still uses <code>Math.random()</code> while the PRD makes verification a real security boundary; FR-BE5's mock-only <code>otp</code> field has no implementable mechanism that doesn't violate §11's own anti-pattern list (and the §9 rollout window would put plaintext OTP in <em>production</em> responses); FR-BE1's single-<code>otp</code>-param endpoint spec cannot deliver the 2–3-variable T3/T4 templates the same document says the port serves; and T3/T4 as worded likely fail DLT's non-consecutive-variable rule the PRD itself states. Rubric medium findings and adversarial findings overlap on four items (FR-BE5 gate, port/T2–T5 scope, the 98% metric's instrumentation, multi-variable support) — overlap is signal, not duplication: these are the PRD's real seams.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Decision-readiness</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Substance over theater</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Strategic coherence</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Done-ness clarity</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Scope honesty</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Downstream usability</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Decision-readiness</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Decisions are stated as decisions, not buried: five dated frontmatter decisions, §5 rejects the MSG91-managed OTP engine with the actual reason, FR-BE4 names what was given up as a real trade-off. The gaps: FR-BE5 is the one decision that looks decided but isn't (two incompatible gate statements), and genuinely open items live scattered inline instead of a consolidated Open Questions list.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-BE5's gate is stated two conflicting ways (active provider vs NODE_ENV) — interacts with §9's prod-runs-mock step</h3>
+              <span class="finding-location">§4.1 FR-BE5 vs §9 step 1</span>
+            </header>
+            <div class="finding-note">FR-BE5 says the <code>otp</code> field appears "only when the active provider is the mock"; §9 step 1 lands production on the mock and tells testers to use the response OTP. If the gate is active provider, plaintext OTP flows in production responses; if the gate is NODE_ENV, production testers lose what §9 promised. These cannot both hold.</div>
+            <div class="finding-fix"><strong>Fix:</strong> gate on NODE_ENV alone (production never sees the field regardless of provider) and reword §9's tester note to "mock logs only" in prod.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Open items scattered, not consolidated</h3>
+              <span class="finding-location">§10.1 T2 note, §10.2 T6, T8</span>
+            </header>
+            <div class="finding-note">Three pre-registration/pre-build conditions live as inline italic notes across two sections (T2's link check, T8's consent decision, T6's missing event).</div>
+            <div class="finding-fix"><strong>Fix:</strong> a short "Open items" list collecting them.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Substance over theater</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>No personas (correct for a technical capability spec); the Vision is not swappable; §11 is earned and constrains FR-BE0/BE1/BE2 concretely with an anti-pattern review checklist and an honest YAGNI decline on failover. §12's five external citations pad a decision the team already made, and FR-BE1's concrete spec does not yet deliver what AD-5 promises for multi-variable templates.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-BE1's adapter spec only works for single-variable templates, but §11 claims the port serves T2–T5</h3>
+              <span class="finding-location">§4.1 FR-BE1 vs §11 AD-5</span>
+            </header>
+            <div class="finding-note">FR-BE1 pins the v5 OTP endpoint mapping to <code>otp</code> (<code>variables[0]</code>) — a single-code param; T2–T5 are 2–3-variable templates. The port's <code>variables: string[]</code> model and the concrete HTTP contract don't yet connect.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one sentence in FR-BE1 or AD-2 naming which MSG91 endpoint/param mapping carries multi-variable templates (or explicitly: T2–T5 go through the transactional endpoint, an adapter-internal branch).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">§11's external-citation weight is disproportionate</h3>
+              <span class="finding-location">§12</span>
+            </header>
+            <div class="finding-note">Five references to obscure repos defend a pattern the user already mandated; AD-1–AD-6 stand fine without them.</div>
+            <div class="finding-fix"><strong>Fix:</strong> optional — trim to the two best.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Strategic coherence</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>There is a thesis and the PRD bets on it: close a security hole (W1) with minimal blast radius — "only the delivery leg changes." Prioritization follows from it; success metrics validate the thesis, not activity. §10's T2–T5 ride-along is honest about why (batch registration) and is registration-only, not code.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">No counter-metrics</h3>
+              <span class="finding-location">§7</span>
+            </header>
+            <div class="finding-note">The natural ones are right there: OTP send failure rate, verify abandonment after delivery, SMS spend per signup.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add 1–2 counter-metrics.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Done-ness clarity</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>FRs are concrete to the line — an engineer could write acceptance criteria without questions; every cited code location was verified to exist as described. Three soft spots: FR-BE5 (above), the MSG91 success predicate, and the 98% metric.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">§7's "≥ 98% signup success rate" is not measurable under this plan</h3>
+              <span class="finding-location">§7</span>
+            </header>
+            <div class="finding-note">No FR adds instrumentation, log aggregation, or an analytics hook, and the in-memory session store keeps no attempt history. The metric can never be checked as written.</div>
+            <div class="finding-fix"><strong>Fix:</strong> specify the minimal measurement (structured logs + a query, or a counter on the session store) or restate the SM as something verifiable with the shipped tests and manual checks.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">FR-BE4's trigger cites a "non-success response" but the success shape is never pinned</h3>
+              <span class="finding-location">§4.1 FR-BE4, AD-4</span>
+            </header>
+            <div class="finding-note">"What counts as success" (e.g. <code>type: "success"</code> vs HTTP-status-only) is left to the implementer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one line in FR-BE1 or FR-T2 defining the success predicate.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Scope honesty</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>§5's Non-Goals do real work — seven items each with a reason, including two rejections of tempting alternatives. Deferred items surface as callouts rather than silence. The one real hole: the backend senders implied by the T2–T5 registration batch.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">T2–T5 backend sender work is described with implementation sketches but never de-scoped or owned</h3>
+              <span class="finding-location">§10.1</span>
+            </header>
+            <div class="finding-note">"Backend: new — sent by inviteTechnician…" (T2) and "SMS worker subscribes to notifications inserts" (T4) appear, yet no FR covers any of it, §5 doesn't de-scope it, and no deferred-work pointer exists. A reader cannot tell whether registering T2–T5 implies building those senders this phase.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one explicit sentence — "T2–T5 sender implementation is out of scope for this PRD; tracked as &lt;where&gt;."</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Downstream usability</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>FR IDs contiguous and unique; cross-references resolve; UJs have protagonists; sections read standalone; §10 and the ops one-pager are character-identical where they overlap (all five template strings, entity ID, header, category, deadline, rejection rules verified). No glossary needed — terms are defined inline at first use.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Correct shape for a brownfield, cross-repo technical capability spec feeding BMAD story creation. New-vs-existing distinguished throughout; §10/§11 read as deliberate annexes justified by the batch-registration and per-channel-port decisions, not scope smuggling.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Adversarial review</h2>
+          <span class="reviewer-source">review-adversarial-general.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>16 concrete findings, each citing a section and a load-bearing quoted phrase, with backend claims verified against the working tree. Severity badges below are assigned by the synthesis pass (the adversarial lens reports descriptions only). Findings 1–5 in particular are pre-implementation must-resolves: the RNG, the OTP-field gate, the rollout window, the multi-variable port gap, and the T3/T4 DLT wording.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">OTP still generated with Math.random() — real verification verifying a predictable code</h3>
+              <span class="finding-location">§2 table, FR-BE6 (auth.service.ts:84)</span>
+            </header>
+            <div class="finding-note">Math.random() is not a CSPRNG (V8 xorshift128+ — predictable from ~a few observed outputs). The PRD upgrades verification to a real security boundary while generation stays at mock quality; the RNG is never mentioned anywhere in the PRD.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add an FR switching generation to <code>crypto.randomInt(100000, 1000000)</code> (one-line change), or document the deliberate deferral with rationale.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">FR-BE5's mock-only otp field has no implementable mechanism that doesn't violate §11's own anti-pattern</h3>
+              <span class="finding-location">§4.1 FR-BE5, §3.3, §11</span>
+            </header>
+            <div class="finding-note">Implementing FR-BE5 literally requires the service to know which provider is active — a provider-identity check the §11 checklist bans. The alternative (NODE_ENV gating) contradicts FR-BE5's provider-based wording. The PRD never picks one.</div>
+            <div class="finding-fix"><strong>Fix:</strong> gate on an explicit environment/config signal the service can read without knowing the provider (e.g. <code>EXPOSE_DEV_OTP</code>, default false); the mock keeps its own logging; the service-level OTP log line is deleted, not gated.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Deployment step 1 schedules plaintext OTP in production API responses</h3>
+              <span class="finding-location">§9 step 1 + FR-BE5 + §7</span>
+            </header>
+            <div class="finding-note">§9 step 1 instructs Render production to run <code>SMS_DELIVERY_PROVIDER=mock</code> until the config flip — a window spanning DLT approval (days). During it, every production <code>POST /auth/otp/send</code> returns the plaintext OTP, contradicting the §7 metric the PRD sets for itself.</div>
+            <div class="finding-fix"><strong>Fix:</strong> gate on environment (production never sees the field), and add an acceptance check at the step-3 flip asserting the response has no <code>otp</code> key.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The port signature can't deliver T3/T4 — variables[1..2] have nowhere to go on MSG91 v5 /otp</h3>
+              <span class="finding-location">§4.1 FR-BE1 vs §10.1 T3/T4, §11 AD-1/AD-5/AD-2</span>
+            </header>
+            <div class="finding-note">FR-BE1 hardwires the adapter to the v5 <code>/otp</code> endpoint, which carries exactly one <code>otp</code> param; T3 and T4 need three variables. AD-2 calls the endpoint choice "vendor detail inside the adapter," but the port call carries no information from which the adapter could decide, and no FR covers the transactional path at all.</div>
+            <div class="finding-fix"><strong>Fix:</strong> pin the mapping now (second adapter method or flow-endpoint mapping for multi-variable templates) or scope T2–T5 sending explicitly out of this PRD's port promise.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">T3 and T4 likely DLT rejections — adjacent variables violate the non-consecutive rule the PRD itself states</h3>
+              <span class="finding-location">§10 T3/T4 + ops one-pager</span>
+            </header>
+            <div class="finding-note">"New job {#var#} ({#var#})" and "Update for job {#var#}: {#var#}" sit variables back-to-back separated only by punctuation. DLT operators reject templates with no fixed text between variables — the very rule the PRD cites. Both launch-set templates contradict their own document's invariant.</div>
+            <div class="finding-fix"><strong>Fix:</strong> rewrite with real fixed text between every variable pair (e.g. T3: "New job {#var#} for {#var#} service is scheduled for {#var#}."), re-check the ≤30-char budget, mirror into the ops sheet before the batch is submitted.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">T2–T5 handed to ops as a launch set, but no FR covers their backend sending; T4 presumes an undesigned worker</h3>
+              <span class="finding-location">§8, §10.1</span>
+            </header>
+            <div class="finding-note">§4 covers only T1. T2's inviteTechnician send, T3/T5 job-event sends, and T4's "SMS worker subscribes to notifications inserts" are unimplemented and undesigned — the worker appears only as a parenthetical in an ops-facing section. Approved templates can't be edited, while their exact wording depends on backend formatting choices that don't exist yet.</div>
+            <div class="finding-fix"><strong>Fix:</strong> scope T2–T5 registration explicitly ("ops may register now; backend wiring is a separate future PRD/story; store IDs until then") or cut T2–T5 from the batch — approval is per-template, not batch-coupled.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Registry sketch's getOrThrow contradicts the documented "unset → mock in dev" default</h3>
+              <span class="finding-location">§11 AD-3 vs FR-BE2, §9</span>
+            </header>
+            <div class="finding-note"><code>getOrThrow</code> throws at boot on the documented dev path (var deliberately unset); the sketch also lacks the NODE_ENV=test short-circuit FR-BE2 requires.</div>
+            <div class="finding-fix"><strong>Fix:</strong> resolve a default (<code>isProduction ? 'msg91' : 'mock'</code>), short-circuit test env, and validate the resolved key against the registry with a named config error.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">No cross-field env validation — msg91 with a missing auth key is a runtime login outage, not a boot error</h3>
+              <span class="finding-location">§4.1 FR-BE3</span>
+            </header>
+            <div class="finding-note">Nothing requires <code>MSG91_AUTH_KEY</code>/<code>MSG91_OTP_TEMPLATE_ID</code> to be present when <code>SMS_DELIVERY_PROVIDER=msg91</code>. A manual flip with a typo'd key passes Joi and boots cleanly; every login then 502s in production.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Joi cross-field rule — msg91 requires a non-empty auth key and template ID; the app refuses to boot otherwise.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-BE4's delete-on-failure races the 4s timeout — the user receives a code whose session was just deleted</h3>
+              <span class="finding-location">§4.1 FR-BE4 + FR-BE1</span>
+            </header>
+            <div class="finding-note">AbortSignal.timeout(4000) aborts locally, but MSG91 may have already dispatched. The session is deleted; the user then receives a real SMS whose correct code returns OTP_EXPIRED — and re-requesting burns another rate-limit slot and ₹0.20–0.25. No test covers the deletion path (it falls between FR-T1 and FR-T2).</div>
+            <div class="finding-fix"><strong>Fix:</strong> on timeout, keep the session (the SMS may still arrive) and log for diagnosis; on definite pre-dispatch failure, delete. Pin the chosen semantics with a test.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-BE6's "exactly as written" inherits a TTL-reset bug — every failed verify extends the session by 5 minutes</h3>
+              <span class="finding-location">§4.2 FR-BE6 (auth.service.ts:147)</span>
+            </header>
+            <div class="finding-note">The failure path re-stores the session with the full 300s TTL, so up to ~25 minutes of life vs the DLT template's "Valid for 5 minutes" promise; the response's <code>expires_at</code> (computed once at send) diverges from actual expiry after any failed attempt.</div>
+            <div class="finding-fix"><strong>Fix:</strong> on failure, re-store with the remaining TTL; add a test asserting a session never outlives its advertised expires_at.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The rate limiter's get→set increment is non-atomic — and it now caps real SMS spend</h3>
+              <span class="finding-location">§2 table, FR-BE4 (in-memory-otp-session.store.ts:53)</span>
+            </header>
+            <div class="finding-note">Two concurrent sends can both read count=N and both write N+1. The code's own "not atomic; Phase 2 Redis" caveat never made it into the PRD's gap analysis, and §5 dismisses Redis on instance-count grounds, not atomicity grounds.</div>
+            <div class="finding-fix"><strong>Fix:</strong> serialize per-E.164 with an in-process per-key promise chain, or explicitly accept the race with a stated bound ("worst case ~2× cap per burst").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Deploys and restarts silently wipe in-flight OTP sessions on a single instance — real users will hit it</h3>
+              <span class="finding-location">§5 Non-Goals, §6 Assumption</span>
+            </header>
+            <div class="finding-note">The Redis framing is multi-instance, but the failure triggers on a single instance too: every Render deploy restarts the process mid-flow; idle spin-down wipes sessions and rate counters. Post-launch, "SMS arrives → deploy lands → user types code" returns OTP_EXPIRED.</div>
+            <div class="finding-fix"><strong>Fix:</strong> an accepted-risk paragraph in §6 naming restart invalidation of in-flight sessions and reset rate windows; time deploys/flip at low traffic.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">templateId is never pinned as DLT ID vs MSG91-panel ID — the API call, env var, and ops sheet can each mean something different</h3>
+              <span class="finding-location">§8 step 5, §4.1 FR-BE1/FR-BE3, §10.4</span>
+            </header>
+            <div class="finding-note">Which string MSG91's v5 send call accepts depends on how the template was created in their panel; the PRD uses "DLT template ID" and <code>MSG91_OTP_TEMPLATE_ID</code> interchangeably, and §10.4's table records only the DLT ID.</div>
+            <div class="finding-fix"><strong>Fix:</strong> pin that <code>MSG91_OTP_TEMPLATE_ID</code> is exactly the string that succeeded in §8's "Test DLT" run; add a "value that worked in Test DLT" column to the ops fill-in table.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">T1 hardcodes "Valid for 5 minutes" while the TTL is an adjustable code constant</h3>
+              <span class="finding-location">§8 step 3, §10.1 T1, FR-BE1</span>
+            </header>
+            <div class="finding-note">Approved templates cannot be edited. If <code>OTP_TTL_SECONDS</code> is ever tuned, the SMS copy and actual expiry diverge — the template lies or the code does.</div>
+            <div class="finding-fix"><strong>Fix:</strong> a guard note at the T1 block ("TTL constant is coupled to the approved wording; change both in one change-set or never") plus a test pinning the constant.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">§7's metrics have no instrumentation behind them (overlaps rubric medium on the 98% metric)</h3>
+              <span class="finding-location">§7, §4</span>
+            </header>
+            <div class="finding-note">Measuring ≥98% or ~5 s delivery requires recording send attempts, provider outcomes, and verification outcomes; no FR produces that data — the only prescribed logging change removes a log line.</div>
+            <div class="finding-fix"><strong>Fix:</strong> an FR for structured delivery-outcome logging (provider, outcome, duration, MSG91 response type — no new PII) sufficient to compute §7 by log query; plus a weekly manual wallet-balance check during launch.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FE 45s resend timer vs the 5/10-min limiter — hitting 429 becomes a normal user path with real SMS, and FR-FE3 doesn't cover it</h3>
+              <span class="finding-location">§2 table, §4.3 FR-FE3</span>
+            </header>
+            <div class="finding-note">Resend-until-arrival at the screen's cadence hits the ceiling in ~3–4 minutes of screen time. The only FE change (FR-FE3) handles OTP_SEND_FAILED and leaves the existing 429 path untouched — with real delivery, the app invites users into a 10-minute hard block with an unexplained error.</div>
+            <div class="finding-fix"><strong>Fix:</strong> extend FR-FE3 to handle RATE_LIMIT_EXCEEDED with a countdown derived from the backend's Retry-After; or at minimum record a check that the existing 429 copy renders acceptably.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>Pricing drift: "~₹0.20–0.25 per OTP SMS" (§6) vs "~₹0.19–0.25/OTP SMS" (§12) — pick one.</li>
+        <li>"max 2–3 non-consecutive variables" (§8 step 3) vs "max 3 (ideally 1)" (§10 rule block) — same rule, two phrasings; align the PRD's own two statements.</li>
+        <li>§6 carries one inline bold Assumption (single backend instance) but no <code>[ASSUMPTION]</code> tags or index; low cost to add.</li>
+        <li>Naming continuity handled well: rename flagged inline in §2, recorded as frontmatter decision 5, codified in §11's anti-patterns; <code>OtpSessionStore</code> matches the actual interface name; env vars and IDs consistent throughout.</li>
+        <li>T1 wording consistent across §8, §10.1, and the ops one-pager; all five T1–T5 template strings character-identical with the ops sheet.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-09-18T00:00:00+05:30</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
