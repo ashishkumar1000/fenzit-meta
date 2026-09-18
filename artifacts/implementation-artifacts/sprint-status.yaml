@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-14-2026  # story 9-1 done (code review applied: 11 patches + 2 decisions; bun install verified; device checklist pending user-side)
+last_updated: 09-18-2026  # epic-10 (real OTP via MSG91/DLT) added to backlog; PRD finalized 2026-09-18
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -99,3 +99,16 @@ development_status:
   # (installed by the user) with a small bun patch for onError/loading styling.
   epic-9: in-progress
   9-1-frontend-full-screen-attachment-viewer: done
+
+  # Epic 10: Real OTP delivery via MSG91 SMS (DLT) — replaces the mock OTP
+  # flow (closes deferred-work W1: verify accepts any 6-digit code + plaintext
+  # OTP in the send response). Planning complete; stories NOT yet created —
+  # next step is BMAD epics-and-stories breakdown from the PRD.
+  # PRD: artifacts/planning-artifacts/prd-otp-sms-msg91-2026-09-18.md (final,
+  # validated 2026-09-18 — BMAD rubric + adversarial, grade Fair, fixes applied).
+  # Ops side (user-run, parallel to dev): DLT registration per
+  # artifacts/planning-artifacts/ops-dlt-sms-template-registration-2026-09-18.md
+  # — payment due 17/10/2026; MSG91_OTP_TEMPLATE_ID arrives from that run.
+  # Execution order = backend first (fenzit-be), then FE cleanup (fenzo-app),
+  # per CLAUDE.md cross-repo ordering rule.
+  epic-10: backlog

@@ -1,6 +1,6 @@
 ---
 title: "PRD: Real OTP Delivery via MSG91 SMS (DLT) — replacing the mock OTP flow"
-status: drafted
+status: final
 created: 2026-09-18
 updated: 2026-09-18
 scope: cross-repo (fenzit-be primary, fenzo-app minor)
