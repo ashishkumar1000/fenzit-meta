@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-18-2026  # epic-10 (real OTP via MSG91/DLT) added to backlog; PRD finalized 2026-09-18
+last_updated: 09-18-2026  # epic-9 closed (9-1 done); epic-10 (real OTP via MSG91/DLT) in backlog, PRD finalized
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -97,7 +97,7 @@ development_status:
   # sync carryover above. Story designed via BMAD UX + research agents
   # (2026-09-14): react-native-image-viewing@0.2.2 taken as a dependency
   # (installed by the user) with a small bun patch for onError/loading styling.
-  epic-9: in-progress
+  epic-9: done  # closed 2026-09-18 — story 9-1 done (frontend-only, no BE change)
   9-1-frontend-full-screen-attachment-viewer: done
 
   # Epic 10: Real OTP delivery via MSG91 SMS (DLT) — replaces the mock OTP
