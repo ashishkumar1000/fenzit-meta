@@ -528,3 +528,9 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 
 - [x] **No controller/e2e-level test for `GET /users/me`** (fenzit-be) — RESOLVED: `test/users.e2e-spec.ts` added (5 tests: owner/technician/pre-onboarding 200 shapes incl. the additive `customerCount`, 401 without JWT, 422 invalid jobsScope) with a universal thenable Supabase builder at the factory boundary.
 - [x] **Interactive `Card`s expose no `accessibilityRole`** (fenzo-app) — RESOLVED: `Card` now forwards `accessibilityRole` on both render branches, and the three Home quick-action tiles pass `"button"` (pinned in Card.test + QuickActions.test). Other interactive-Card call sites still pass no role — follow-up opportunity, not a regression.
+
+## Deferred from: code review of story 11-8 (2026-09-20)
+
+- **Dial-code digits in search fail to match** (fenzo-app) — a query like "+91 9000000002" strips to "919000000002", which never matches the stored digits-only `phoneNumber`, so a pasted full dialled number shows a false no-match. Pre-existing: `filterCustomers` (src/features/customers/format.ts) has identical semantics; `filterTechnicians` deliberately mirrors it (AC 2). Fix would be a shared behaviour change across both features, not a technician-picker patch.
+- **Tile-grid machinery is a third near-identical copy** (fenzo-app) — header row (title + count chip + Browse all), search field, onLayout-measured 3-column grid, VISIBLE_TILES pinning and no-match copy are duplicated across SkillPicker / CustomerPicker / TechnicianPicker. Accepted per-story mirror across 11-5/11-7/11-8; the next behavioural change (like this diff's 5→2 cap) has to be made and re-tested in three places. Follow-up: extract a shared tile-grid component.
+- **SelectTechniciansScreen ~403 lines vs ~300 guideline** (fenzo-app) — mirrors the accepted SelectCustomersScreen (~360); deviation is inherited, not invented. Follow-up opportunity if the screen grows.
