@@ -47,7 +47,10 @@ So that I never have to retry or wonder.
    `queued → generating → ready | failed` through the full pipeline;
    concurrency is capped (default 1 — one render at a time, sequential poll
    loop); the worker starts on app bootstrap and shuts down cleanly
-   (`OnApplicationBootstrap` / `OnModuleDestroy`, interval cleared).
+   (`OnApplicationBootstrap` / `OnModuleDestroy`, interval cleared). Each log
+   entry carries: `tenantId`, `reportRequestId`, `currentStatus`, `timestamp`
+   (ISO 8601 UTC), log level (info for poll ticks, warn for claim conflicts,
+   error for failures); never log params or user data.
 2. **Atomic claim (de-SP)** — **Given** one or more workers/racers **When**
    claiming a `queued` row **Then** the claim is a single guarded UPDATE via
    the admin client: `update report_requests set status='generating',
@@ -76,10 +79,10 @@ So that I never have to retry or wonder.
 5. **Notification (app-level two-step)** — **Given** the terminal stamp
    committed **When** the worker inserts the notification **Then** it goes
    only to `requested_by` (never all owners) via the admin client with
-   `event_type = 'report_ready' | 'report_failed'`, a payload carrying the
-   report id, status, and **report label** (the definition's `label` field, 
-   e.g., 'technician_job_activity'; see dev notes for label semantics) — 
-   **no URLs** — and `job_id` NULL (migration 52 makes `notifications.job_id` 
+   `event_type = 'report_ready' | 'report_failed'`, a payload carrying:
+   `{ reportId: UUID, reportType: string, reportLabel: string, status: 'ready'|'failed', errorCode?: string }`
+   (the report's `type`, the definition's `label` field e.g. 'technician_job_activity',
+   and status enum, no URLs) and `job_id` NULL (migration 52 makes `notifications.job_id` 
    nullable; the Realtime broadcast trigger fans it out untouched). **Edge 
    case: if `requested_by` user was deleted**, the FK would fail; the worker 
    logs the failure and drops the notification (no retry) — the FE history 
@@ -91,9 +94,10 @@ So that I never have to retry or wonder.
 6. **Lease crash recovery** — **Given** a deploy killed the worker
    mid-render **When** the next poll runs **Then** a row stranded
    `generating` past its `locked_until` lease is **checked before re-running**:
-   if `attempt_count + 1 > REPORT_MAX_ATTEMPTS` (default 3), mark it 
-   `failed` with `report_generation_failed` instead of re-claiming. Otherwise,
-   re-claim by the same guarded UPDATE with the lease predicate
+   if `attempt_count + 1 > REPORT_MAX_ATTEMPTS` (default 3, so after 3 failed
+   attempts the row is terminal and will not be re-run), mark it `failed` with
+   `report_generation_failed` instead of re-claiming. Otherwise, re-claim by
+   the same guarded UPDATE with the lease predicate
    (`where id = ? and status = 'generating' and locked_until < now()`),
    increment `attempt_count`, and re-run — re-uploading to the **same**
    deterministic R2 key (the orphan self-heals).

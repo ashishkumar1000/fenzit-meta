@@ -83,10 +83,11 @@ So that I can review technician performance without opening the app's data.
    "all technicians"), the create endpoint rejects with 400 before reaching this fetcher.
    **Pagination strategy (Option A):** The fetcher loops through jobs in pages 
    (PostgREST's default 1000-row limit) — on each page, check cumulative total 
-   against `REPORT_MAX_JOBS` (5000); if total would exceed it, fail with 
-   `report_too_large` (never silent truncation). Once all jobs fit under the cap, 
-   batch-fetch all technician names (chunked, per AC 2 task) and all attachment 
-   counts (chunked) in bulk — the fetcher returns the complete dataset for the PDF.
+   against `REPORT_MAX_JOBS` (5000). The fetcher accepts **up to and including** 
+   5000 rows; if cumulative total exceeds 5000, fail with `report_too_large` 
+   (never silent truncation). Once all jobs fit under the cap, batch-fetch all 
+   technician names (chunked, per AC 2 task) and all attachment counts (chunked) 
+   in bulk — the fetcher returns the complete dataset for the PDF.
 3. **Report layout (FR15)** — **Given** the PDF **When** rendered **Then** it
    shows the branded header (tenant company name + address, logo, report
    title, date range, IST generation timestamp in the footer), the **Overall**

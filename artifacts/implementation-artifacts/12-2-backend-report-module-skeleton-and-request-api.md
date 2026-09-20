@@ -9,12 +9,13 @@ from story 12-1 are staged but uncommitted on top of it)
 > "Atomic count+insert pattern" section below proposes a SECURITY DEFINER RPC
 > for the in-flight cap. The user asked to keep stored procedures to a minimum
 > ("try using stored procedure less"), so the cap ships as a **BEFORE INSERT
-> trigger** instead (migration 51, superseding the create-RPC of migration 50
-> and dropping 12-1's claim RPC too): `report_requests_in_flight_guard` takes
-> a per-tenant advisory xact lock, counts `queued|generating`, and raises
-> `PT429` at ≥ 3. The service inserts plainly and maps `error.code === 'PT429'`
-> → 429 `REPORT_IN_FLIGHT_LIMIT`. Everything else (module skeleton, registry,
-> DTO→400 mapping, keyset list, presign-on-ready status) shipped as written.
+> trigger** instead (migration 20260920000007, superseding the create-RPC of
+> migration 20260920000006 and dropping 12-1's claim RPC too):
+> `report_requests_in_flight_guard` takes a per-tenant advisory xact lock,
+> counts `queued|generating`, and raises `PT429` at ≥ 3. The service inserts
+> plainly and maps `error.code === 'PT429'` → 429 `REPORT_IN_FLIGHT_LIMIT`.
+> Everything else (module skeleton, registry, DTO→400 mapping, keyset list,
+> presign-on-ready status) shipped as written.
 
 ## Story
 
@@ -50,13 +51,13 @@ So that report generation starts and stays trackable.
    by the owning tenant **Then** it returns
    `{ id, reportType, params, status, createdAt, completedAt, file?, error? }`;
    when `ready`, `file` carries a fresh presigned R2 URL via
-   `StorageService.getPresignedUrl(key)` (TTL from
-   `REPORT_PRESIGN_TTL_SECONDS`), size and filename; another tenant's id →
-   404 (no existence leak); presign failure handling:
+   `StorageService.getPresignedUrl(key, REPORT_PRESIGN_TTL_SECONDS)` (explicit
+   TTL parameter), size and filename; another tenant's id → 404 (no existence
+   leak); presign failure handling:
    - **Persistent R2 object loss (missing/deleted):** run S3 `HeadObject`
-     on the key — if 404, return `410 Gone` (file truly missing).
-   - **Transient presign failure:** if `HeadObject` returns 5xx or timeout,
-     return `500 report_presign_failed` (retry-able).
+     on the key with 5s timeout — if 404, return `410 Gone` (file truly missing).
+   - **Transient presign failure:** if `HeadObject` returns 5xx, times out (>5s),
+     or any other error, return `500 report_presign_failed` (retry-able).
    Technician role → 403 (via the `@Roles` guard).
    **Note:** the worker (12-3) does not exist yet, so no row can be `ready`
    in this story — the presign code path is built and expected to be
@@ -114,20 +115,22 @@ So that report generation starts and stays trackable.
         layer; RLS is the second layer — 12-1's policies).
   - [ ] Create endpoint inserts to `report_requests` via the owner-JWT INSERT
         policy; the `BEFORE INSERT` trigger `report_requests_in_flight_guard`
-        (migration 51) enforces the cap atomically: it counts existing
-        `queued`+`generating` rows for the tenant and raises `PT429` if the
-        limit (3) would be exceeded. The service catches the error, maps it
-        to `report_in_flight_limit`, and returns 429 to the client.
+        (migration 20260920000007) enforces the cap atomically: it takes a
+        per-tenant advisory exclusive lock, counts existing `queued`+`generating`
+        rows for the tenant, and raises `PT429` if the limit (3) would be
+        exceeded. The service catches the error, maps it to
+        `report_in_flight_limit`, and returns 429 to the client.
 - [ ] Task 4: Endpoints (AC: 1, 4, 5)
   - [ ] `POST /api/v1/reports` — `@Roles(Role.OWNER)`, `@CurrentUser()`,
         idempotent via the existing `IdempotencyInterceptor` wiring (copy how
         `jobs.controller.ts` opts in); validate `report_type` exists in registry 
         before creating row (unknown → 400); returns `201 { id, status, createdAt }`.
   - [ ] `GET /api/v1/reports/:id` — owner-only, tenant-scoped; when `ready`,
-        mint a fresh presigned URL via `StorageService.getPresignedUrl(key)`
-        (TTL `REPORT_PRESIGN_TTL_SECONDS`) + size + filename. Presign failure
-        handling: on presign error, run S3 `HeadObject` on the key — if 404,
-        return `410 Gone` (file missing); if 5xx or timeout, return `500
+        mint a fresh presigned URL via
+        `StorageService.getPresignedUrl(key, REPORT_PRESIGN_TTL_SECONDS)` +
+        size + filename. Presign failure handling: on presign error, run S3
+        `HeadObject` on the key with 5s timeout — if 404, return `410 Gone`
+        (file missing); if 5xx, timeout (>5s), or any other error, return `500
         report_presign_failed` (transient). Other tenant's id → 404.
   - [ ] `GET /api/v1/reports` — keyset pagination via
         `src/common/dto/paginated-response.dto.ts` +
@@ -232,15 +235,19 @@ So that report generation starts and stays trackable.
   enforced so **racing submissions cannot exceed it** — a plain count-then-
   insert through the Supabase client is a check-then-act race (NFR3, FR2).
 - **Solution: BEFORE INSERT trigger** (`report_requests_in_flight_guard` in
-  migration 51). When an INSERT fires on `report_requests`, the trigger:
-  1. Counts rows where `status IN ('queued','generating')` and `tenant_id =
+  migration 20260920000007). When an INSERT fires on `report_requests`, the
+  trigger:
+  1. Takes a per-tenant advisory exclusive transaction lock (`SELECT pg_advisory_xact_lock(...)`)
+     to serialize concurrent INSERTs for the same tenant.
+  2. Counts rows where `status IN ('queued','generating')` and `tenant_id =
      (new.tenant_id)` (the new row's tenant).
-  2. If count ≥ 3, raises `PT429` (aborting the INSERT transaction).
-  3. Otherwise allows the INSERT to proceed.
-- Why a trigger instead of backend code: **atomicity**. The trigger fires
-  inside the INSERT transaction — two racing submissions cannot both pass
-  the count check before either completes. The database guarantees exactly
-  one will succeed and the other will see 3 in-flight + get rejected.
+  3. If count ≥ 3, raises `PT429` (aborting the INSERT transaction).
+  4. Otherwise allows the INSERT to proceed.
+- Why explicit locking + a trigger: **atomicity with races**. The advisory
+  lock ensures the count-check-then-allow is serialized at the database level
+  — two racing submissions cannot both pass the count check before either
+  completes. The database guarantees exactly one will succeed and the other
+  will see 3 in-flight + get rejected.
 - The service catches the `PT429` exception and maps it to the HTTP 429
   response with `report_in_flight_limit` error code. All business logic
   (what counts as "in-flight") stays in backend code; the trigger is a
