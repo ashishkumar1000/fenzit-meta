@@ -36,10 +36,9 @@ So that report generation starts and stays trackable.
    > 25 or non-tenant / non-technician ids, empty `technician_ids` on a 
    tenant with zero technicians) **When** submitted **Then** 400
    with the mapped code (`report_range_too_large`,
-   `report_too_many_technicians`, …). Absent/empty `technician_ids` means
+   `invalid_technician_selection`, …). Absent/empty `technician_ids` means
    **all technicians** — validate that the tenant has at least one 
-   technician; if zero, return 400 `report_too_many_technicians` or a 
-   dedicated code.
+   technician; if zero, return 400 `invalid_technician_selection`.
 3. **Atomic in-flight cap** — **Given** 3 requests already `queued` +
    `generating` for the tenant **When** a 4th is submitted (including racing
    submissions) **Then** it is rejected with `report_in_flight_limit` — and
@@ -135,7 +134,7 @@ So that report generation starts and stays trackable.
         12-5's job — this story ships the contract + registration only.
 - [ ] Task 6: Error codes (AC: 2, 3, 4)
   - [ ] Add to `src/common/enums/error-code.enum.ts`:
-        `report_range_too_large`, `report_too_many_technicians`,
+        `report_range_too_large`, `invalid_technician_selection`,
         `report_in_flight_limit`, `report_too_large`,
         `report_generation_failed`, `report_presign_failed`.
 - [ ] Task 7: Env vars (AC: 7)
