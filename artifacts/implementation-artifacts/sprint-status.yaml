@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-20-2026  # epic-11: 11-1, 11-3, 11-5 (skill redesign + follow-ups) done; open: 11-2 Today-sort, 11-4 Account, 11-6 colouring
+last_updated: 09-20-2026  # epic-11: 11-1, 11-3, 11-5, 11-7 done; open: 11-2 Today-sort, 11-4 Account, 11-6 colouring
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -120,3 +120,4 @@ development_status:
   11-1-frontend-home-quick-actions: done  # fenzo-app 2a2ff17, fenzit-be 88e08aa+cea7a7c (deploys first, customerCount); fenzo-meta 926f927
   11-3-frontend-inline-add-technician-and-progressive-disclosure: done  # New Job: invite sheet inline + form gated on skill pick; verified on device, review patches applied 2026-09-20; fenzo-app e948709
   11-5-frontend-new-job-skill-section-redesign: done  # SkillPicker tiles (chip/search/first-5/+N, pinned selection), SelectSkillsScreen single-select (Apply gated, Clear = null), popTo fix (v7 navigate pushes duplicates), DB-driven lucide icons + SkillIcon catalog contract test; 28-skill cutover + icon column + CHECK constraints in fenzit-be 18ea107 (applied + re-tagged 6 test technicians); fenzo-app 2fe38f6; review (3 hunter layers): 10 patches applied, 2 defers resolved, 2 accepted; follow-ups 2026-09-20: selected-tile restyle (light tint + primary chip/label, fenzo-app 7e14ffd) and section separation (DS Eyebrow/SectionHead, one-line Skill header, EditJobSheet + Today adoption, fenzo-app b34f17a)
+  11-7-frontend-new-job-customer-section-redesign: done  # implemented + device-confirmed + reviewed 2026-09-20: CustomerPicker tiles (5 most-recent-first via sortCustomersByRecency + "+N more", search via filterCustomers, pinned selection), SelectCustomersScreen (Apply/Clear popTo), Add-new link kept; FE-only, no BE change; tests written after device confirmation (981/982, 1 pre-existing failure from user's local config edit); BMAD 4-layer review: 10 patches applied, 13 dismissed
