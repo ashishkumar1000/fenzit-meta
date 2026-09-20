@@ -49,10 +49,12 @@ So that report generation starts and stays trackable.
    `{ id, reportType, params, status, createdAt, completedAt, file?, error? }`;
    when `ready`, `file` carries a fresh presigned R2 URL (TTL from
    `REPORT_PRESIGN_TTL_SECONDS`), size and filename; another tenant's id →
-   404 (no existence leak); **transient presign failure → 500 
-   `report_presign_failed`; persistent R2 object loss (missing/deleted) → 
-   410 Gone** (verify via S3 HeadObject before returning 500 for transient failures); 
-   technician role → 403 (via the `@Roles` guard).
+   404 (no existence leak); presign failure handling:
+   - **Persistent R2 object loss (missing/deleted):** run S3 `HeadObject`
+     on the key — if 404, return `410 Gone` (file truly missing).
+   - **Transient presign failure:** if `HeadObject` returns 5xx or timeout,
+     return `500 report_presign_failed` (retry-able).
+   Technician role → 403 (via the `@Roles` guard).
    **Note:** the worker (12-3) does not exist yet, so no row can be `ready`
    in this story — the presign code path is built and expected to be
    unexercisable until 12-3 lands.
@@ -118,8 +120,10 @@ So that report generation starts and stays trackable.
         before creating row (unknown → 400); returns `201 { id, status, createdAt }`.
   - [ ] `GET /api/v1/reports/:id` — owner-only, tenant-scoped; when `ready`,
         mint a fresh presigned URL via `StorageService` (TTL
-        `REPORT_PRESIGN_TTL_SECONDS`) + size + filename; presign failure →
-        500 `report_presign_failed`; other tenant's id → 404.
+        `REPORT_PRESIGN_TTL_SECONDS`) + size + filename. Presign failure
+        handling: on presign error, run S3 `HeadObject` on the key — if 404,
+        return `410 Gone` (file missing); if 5xx or timeout, return `500
+        report_presign_failed` (transient). Other tenant's id → 404.
   - [ ] `GET /api/v1/reports` — keyset pagination via
         `src/common/dto/paginated-response.dto.ts` +
         `src/common/utils/cursor.util.ts` (add a `reports-list` `CursorScope`,
