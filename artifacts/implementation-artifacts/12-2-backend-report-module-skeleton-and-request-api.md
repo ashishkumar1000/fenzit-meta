@@ -49,7 +49,8 @@ So that report generation starts and stays trackable.
 4. **Status endpoint** — **Given** `GET /api/v1/reports/:id` **When** called
    by the owning tenant **Then** it returns
    `{ id, reportType, params, status, createdAt, completedAt, file?, error? }`;
-   when `ready`, `file` carries a fresh presigned R2 URL (TTL from
+   when `ready`, `file` carries a fresh presigned R2 URL via
+   `StorageService.getPresignedUrl(key)` (TTL from
    `REPORT_PRESIGN_TTL_SECONDS`), size and filename; another tenant's id →
    404 (no existence leak); presign failure handling:
    - **Persistent R2 object loss (missing/deleted):** run S3 `HeadObject`
@@ -123,8 +124,8 @@ So that report generation starts and stays trackable.
         `jobs.controller.ts` opts in); validate `report_type` exists in registry 
         before creating row (unknown → 400); returns `201 { id, status, createdAt }`.
   - [ ] `GET /api/v1/reports/:id` — owner-only, tenant-scoped; when `ready`,
-        mint a fresh presigned URL via `StorageService` (TTL
-        `REPORT_PRESIGN_TTL_SECONDS`) + size + filename. Presign failure
+        mint a fresh presigned URL via `StorageService.getPresignedUrl(key)`
+        (TTL `REPORT_PRESIGN_TTL_SECONDS`) + size + filename. Presign failure
         handling: on presign error, run S3 `HeadObject` on the key — if 404,
         return `410 Gone` (file missing); if 5xx or timeout, return `500
         report_presign_failed` (transient). Other tenant's id → 404.
@@ -203,7 +204,8 @@ So that report generation starts and stays trackable.
   IST math (`IST_OFFSET_MS = 5.5h`, UTC-component arithmetic) to mirror for
   "today in IST" when validating "not in the future".
 - `src/storage/storage.service.ts` + `storage.module.ts` — the AWS SDK v3
-  R2 service the status endpoint's presign goes through (read-presign exists;
+  R2 service. The presign method is `getPresignedUrl(key: string, ttlSeconds: number): Promise<string>`,
+  called by the status endpoint to mint fresh URLs for ready reports (read-presign exists;
   `PutObjectCommand` for uploads is 12-3's addition — do not add it here).
 - `src/common/factories/supabase-client.factory.ts` +
   `src/supabase/supabase.module.ts` — how the service obtains its Supabase
