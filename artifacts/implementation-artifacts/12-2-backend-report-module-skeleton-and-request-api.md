@@ -73,8 +73,7 @@ So that report generation starts and stays trackable.
 7. **Env vars** — **Given** config **When** the app boots **Then**
    `REPORT_PRESIGN_TTL_SECONDS` (600), `REPORT_POLL_INTERVAL_SECONDS` (5),
    `REPORT_MAX_JOBS` (5000), `REPORT_MAX_ATTEMPTS` (3) are in the Joi env
-   schema (boot fails if missing). **Additional vars in 12-3:** 
-   `REPORT_LEASE_SECONDS` (300), `REPORT_WORKER_CONCURRENCY` (1).
+   schema (boot fails if missing).
 8. **Backend-only story, no app code** — **Given** this story merges,
    **When** reviewed, **Then** it ships only the `src/reports/` module +
    env/error-code additions plus docs; the worker/engine and the first
@@ -143,6 +142,8 @@ So that report generation starts and stays trackable.
         `REPORT_MAX_ATTEMPTS` (3) to the Joi `validationSchema` in
         `src/app.module.ts` (number with default, following the
         `MAX_ATTACHMENT_SIZE_BYTES` shape).
+  - [ ] **Note:** `REPORT_LEASE_SECONDS` and `REPORT_WORKER_CONCURRENCY`
+        are worker-only (story 12-3) — do not add them here.
 - [ ] Task 8: Docs (small-modular rule: docs updated in the same change)
   - [ ] A short `src/reports/README.md` (or module header comment) capturing
         the module layout, the registry contract and the dependency rule —

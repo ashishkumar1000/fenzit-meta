@@ -104,7 +104,12 @@ So that I never have to retry or wonder.
    The `PdfRenderer` **port** (interface) is defined in this story, the pdfmake 
    implementation is 12-4's; the module still imports only `common/` + 
    `storage` (NFR5).
-8. **Backend-only story, no app code** — **Given** this story merges,
+8. **Env vars configured** — **Given** config **When** the app boots **Then**
+   `REPORT_LEASE_SECONDS` (300 seconds; worker's claim lease duration) and
+   `REPORT_WORKER_CONCURRENCY` (1; sequential processing) are in the Joi env
+   schema (boot fails if missing). These are worker-specific; 12-2 adds
+   separate vars for presigning and job limits.
+9. **Backend-only story, no app code** — **Given** this story merges,
    **When** reviewed **Then** it ships the engine/worker, the migration 52
    (notifications.job_id nullable), the StorageService.putObject addition
    plus docs; the fenzo-app screen is 12-6. Additive backend change —
@@ -158,7 +163,7 @@ So that I never have to retry or wonder.
   - [ ] `engine/report-notifications.ts` — insert into `notifications` via
         the admin client after the terminal stamp (`job_id: null`, payload
         without URLs); wrap in try/catch — failure logs and drops.
-- [ ] Task 7: Module + env wiring (AC: 7, 8)
+- [ ] Task 7: Module + env wiring (AC: 8, 9)
   - [ ] Register the new providers in `reports.module.ts`; the module still
         imports only `SupabaseModule` + `StorageModule`.
   - [ ] Add `REPORT_LEASE_SECONDS` (300) and `REPORT_WORKER_CONCURRENCY` (1)
