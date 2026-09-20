@@ -80,10 +80,14 @@ So that I never have to retry or wonder.
    report id, status, and **report label** (the definition's `label` field, 
    e.g., 'technician_job_activity'; see dev notes for label semantics) — 
    **no URLs** — and `job_id` NULL (migration 52 makes `notifications.job_id` 
-   nullable; the Realtime broadcast trigger fans it out untouched); a 
-   notification failure or a crash between stamp and notify is logged and 
-   dropped — the FE history polling is the fallback, so no retry machinery 
-   (supersedes the PRD's one-transaction clause, see the deviation blockquote).
+   nullable; the Realtime broadcast trigger fans it out untouched). **Edge 
+   case: if `requested_by` user was deleted**, the FK would fail; the worker 
+   logs the failure and drops the notification (no retry) — the FE history 
+   polling is the fallback, so the user still discovers the ready report on 
+   next poll. A notification failure or a crash between stamp and notify is 
+   logged and dropped — the FE history polling is the fallback, so no retry 
+   machinery (supersedes the PRD's one-transaction clause, see the deviation 
+   blockquote).
 6. **Lease crash recovery** — **Given** a deploy killed the worker
    mid-render **When** the next poll runs **Then** a row stranded
    `generating` past its `locked_until` lease is **checked before re-running**:
@@ -162,7 +166,9 @@ So that I never have to retry or wonder.
 - [ ] Task 6: Notification insert (AC: 5)
   - [ ] `engine/report-notifications.ts` — insert into `notifications` via
         the admin client after the terminal stamp (`job_id: null`, payload
-        without URLs); wrap in try/catch — failure logs and drops.
+        without URLs); wrap in try/catch — any failure (including FK violation
+        if `requested_by` user was deleted) logs the error and drops the
+        notification (no retry). The FE history polling fallback covers this.
 - [ ] Task 7: Module + env wiring (AC: 8, 9)
   - [ ] Register the new providers in `reports.module.ts`; the module still
         imports only `SupabaseModule` + `StorageModule`.
