@@ -41,9 +41,11 @@ So that report generation starts and stays trackable.
    technician; if zero, return 400 `invalid_technician_selection`.
 3. **Atomic in-flight cap** — **Given** 3 requests already `queued` +
    `generating` for the tenant **When** a 4th is submitted (including racing
-   submissions) **Then** it is rejected with `report_in_flight_limit` — and
-   the count + insert is **one transaction**, so concurrent submissions can
-   never exceed the cap (NFR3).
+   submissions) **Then** it is rejected with `report_in_flight_limit` code via
+   a `BEFORE INSERT` trigger (`report_requests_in_flight_guard`, migration 51);
+   the trigger counts rows where `status IN ('queued','generating')` and
+   `tenant_id = (new.tenant_id)`, raises `PT429` if count ≥ 3, enforcing
+   atomicity — concurrent submissions cannot exceed the cap (NFR3).
 4. **Status endpoint** — **Given** `GET /api/v1/reports/:id` **When** called
    by the owning tenant **Then** it returns
    `{ id, reportType, params, status, createdAt, completedAt, file?, error? }`;
@@ -109,10 +111,12 @@ So that report generation starts and stays trackable.
   - [ ] `service/reports.service.ts`: tenant-scoped reads/writes via the
         Supabase client (`tenantId` from `@CurrentUser()` at the service
         layer; RLS is the second layer — 12-1's policies).
-  - [ ] Atomic count+insert enforcing the cap (max 3 `queued`+`generating`
-        per tenant) → `report_in_flight_limit`: one transaction (single SQL
-        statement via an RPC or a serializable-transaction insert-where-
-        guard) so racing submissions cannot exceed it — see Dev Notes.
+  - [ ] Create endpoint inserts to `report_requests` via the owner-JWT INSERT
+        policy; the `BEFORE INSERT` trigger `report_requests_in_flight_guard`
+        (migration 51) enforces the cap atomically: it counts existing
+        `queued`+`generating` rows for the tenant and raises `PT429` if the
+        limit (3) would be exceeded. The service catches the error, maps it
+        to `report_in_flight_limit`, and returns 429 to the client.
 - [ ] Task 4: Endpoints (AC: 1, 4, 5)
   - [ ] `POST /api/v1/reports` — `@Roles(Role.OWNER)`, `@CurrentUser()`,
         idempotent via the existing `IdempotencyInterceptor` wiring (copy how
@@ -220,24 +224,26 @@ So that report generation starts and stays trackable.
   reject a same-day IST range for part of the day (PRD §4 date semantics).
 - The 92-day cap counts days **inclusively** (start and end both count).
 
-### Atomic count+insert pattern (backend-first)
+### Atomic count+insert pattern — BEFORE INSERT trigger (backend-first)
 
 - The in-flight cap (max 3 `queued`+`generating` per tenant) must be
   enforced so **racing submissions cannot exceed it** — a plain count-then-
   insert through the Supabase client is a check-then-act race (NFR3, FR2).
-- Preferred: one atomic SQL statement — an insert guarded by the count,
-  e.g. a small SECURITY DEFINER RPC `request_report_request(...)` that
-  runs `INSERT ... SELECT ... WHERE (SELECT count(*) FROM report_requests
-  WHERE tenant_id = <jwt tenant> AND status IN ('queued','generating')) < 3`
-  and raises the repo's `PT<http-status>` SQLSTATE convention on cap failure
-  (the `rpc_update_job_with_log` / `confirm_attachment` guard idiom from
-  12-1's Dev Notes; the service layer maps `PT429` →
-  `report_in_flight_limit`). Tenant comes from `auth.jwt()` inside the
-  function — never a parameter — and `EXECUTE` is revoked from
-  `anon`/`authenticated`, matching the 12-1 claim-RPC discipline.
-- If a migration-based RPC is chosen, it goes through the Supabase MCP
-  (`apply_migration`) and its header comment documents the cap semantics.
-  A plain client-side count is **not** an acceptable substitute.
+- **Solution: BEFORE INSERT trigger** (`report_requests_in_flight_guard` in
+  migration 51). When an INSERT fires on `report_requests`, the trigger:
+  1. Counts rows where `status IN ('queued','generating')` and `tenant_id =
+     (new.tenant_id)` (the new row's tenant).
+  2. If count ≥ 3, raises `PT429` (aborting the INSERT transaction).
+  3. Otherwise allows the INSERT to proceed.
+- Why a trigger instead of backend code: **atomicity**. The trigger fires
+  inside the INSERT transaction — two racing submissions cannot both pass
+  the count check before either completes. The database guarantees exactly
+  one will succeed and the other will see 3 in-flight + get rejected.
+- The service catches the `PT429` exception and maps it to the HTTP 429
+  response with `report_in_flight_limit` error code. All business logic
+  (what counts as "in-flight") stays in backend code; the trigger is a
+  **database constraint** enforcing the decision, not a stored procedure
+  replicated elsewhere.
 
 ### Registry + definition contract
 
