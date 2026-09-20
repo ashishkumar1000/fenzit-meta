@@ -83,7 +83,12 @@ So that I can open the finished PDF without leaving the app.
    nav. New items prepend without jumping position.
 5. A queued/generating row transitions to ready without a manual pull
    (polling and/or Realtime) within ~5 s of completion. Show subtle
-   "syncing..." indicator in header during poll.
+   "syncing..." indicator in header during poll. **Polling failure handling:**
+   if polling fails 3+ consecutive times, show a subtle error banner below
+   the history list ("Sync paused — pull to retry") with a manual refresh
+   button; banner dismisses on successful poll or manual pull. Realtime
+   failures are silent (polling is the fallback, so if both fail, user
+   discovers status on next manual pull or app re-open).
 6. Tapping a ready row fetches a fresh presigned URL (timeout 10s; if timeout,
    show error banner "Failed to open PDF — try again") and opens via
    `Linking.openURL` in the system viewer.
