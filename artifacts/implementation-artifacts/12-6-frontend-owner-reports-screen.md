@@ -18,18 +18,32 @@ So that I can open the finished PDF without leaving the app.
 
 - `Reports` route + entry tile in the More tab (owner-only).
 - Request form: report type (only `technician_job_activity` exists — show its
-  title), IST date pickers (start/end, ≤ 92 days inclusive, no future IST
-  dates), technician MultiSelect (empty = all), Generate button gated on
-  valid form.
-- Fresh `x-idempotency-key` per submit (never reuse).
-- History list: newest first, status chips (queued / generating / ready /
-  failed), failed rows show friendly error copy from `errorCode`.
+  title), IST date pickers (start/end, ≤ 92 days inclusive, no future IST dates;
+  same-date reports allowed; future dates disabled in picker; show "N days
+  selected"), technician MultiSelect (empty = all; searchable; sorted
+  alphabetically; shows "[N] technicians selected"; placeholder "Select
+  technicians (leave empty for all)"), Generate button gated on valid form.
+  Validation errors appear inline under fields (red border + text below) on
+  submit or onChange after first blur. Error messages: "[Field] is required" /
+  "Start date cannot be after end date" / "Range exceeds 92 days" / "End date
+  cannot be in the future."
+- Fresh `x-idempotency-key` per submit (UUID v4, valid for 1 hour, never reuse;
+  retry same request with same key on network failure).
+- History list: newest first (20 items initial load), status chips (queued /
+  generating / ready / failed), failed rows show friendly error copy from
+  `errorCode`. List uses "Load more" button (not infinite scroll); scroll
+  position recovers on back nav. New items via Realtime prepend without jumping
+  scroll position.
 - Refresh: 5 s list-polling while any row is queued/generating + Supabase
-  Realtime refresh on `report_ready` / `report_failed` notifications.
-- Ready row → tap opens `GET /reports/:id` presigned URL via
-  `Linking.openURL` (fresh URL per tap — never cached).
-- Design-system states: skeleton loading, empty state, error banner, offline
-  boundary. Tiered `useReports` store.
+  Realtime on `report_ready` / `report_failed` notifications (subscribe to
+  `auth.tenantId + ':reports'` channel on mount; unsubscribe on unmount; fall
+  back to polling if Realtime drops).
+- Ready row → tap fetches fresh presigned URL (TTL 1 hour; fetch timeout 10s;
+  if timeout, show "Failed to open PDF — try again") and opens via
+  `Linking.openURL` (never cached).
+- Design-system states: skeleton loading (3 rows, animated shimmer, matching
+  final row height), empty state ("No reports yet" + illustration), error banner
+  (dismissible), offline boundary. Tiered `useReports` store.
 
 ## API contract (consumed)
 
@@ -48,18 +62,42 @@ So that I can open the finished PDF without leaving the app.
 ## Acceptance criteria
 
 1. Owner sees the Reports tile; technician does not (route gated by role).
-2. Form validates before Generate enables: start ≤ end, range ≤ 92 days,
-   end not in the future on the IST clock.
-3. Submit posts with a fresh idempotency key; duplicate submit (retry) does
-   not create a second row; `REPORT_IN_FLIGHT_LIMIT` shows a clear message.
+2. Form validates before Generate enables: start ≤ end, range ≤ 92 days
+   inclusive, end not in the future on the IST clock. Errors appear inline
+   (red border + text below) on submit or onChange after first blur. Error
+   messages: "[Field] is required" / "Start date cannot be after end date" /
+   "Range exceeds 92 days" / "End date cannot be in the future." Button
+   disabled while submit in flight (prevents double-tap).
+3. Submit posts with a fresh UUID v4 idempotency key (valid 1 hour); duplicate
+   submit (retry) does not create a second row; `REPORT_IN_FLIGHT_LIMIT` (429)
+   shows error banner: "You have a report generating. Wait for it to finish
+   before creating another." Auto-retry after 2s or dismiss manually. Generate
+   button shows spinner for 1s after success; form resets; success toast "Report
+   queued — you'll be notified when ready" appears 2s.
 4. History list shows all my requests newest-first with status chips 
    (Queued, Generating, Ready, Failed); failed rows show friendly copy per 
-   error code, not a raw code.
+   error code (mapping per 12-2 AC 4: `report_generation_failed` → "Report
+   generation failed. Try again." / `report_too_large` → "Too many jobs in
+   range. Narrow the date range." / unknown → "Error (code: XXX)"), not raw code.
+   Load more button shows when `hasMore=true`. Scroll position recovers on back
+   nav. New items prepend without jumping position.
 5. A queued/generating row transitions to ready without a manual pull
-   (polling and/or Realtime) within ~5 s of completion.
-6. Tapping a ready row opens the PDF in the system viewer (fresh presigned
-   URL fetched at tap time).
+   (polling and/or Realtime) within ~5 s of completion. Show subtle
+   "syncing..." indicator in header during poll.
+6. Tapping a ready row fetches a fresh presigned URL (timeout 10s; if timeout,
+   show error banner "Failed to open PDF — try again") and opens via
+   `Linking.openURL` in the system viewer.
 7. Loading / empty / error states all use the design system; no blank screen.
+   Skeleton loading: 3 rows, animated shimmer (0.8s ease-in-out repeat),
+   matching final row height (80px). Empty state: "No reports yet. Create your
+   first report to get started" + illustration. Error banner: dismissible,
+   red bg. Offline banner: "No connection — using cached data." Status chips
+   meet WCAG AA contrast (4.5:1). MultiSelect and status chips labeled for
+   screen readers. List announces "X jobs" on Realtime update. All interactive
+   elements keyboard-accessible (focus order: start → end → technician →
+   Generate; arrow keys in date picker, Enter to confirm; min 48pt touch
+   targets). Keyboard dismiss: hide after Generate tap. A11y: label all fields
+   ("Start date", "End date", "Select technicians").
 
 ## Notes
 

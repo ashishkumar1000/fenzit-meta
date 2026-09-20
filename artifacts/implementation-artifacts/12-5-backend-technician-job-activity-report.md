@@ -91,10 +91,11 @@ So that I can review technician performance without opening the app's data.
    count).
 4. **Metrics match PRD §4 (FR17)** — **Given** metrics **When** computed
    **Then** on-time % = on-time completed ÷ completed jobs (completed-only
-   denominator, zero completed → "—", jobs with null `scheduled_end` excluded
-   from the denominator); total assigned, completed, cancelled, open
-   (scheduled + in_progress), urgent completed, distinct customers served
-   (all statuses), photos + signatures captured.
+   denominator, zero completed → "—"; on-time = `completed_at <= scheduled_end`; 
+   jobs with null `scheduled_end` excluded entirely from on-time calculation — 
+   excluded from both numerator and denominator); total assigned, completed, 
+   cancelled, open (scheduled + in_progress), urgent completed, distinct 
+   customers served (all statuses), photos + signatures captured.
 5. **Edge cases (FR18)** — **Given** a selected technician with zero jobs in
    range **When** rendered **Then** their section still appears (zeroed
    summary card, empty-state table row); **Given** the selection has zero jobs

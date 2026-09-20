@@ -34,11 +34,12 @@ So that every report is branded consistently and the renderer can be swapped lat
    (`src/reports/templates/brand-kit/`) **When** inspected **Then** it owns:
    the Fenzit logo (`assets/fenzit-logo.png`, 360×360, copied from
    `fenzo-app/src/assets/branding/logo@3x.png` — same file the PRD run
-   folder already holds), the Inter TTFs (Regular 400 / SemiBold 600 /
-   Bold 700) as base64 vfonts, and the theme tokens: Primary `#1A56DB`,
-   Done `#06956F`, Scheduled `#D97706`, Cancelled `#C92A2A`, background
-   `#F9FAFB`, text `#111827`, cool-gray borders (from the FE `colors.ts`
-   gray scale).
+   folder already holds), the Inter TTF font files (`Inter-Regular.ttf`,
+   `Inter-SemiBold.ttf`, `Inter-Bold.ttf` — weights 400, 600, 700) loaded
+   from `assets/fonts/` and embedded as base64 vfonts, and the theme tokens:
+   Primary `#1A56DB`, Done `#06956F`, Scheduled `#D97706`, Cancelled `#C92A2A`,
+   background `#F9FAFB`, text `#111827`, cool-gray borders (from the FE
+   `colors.ts` gray scale).
 2. **Page chrome helpers** — **Given** the kit **When** a template composes
    **Then** it gets `pageHeader(tenant, title, range)`,
    `summaryCardRow(cards)`, `jobsTable(rows)` and `pageFooter()`
@@ -72,8 +73,9 @@ So that every report is branded consistently and the renderer can be swapped lat
 - [ ] Task 2: Brand kit files (AC: 1, 2)
   - [ ] `brand-theme.ts` — the token map (colours, borders, page margins,
         font names).
-  - [ ] `brand-assets.ts` — base64 logo + font vfs map (fs-read once,
-        cached at module load).
+  - [ ] `brand-assets.ts` — load fonts from `src/reports/templates/brand-kit/assets/fonts/*.ttf`
+        via `fs.readFileSync()`, encode as base64 vfonts, cache at module load.
+        Logo data URI (embedded PNG). Map returned as `{ fonts: ..., vfs: ... }`.
   - [ ] `page-chrome.ts` (+ split files if the ~300-line rule demands) —
         the four helpers returning pdfmake fragments, styled only from
         `brand-theme`.
@@ -102,10 +104,10 @@ So that every report is branded consistently and the renderer can be swapped lat
   stage it (`.gitignore` covers it if configured — verify before commit).
 - Sandbox network is blocked (proxy) — the user runs `bun add pdfmake`,
   `bun add -d @types/pdfmake`, and the Inter TTF download via `!`.
-- pdfmake server-side API (verify against the installed package's types
-  before finalising): `new Printer(fonts, vfs).createPdfKitDocument(doc)`
-  (0.3.x) or `new PdfPrinter(fonts)` + vfs entry (0.2.x) — read
-  `node_modules/pdfmake` `.d.ts` after install, don't guess.
+- **pdfmake version:** Use 0.3.x (current stable; 0.3.11 verified).
+  Server-side API: `new Printer(fonts, vfs).createPdfKitDocument(doc)`.
+  Do NOT use 0.2.x (`new PdfPrinter(fonts)` API differs). Verify against
+  `node_modules/pdfmake/.d.ts` after install.
 
 ### Design decisions already made
 
