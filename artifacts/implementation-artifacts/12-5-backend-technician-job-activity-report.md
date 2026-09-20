@@ -81,8 +81,12 @@ So that I can review technician performance without opening the app's data.
    technician users, with photo/signature attachment counts per job. **Edge case:**
    if the tenant has zero technicians and empty `technician_ids` was passed (meaning 
    "all technicians"), the create endpoint rejects with 400 before reaching this fetcher.
-   Queries are paginated (default 1000-row PostgREST cap handled); exceeding
-   `REPORT_MAX_JOBS` fails with `report_too_large` — never silent truncation.
+   **Pagination strategy (Option A):** The fetcher loops through jobs in pages 
+   (PostgREST's default 1000-row limit) — on each page, check cumulative total 
+   against `REPORT_MAX_JOBS` (5000); if total would exceed it, fail with 
+   `report_too_large` (never silent truncation). Once all jobs fit under the cap, 
+   batch-fetch all technician names (chunked, per AC 2 task) and all attachment 
+   counts (chunked) in bulk — the fetcher returns the complete dataset for the PDF.
 3. **Report layout (FR15)** — **Given** the PDF **When** rendered **Then** it
    shows the branded header (tenant company name + address, logo, report
    title, date range, IST generation timestamp in the footer), the **Overall**
@@ -187,6 +191,12 @@ So that I can review technician performance without opening the app's data.
   confirmation, per the test-timing rule) need no DB.
 - On-time: `completed_at <= scheduled_end`; the "—" rule covers both
   zero-completed and all-null-`scheduled_end` cases.
+- **Pagination (not user-facing):** Report generation is one-off bulk fetch.
+  The fetcher loops through job pages (PostgREST's 1000-row default) until
+  it has all jobs, checking total against REPORT_MAX_JOBS on each iteration.
+  Once all jobs fit (under 5000), it bulk-fetches names + counts in chunked
+  batches. There is no "next page" returned to a caller; the complete dataset
+  is assembled and returned as-is for the PDF.
 
 ### References
 
