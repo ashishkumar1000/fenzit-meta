@@ -32,6 +32,11 @@ When writing backend code (database schema, RLS policies, API endpoints, busines
 When writing frontend code (screens, components, hooks, state management in `fenzo-app`), think **as a frontend/UX/React Native engineer**, not as a backend engineer trying to mirror API responses. Backend capabilities don't translate directly to frontend performance, UX, or accessibility. Drive fenzo-app frontend development with a UX-first mindset by strictly enforcing design system tokens and atomic components, applying tiered state management, optimizing performance and resilience with list virtualization, client-side validation, and explicit loading/error/empty states, adhering to accessibility standards and briefing AI dev agents using design-focused prompts, comprehensive checklists, and pre-merge code reviews. Always generate explicit loading skeletons and handle network timeout/offline boundaries gracefully rather than letting the screen freeze or crash.
 Do not make any changes until you 95% confidence in what you need to build. Ask me follow-up questions until you reach that confidence.
 
+- **Test timing — confirm the feature first.** When writing a feature, do NOT
+  write test cases immediately. Wait until the user has confirmed the feature
+  is working properly (e.g. on a device/simulator); only then write the tests,
+  and run the code review after that. Only do code review after the feature is confirmed working and the tests are written.
+
 ## Where things live
 
 Full model in `README.md`: `docs/repo-catalog.yaml`, `docs/repos/<id>/`, `docs/initiatives/`, `workspace/core/`. Use BMAD skills under `.claude/skills` (installed via the `bmad-method` package: core, bmm, tea, cis) for planning and dev workflows.

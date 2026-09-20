@@ -523,3 +523,8 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
     Extend the existing real-DB-gated integration spec pattern (`test/integration/rls-isolation.integration.spec.ts` — self-skips without real SUPABASE_URL):
     - boot `JobsService` against the migrated Supabase, create a job via the real `create_job_with_log`, read it back through a real `JOB_COLUMNS` select — pins both the RPC signature and the select shape against the actual schema.
     - Same treatment eventually for the Docker image: a CI step that builds the image and boots it against `/health`.
+
+## Deferred from: code review (2026-09-20) — both RESOLVED same day (user asked to fix deferred items too)
+
+- [x] **No controller/e2e-level test for `GET /users/me`** (fenzit-be) — RESOLVED: `test/users.e2e-spec.ts` added (5 tests: owner/technician/pre-onboarding 200 shapes incl. the additive `customerCount`, 401 without JWT, 422 invalid jobsScope) with a universal thenable Supabase builder at the factory boundary.
+- [x] **Interactive `Card`s expose no `accessibilityRole`** (fenzo-app) — RESOLVED: `Card` now forwards `accessibilityRole` on both render branches, and the three Home quick-action tiles pass `"button"` (pinned in Card.test + QuickActions.test). Other interactive-Card call sites still pass no role — follow-up opportunity, not a regression.
