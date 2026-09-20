@@ -132,7 +132,8 @@ So that I can review technician performance without opening the app's data.
 - [ ] Task 4: Wiring (AC: 1)
   - [ ] `ReportFetchContext` gains `maxJobs` (from `REPORT_MAX_JOBS` via
         ConfigService in the pipeline) — definitions stay DI-free.
-  - [ ] Definition implements `fetchData` + `buildDocument`.
+  - [ ] Definition implements canonical field names: `fetcher` and
+        `templateBuilder` (per 12-3 AC 7 standardization, not fetchData/buildDocument).
 - [ ] Task 5: Docs + extensibility checklist (AC: 1, NFR6)
   - [ ] `src/reports/README.md` — first report shipped, fetcher/metrics/
         template layout, measured NFR2 note when measured. **Add the 
