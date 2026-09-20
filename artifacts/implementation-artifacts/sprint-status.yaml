@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-18-2026  # epic-9 closed (9-1 done); epic-10 (real OTP via MSG91/DLT) in backlog, PRD finalized
+last_updated: 09-20-2026  # epic-11: 11-1, 11-3, 11-5 (skill section redesign) done; open: 11-2 Today-sort, 11-4 Account, 11-6 colouring
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -112,3 +112,11 @@ development_status:
   # Execution order = backend first (fenzit-be), then FE cleanup (fenzo-app),
   # per CLAUDE.md cross-repo ordering rule.
   epic-10: backlog
+
+  # Epic 11: Product feedback items (2026-09-20) — numbered by the user's
+  # feedback list; gaps are items still open (2 Today-sort, 4 Account section,
+  # 6 time-based colouring — each awaiting a user decision).
+  epic-11: in-progress
+  11-1-frontend-home-quick-actions: done  # fenzo-app 2a2ff17, fenzit-be 88e08aa+cea7a7c (deploys first, customerCount); fenzo-meta 926f927
+  11-3-frontend-inline-add-technician-and-progressive-disclosure: done  # New Job: invite sheet inline + form gated on skill pick; verified on device, review patches applied 2026-09-20; fenzo-app e948709
+  11-5-frontend-new-job-skill-section-redesign: done  # SkillPicker tiles (chip/search/first-5/+N, pinned selection), SelectSkillsScreen single-select (Apply gated, Clear = null), popTo fix (v7 navigate pushes duplicates), DB-driven lucide icons + SkillIcon catalog contract test; 28-skill cutover + icon column + CHECK constraints in fenzit-be 18ea107 (applied + re-tagged 6 test technicians); fenzo-app 2fe38f6; review (3 hunter layers): 10 patches applied, 2 defers resolved, 2 accepted
