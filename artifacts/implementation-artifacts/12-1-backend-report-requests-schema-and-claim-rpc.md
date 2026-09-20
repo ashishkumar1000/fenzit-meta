@@ -1,24 +1,21 @@
-# Story 12.1: Backend — report_requests schema + claim RPC
+# Story 12.1: Backend — report_requests schema + guarded UPDATE claim
 
 Status: ready-for-dev
 baseline_commit: 18ea107 (fenzit-be)
 
-> **Implemented 2026-09-20 — with one deviation from the story text.** The
-> table + RLS + worker indexes shipped as designed (migration 48). The claim
-> RPC (migration 49) was **dropped the same day** by migration 51: the user
-> asked to keep stored procedures to a minimum ("try using stored procedure
-> less"). The worker's claim (story 12-3) is now a single guarded UPDATE —
-> `update report_requests set status='generating', ... where id=? and
-> status='queued'` — which is atomic in Postgres, so the SECURITY DEFINER RPC
-> is not needed for exactly-once pickup. Read ACs 3–6 and the RPC Dev Notes
-> below as superseded on that point; the PT-SQLSTATE convention and the RLS
-> envelope stand.
+> **Implemented 2026-09-20.** Table + RLS + worker indexes shipped as designed
+> (migration 48). Claim logic is a single guarded UPDATE (no stored procedure):
+> `UPDATE report_requests SET status='generating', locked_until = <lease>,
+> attempt_count = attempt_count + 1 WHERE id = ? AND tenant_id = <tenant> AND
+> (status = 'queued' OR (status = 'generating' AND locked_until < now()))`.
+> Atomic in Postgres, no RPC needed for exactly-once pickup. PT-SQLSTATE
+> convention and RLS envelope stand.
 
 ## Story
 
 As a report engine,
 I want a `report_requests` state-machine table with a deny-by-default RLS
-envelope and an atomic SECURITY DEFINER claim RPC,
+envelope and an atomic guarded UPDATE claim mechanism,
 so that queued requests are picked up exactly once — a crashed worker can
 never double-run a report and no client can ever touch another tenant's rows.
 
@@ -52,41 +49,36 @@ never double-run a report and no client can ever touch another tenant's rows.
      `tenant_id = (auth.jwt() ->> 'tenantId')::uuid` (same predicate as
      `customers` / `attachments`);
    - **no** client-facing `UPDATE` or `DELETE` policy at all — status
-     transitions happen only through the service-role client and the
-     SECURITY DEFINER claim RPC (worker mutations never ride a user JWT).
-3. **Claim RPC, SECURITY DEFINER** — **Given** the RPC exists,
-     **When** the engine calls it (service-role path) for a `queued` row,
-     **Then** it performs the `queued → generating` transition in one
-     atomic statement that also stamps `locked_until` (the lease) and
-     increments `attempt_count`, returning the claimed row; the function
-     runs as `SECURITY DEFINER`, **validates the JWT is present and
-     extracts a valid tenantId** (fails SQLSTATE PT401 if missing), 
-     resolves the tenant from the JWT **inside** the function (never a 
-     client-supplied parameter), and has `EXECUTE` revoked from `anon` and 
-     `authenticated` (service-role-only call path, matching the existing 
-     RPC discipline).
+     transitions happen only through the service-role client (guarded UPDATE
+     from the worker; user mutations never ride a user JWT).
+3. **Guarded UPDATE claim (service-role only)** — **Given** the worker runs
+     a claim via the Supabase service-role client **When** it executes the
+     guarded UPDATE **Then** it performs the `queued → generating` transition
+     in one atomic statement: `UPDATE report_requests SET status = 'generating',
+     locked_until = now() + INTERVAL 'X seconds', attempt_count = attempt_count + 1
+     WHERE id = ? AND tenant_id = ? AND (status = 'queued' OR (status = 'generating'
+     AND locked_until < now()))`. Claim succeeds if one row is updated; zero rows
+     updated means the request is already-claimed or terminal (developer checks
+     affected rows; if zero, treat as conflict). Atomic in Postgres, no RPC needed.
 4. **Already-claimed / terminal conflict** — **Given** the target row is
      `generating` with an unexpired lease, `ready`, or `failed`,
-     **When** the claim RPC runs against it,
-     **Then** it fails with the repo's `PT<status>` SQLSTATE convention
-     (e.g. `USING ERRCODE = 'PT409'`, the `rpc_update_job_with_log` /
-     `advance_workflow_step` guard pattern) so the service layer maps it to
-     a clean HTTP error — a crashed worker never double-runs a request. A
-     row stranded `generating` past its `locked_until` lease is
-     **re-claimable** (the claim's eligibility predicate includes expired
-     leases), so 12-3's crash recovery needs no engine-side schema change
-     (FR8).
+     **When** the guarded UPDATE runs against it,
+     **Then** zero rows are updated (the WHERE predicate doesn't match). The
+     worker checks affected rows: if zero, the request was already claimed or
+     is terminal — the worker logs and skips (no retry). A row stranded
+     `generating` past its `locked_until` lease **is re-claimable** (the WHERE
+     predicate includes expired leases), so 12-3's crash recovery needs no
+     schema change (FR8).
 5. **Tenant isolation** — **Given** any caller,
-     **When** the RPC runs,
-     **Then** it never touches a row outside the JWT-resolved tenant; there
-     is no tenant parameter on the RPC surface, and RLS is the second layer
-     behind it (FR14).
-6. **RPC-privilege audit** — **Given** an owner (authenticated) JWT,
-     **When** it calls the claim RPC,
-     **Then** the call is refused (`EXECUTE` revoked) — this is the audit
-     the 12-3 isolation suite reuses (NFR7).
+     **When** the guarded UPDATE executes (service-role only),
+     **Then** it never touches a row outside the specified `tenant_id` parameter;
+     RLS on the table is the second layer of isolation (FR14).
+6. **Service-role only, client-safe** — **Given** a client JWT (owner or technician),
+     **When** they try to UPDATE `report_requests` directly,
+     **Then** the UPDATE is blocked by RLS (no UPDATE policy exists). Only
+     the service-role backend client can mutate the table (12-3 worker).
 7. **Backend-only story, no app code** — **Given** this story merges,
-     **When** reviewed, **Then** it ships only the migration + RPC (DB
+     **When** reviewed, **Then** it ships only the schema migration (DB
      work through the Supabase MCP) plus docs; the `src/reports/` module,
      endpoints and worker land in 12-2/12-3. Additive backend change —
      merges/deploys before any fenzo-app story per the cross-repo ordering
@@ -103,40 +95,25 @@ never double-run a report and no client can ever touch another tenant's rows.
   - [ ] CHECK constraints: `params` object check + `status` enum check.
   - [ ] Indexes: `(tenant_id, created_at DESC)`; partial
         `WHERE status = 'queued'`.
-- [ ] Task 2: RLS (AC: 2, 5)
+- [ ] Task 2: RLS (AC: 2, 5, 6)
   - [ ] `ENABLE ROW LEVEL SECURITY` on `report_requests` (deny-by-default —
         no permissive-by-accident policies).
   - [ ] Owner `SELECT` + `INSERT` policies using the
         `(auth.jwt() ->> 'tenantId')::uuid` predicate (copy the established
         pattern from `20260621000001_create_customers_table.sql`).
   - [ ] Deliberately **no** `UPDATE`/`DELETE` policy; note in the migration
-        header comment why (worker mutates via service-role / SECURITY
-        DEFINER only).
-- [ ] Task 3: Claim RPC (AC: 3, 4, 5, 6)
-  - [ ] New migration creating the RPC (e.g.
-        `claim_report_request(p_request_id uuid, p_lease_seconds int)` —
-        lease duration configurable, sane default): `LANGUAGE plpgsql`,
-        `SECURITY DEFINER`, `SET search_path = public`.
-  - [ ] Resolve tenant inside the function from
-        `auth.jwt() ->> 'tenantId'` — never from a parameter.
-  - [ ] Single atomic transition: `UPDATE report_requests SET status =
-        'generating', locked_until = now() + lease, attempt_count =
-        attempt_count + 1 WHERE id = p_request_id AND tenant_id = <jwt
-        tenant> AND (status = 'queued' OR (status = 'generating' AND
-        locked_until < now()))` — claim success returns the row; zero rows
-        updated means already-claimed or terminal →
-        `RAISE EXCEPTION ... USING ERRCODE = 'PT409'` (the
-        `rpc_update_job_with_log` guard pattern; `confirm_attachment`
-        shows the service-layer mapping discipline).
-  - [ ] `REVOKE EXECUTE ON FUNCTION ... FROM anon, authenticated;`
-        (service-role-only call path).
-  - [ ] Header comment documents: lease semantics, the PT SQLSTATE codes
-        the service layer maps, and why tenant comes from the JWT.
-- [ ] Task 4: Verification via Supabase MCP (AC: 1, 2, 3, 6)
+        header comment why (worker mutates via service-role guarded UPDATE only).
+- [ ] Task 3: Claim mechanism documentation (AC: 3, 4)
+  - [ ] Migration header comment documents: the guarded UPDATE logic, lease
+        semantics, how crashed workers recover (expired lease re-claim), and
+        how the 12-3 worker checks affected rows to detect conflicts.
+  - [ ] No RPC created (claim logic is backend application code in 12-3, not
+        a stored procedure).
+- [ ] Task 4: Verification via Supabase MCP (AC: 1, 2)
   - [ ] Inspect the applied table/columns/indexes; confirm the CHECKs and
         the partial index.
   - [ ] Confirm policies: only SELECT/INSERT for owner JWTs; RLS enabled.
-  - [ ] Confirm `EXECUTE` grants: revoked for `anon`/`authenticated`.
+  - [ ] Run security advisor and fix any flags.
 - [ ] Task 5: Docs (small-modular rule: docs updated in the same change)
   - [ ] Migration/RPC header comments carry the state machine, lease and
         isolation contract (the 12-3 engine story reads these first).
@@ -163,24 +140,16 @@ never double-run a report and no client can ever touch another tenant's rows.
   switch to sequential numbering (48, 49, etc.) — keep the timestamp scheme 
   consistent across the entire epic.
 
-### The RPC pattern being followed (read these files first)
+### Guarded UPDATE pattern (claim logic is app code, not a stored procedure)
 
-- `supabase/migrations/20260621000004_rpc_update_job_with_log.sql` and
-  `20260621000006_rpc_advance_workflow_step.sql` — the **PT SQLSTATE
-  convention**: guard failures raise with
-  `USING ERRCODE = 'PT409'` (PostgREST PTxxx convention; the comment there
-  spells out "maps to 409 JOB_NOT_MODIFIABLE"). The claim RPC's
-  already-claimed/terminal guard uses the same shape. Note the HTTP status
-  in the SQLSTATE is the contract the NestJS service layer maps (see
-  `workflow.service.ts` for how PT codes become ApiErrors).
-- `supabase/migrations/20260621000009_rpc_confirm_attachment.sql` — the
-  SECURITY DEFINER + `SET search_path = public` skeleton, the
-  header-comment discipline (caller paths, exception codes → HTTP mapping,
-  concurrency notes), and the service-layer mapping story the addendum
-  points at. Our claim RPC differs deliberately in one respect: tenant
-  comes from `auth.jwt()` **inside** the function, not from a
-  `p_tenant_id` parameter — the addendum calls a client-supplied tenant on
-  an RLS-bypassing RPC an isolation hole.
+- The claim is a single guarded UPDATE executed from the worker (story 12-3):
+  `UPDATE report_requests SET status = 'generating', locked_until = ...,
+  attempt_count = ... WHERE id = ? AND tenant_id = ? AND (status = 'queued'
+  OR (status = 'generating' AND locked_until < now()))`. Atomic in Postgres.
+- Worker checks affected rows after the UPDATE: if zero rows updated, the
+  request was already claimed or is terminal — the worker logs and skips.
+- This approach keeps business logic in the backend application (12-3 worker)
+  instead of stored procedures, per the user's direction.
 - `supabase/migrations/20260621000001_create_customers_table.sql` — the
   RLS policy idiom to copy for SELECT/INSERT owner policies.
 
@@ -210,8 +179,8 @@ never double-run a report and no client can ever touch another tenant's rows.
 
 - Deny-by-default is the requirement, not a style choice: enable RLS and
   write only the policies named in AC 2. No client-facing UPDATE/DELETE
-  policy — the worker mutates via the service-role client (RLS bypassed)
-  and the SECURITY DEFINER RPC (definer rights), never through a user JWT.
+  policy — the worker mutates via the service-role client (RLS bypassed),
+  never through a user JWT.
 - The Supabase security advisors run after DDL — check
   `get_advisors` (type: security) once the migration lands and fix anything
   it flags before calling the story done.
