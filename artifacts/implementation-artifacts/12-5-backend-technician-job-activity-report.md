@@ -69,10 +69,11 @@ So that I can review technician performance without opening the app's data.
 
 ## Acceptance Criteria
 
-1. **Definition completed, zero engine changes (FR9/NFR6)** — **Given** the
+1. **Definition completed, minimal engine change (FR9/NFR6)** — **Given** the
    definition **When** registered **Then** `technician-job-activity.definition.ts`
-   now implements `fetchData` + `buildDocument`; the engine, API, and
-   migrations needed zero changes.
+   now implements `fetcher` + `buildDocument`; the engine gains `maxJobs`
+   parameter in `ReportFetchContext` (passed from `REPORT_MAX_JOBS` config
+   via the pipeline), and definitions stay DI-free; no API or migration changes.
 2. **Tenant-scoped fetcher (FR16)** — **Given** a claimed request **When** the
    fetcher runs **Then** it pulls jobs whose `scheduled_start` falls inside the
    IST day bounds (`start_date` 00:00 IST inclusive → `end_date`+1 00:00 IST
