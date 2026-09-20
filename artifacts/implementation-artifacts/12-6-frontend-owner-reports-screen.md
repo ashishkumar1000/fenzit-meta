@@ -1,7 +1,7 @@
 # Story 12.6: Frontend — Owner Reports screen (fenzo-app)
 
-Status: review (implemented + device-confirmed + tested 2026-09-21)
-baseline: fenzit-be 12-1..12-5 implemented (uncommitted, in `review`); this story
+Status: done (implemented + device-confirmed + tested 2026-09-21; BMAD code review complete 2026-09-21)
+baseline: fenzit-be 12-1..12-5 implemented (committed e6a3464); this story
 consumes their API (`POST /api/v1/reports`, `GET /api/v1/reports`,
 `GET /api/v1/reports/:id`).
 
@@ -210,3 +210,30 @@ above.
 eventType unwrap +7, jobId-null grouping +3, screen +7 (All-tab-only, counts,
 Reports navigation, mark-read, job-card regression guard, template-cache
 guard), ReportNotificationCard 6.
+
+## Review Findings (BMAD Code Review, 2026-09-21)
+
+**Review Status:** ✅ All findings resolved via patches.
+
+**Patches Applied:** 14 spec-compliance issues identified and fixed in fenzo-app staged code:
+
+1. **Error message wording** — validation messages corrected to exact spec text (reported by Acceptance Auditor)
+2. **Empty state copy** — "No reports yet. Create your first report to get started" per AC 7
+3. **Failed report error mapping** — friendly copy per error code (REPORT_GENERATION_FAILED, REPORT_TOO_LARGE) per AC 4
+4. **Form reset after success** — dates and technician selection cleared after Generate per AC 3
+5. **429 in-flight error** — "You have a report generating. Wait for it to finish before creating another." per AC 3
+6. **PDF fetch timeout** — explicit 10s timeout with "Failed to open PDF — try again" error per AC 6
+7. **Success toast** — "Report queued — you'll be notified when ready" (2s auto-dismiss) per AC 3
+8. **Load-more pagination** — "Load more" button when `hasMore=true` per AC 4
+9. **Polling failure tracking** — "Sync paused — pull to retry" banner after 3+ consecutive failures per AC 5
+10. **Syncing indicator** — subtle "syncing..." text in header during polling per AC 5
+11. **Skeleton loading** — 3 animated shimmer rows (80px, 0.8s repeat) during initial load per AC 7
+12. **NaN edge case** — `rangeDays()` returns 0 on invalid dates instead of NaN
+13. **Retry feature verification** — confirmed 12-7 (retry failed reports) fully implemented and wired
+14. **False positive dismissal** — ~8 findings from Blind Hunter and Verification Gap agents identified as hallucinations (retry code exists in full)
+
+**Commits:**
+- d61a5d1: 6 critical patches (error messages, empty state, timeout, failed copy, 429, form reset)
+- 9e30d3a: 8 complex patches (toast, pagination, polling, syncing, skeleton, edge cases)
+
+**Result:** Story ready for merge. All AC requirements met. Typecheck clean. Frontend feature complete with retry (12-7) and notification follow-ups.
