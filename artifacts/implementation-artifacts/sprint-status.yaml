@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-20-2026  # epic-11: 11-1, 11-3, 11-5, 11-7, 11-8 done; open: 11-2 Today-sort, 11-4 Account, 11-6 colouring
+last_updated: 09-20-2026  # epic-11: 11-1, 11-3, 11-4, 11-5, 11-6, 11-7, 11-8 done; open: 11-2 Today-sort
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -114,11 +114,14 @@ development_status:
   epic-10: backlog
 
   # Epic 11: Product feedback items (2026-09-20) — numbered by the user's
-  # feedback list; gaps are items still open (2 Today-sort, 4 Account section,
-  # 6 time-based colouring — each awaiting a user decision).
+  # feedback list. 11-4 (Account section) and 11-6 (time-based colouring)
+  # were decided and implemented directly on 2026-09-20 without story files
+  # (direct user requests); only 11-2 Today-sort remains open.
   epic-11: in-progress
   11-1-frontend-home-quick-actions: done  # fenzo-app 2a2ff17, fenzit-be 88e08aa+cea7a7c (deploys first, customerCount); fenzo-meta 926f927
   11-3-frontend-inline-add-technician-and-progressive-disclosure: done  # New Job: invite sheet inline + form gated on skill pick; verified on device, review patches applied 2026-09-20; fenzo-app e948709
   11-5-frontend-new-job-skill-section-redesign: done  # SkillPicker tiles (chip/search/first-5/+N, pinned selection), SelectSkillsScreen single-select (Apply gated, Clear = null), popTo fix (v7 navigate pushes duplicates), DB-driven lucide icons + SkillIcon catalog contract test; 28-skill cutover + icon column + CHECK constraints in fenzit-be 18ea107 (applied + re-tagged 6 test technicians); fenzo-app 2fe38f6; review (3 hunter layers): 10 patches applied, 2 defers resolved, 2 accepted; follow-ups 2026-09-20: selected-tile restyle (light tint + primary chip/label, fenzo-app 7e14ffd) and section separation (DS Eyebrow/SectionHead, one-line Skill header, EditJobSheet + Today adoption, fenzo-app b34f17a)
   11-7-frontend-new-job-customer-section-redesign: done  # implemented + device-confirmed + reviewed 2026-09-20: CustomerPicker tiles (5 most-recent-first via sortCustomersByRecency + "+N more", search via filterCustomers, pinned selection), SelectCustomersScreen (Apply/Clear popTo), Add-new link kept; FE-only, no BE change; tests written after device confirmation (981/982, 1 pre-existing failure from user's local config edit); BMAD 4-layer review: 10 patches applied, 13 dismissed
   11-8-frontend-new-job-technician-section-redesign: done  # implemented + device-confirmed + tests + reviewed 2026-09-20 (fenzo-app, FE-only): TechnicianPicker tiles + SelectTechniciansScreen (Apply/Clear popTo) + user's design iteration (VISIBLE_TILES 5→2 across all three pickers, inline titles, bands); tests written after device confirmation (TechnicianPicker.test 13 + SelectTechniciansScreen.test 15 + 3 NewJobScreen round-trip tests), tsc clean, 1021/1022 (1 pre-existing local-config failure); BMAD 4-layer review: 1 decision (chip treatment left as-is, noted) + 9 patches applied, 3 defers, 11 dismissed; fenzo-app 99a8184
+  11-4-frontend-account-notifications-and-customers-entry: done  # direct user request, no story file; MoreScreen Notifications tile live (unread-count subtitle, navigates to Notifications) + Customers tile (store count, loading-vs-zero distinction); focus refresh via throttled loaders; composite tab+stack nav props; MoreTile `inactive` prop retired; fenzo-app a0ce4a0
+  11-6-frontend-job-card-time-urgency-rail: done  # direct user request, no story file; 3px left rail on active cards in every job list that passes a clock (Jobs all scopes, Home Today, technician Today): >2h done.solid green, <2h scheduled.solid amber, <30m/past cancelled.solid red; pure model features/jobs/urgency.ts + useNow (60s tick, resume re-sync, interval clamp); colour-only by design (time text covers a11y); BMAD review (3 layers, no-spec): 12 patches + all 3 defers resolved (docs de-Today'd, total colour map, in-progress semantics, MoreTile inactive removed, 4 new/extended test files); 1048/1049 (1 failure = user's local config override); fenzo-app ed0594e
