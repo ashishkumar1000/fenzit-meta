@@ -152,6 +152,6 @@ development_status:
   # artifacts/planning-artifacts/research/technical-correlation-id-2026-09-21/research.md
   # Execution order = backend 13-1 first (fenzit-be), then frontend 13-2
   # (fenzo-app), per CLAUDE.md cross-repo ordering rule.
-  epic-13: in-progress  # started 2026-09-21 — 13-1 ready-for-dev
-  13-1-backend-correlation-id-session-id-propagation: done  # implemented + user-verified locally (echo + mint); tests pending (test-timing rule)
-  13-2-frontend-correlation-id-session-id-headers: backlog  # design locked (one sync axios interceptor in src/services/api/apiClient.ts reusing src/utils/idempotency.ts generator; in-memory session id per app launch; r2Upload excluded); story file created after 13-1 is done, per dev-creates-next-story convention
+  epic-13: done  # 2026-09-21 — 13-1 + 13-2 both done (correlation/session ids end to end: FE stamps, BE validates/echoes/logs)
+  13-1-backend-correlation-id-session-id-propagation: done  # implemented + user-verified + BMAD review applied (9 patches + 1 decision + 3 defers completed); 714/714; commit pending user consent
+  13-2-frontend-correlation-id-session-id-headers: done  # implemented 2026-09-21: one sync axios interceptor in src/services/api/apiClient.ts (fresh X-Correlation-ID per request + module-load X-Session-ID, generator reused from utils/idempotency.ts; r2Upload excluded by construction); user device-confirmed; tests written after confirmation (apiClient.test.ts 8/8); BMAD 4-layer review: 3 patches applied, 13 dismissed; commit pending user consent
