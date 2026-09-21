@@ -534,3 +534,7 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - **Dial-code digits in search fail to match** (fenzo-app) — a query like "+91 9000000002" strips to "919000000002", which never matches the stored digits-only `phoneNumber`, so a pasted full dialled number shows a false no-match. Pre-existing: `filterCustomers` (src/features/customers/format.ts) has identical semantics; `filterTechnicians` deliberately mirrors it (AC 2). Fix would be a shared behaviour change across both features, not a technician-picker patch.
 - **Tile-grid machinery is a third near-identical copy** (fenzo-app) — header row (title + count chip + Browse all), search field, onLayout-measured 3-column grid, VISIBLE_TILES pinning and no-match copy are duplicated across SkillPicker / CustomerPicker / TechnicianPicker. Accepted per-story mirror across 11-5/11-7/11-8; the next behavioural change (like this diff's 5→2 cap) has to be made and re-tested in three places. Follow-up: extract a shared tile-grid component.
 - **SelectTechniciansScreen ~403 lines vs ~300 guideline** (fenzo-app) — mirrors the accepted SelectCustomersScreen (~360); deviation is inherited, not invented. Follow-up opportunity if the screen grows.
+
+## Deferred from: code review of 13-1-backend-correlation-id-session-id-propagation (2026-09-21)
+
+(None remain — all 3 deferred items were completed on user request, 2026-09-21, before commit.)
