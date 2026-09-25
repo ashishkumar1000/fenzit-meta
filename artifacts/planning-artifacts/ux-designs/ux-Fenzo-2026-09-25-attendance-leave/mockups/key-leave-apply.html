@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Leave apply (Employee) + Pending approval (Owner)</title>
+<style>
+/*
+  Governed by:
+  DESIGN.md → Components → Leave apply form, Pending leave queue row → detail sheet
+  EXPERIENCE.md → Component Patterns → Leave apply form, Pending leave queue → detail sheet;
+  Key Flows → UJ-3 (Arjun applies for leave, Rakesh approves)
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; gap:48px; justify-content:center; padding:48px 24px; flex-wrap:wrap; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; }
+.header { padding:8px 20px 12px; background:#F9FAFB; display:flex; align-items:center; gap:12px; }
+.header .back { font-size:22px; color:#111827; }
+.header h1 { font-size:18px; font-weight:700; color:#111827; }
+.content { flex:1; background:#F9FAFB; padding:16px 20px; display:flex; flex-direction:column; gap:18px; overflow:hidden; }
+.fieldlabel { font-size:12px; font-weight:700; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.03em; }
+.segmented { display:flex; background:#F3F4F6; border-radius:10px; padding:3px; }
+.seg { flex:1; text-align:center; padding:9px 0; font-size:13px; font-weight:600; color:#6B7280; border-radius:8px; }
+.seg.active { background:#fff; color:#111827; box-shadow:0 1px 3px rgba(17,24,39,0.12); }
+.daterow { display:flex; gap:10px; }
+.datebox { flex:1; border:1px solid #E5E7EB; border-radius:10px; padding:12px; background:#fff; }
+.datebox .lbl { font-size:11px; color:#6B7280; font-weight:600; }
+.datebox .val { font-size:15px; color:#111827; font-weight:700; margin-top:2px; }
+.workdaychip { align-self:flex-start; background:#EFF4FE; border:1px solid #BFD0FB; color:#1645B2; font-size:13px; font-weight:700; padding:6px 12px; border-radius:999px; }
+.textarea { border:1px solid #D1D5DB; border-radius:10px; padding:12px; font-size:14px; color:#111827; min-height:88px; background:#fff; }
+.textarea .placeholder { color:#111827; }
+.counter { font-size:11px; color:#6B7280; text-align:right; margin-top:4px; }
+.spacer { flex:1; }
+.submitbtn { width:100%; height:52px; border-radius:12px; background:#1A56DB; color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+/* Pending detail sheet */
+.overlay { position:absolute; inset:0; background:rgba(17,24,39,0.45); display:flex; align-items:flex-end; }
+.sheet { width:100%; background:#fff; border-radius:20px 20px 0 0; padding:20px 20px 24px; box-shadow:0 -8px 28px rgba(17,24,39,0.14); }
+.sheet .grabber { width:36px; height:4px; background:#D1D5DB; border-radius:999px; margin:0 auto 14px; }
+.person { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.avatar { width:40px; height:40px; border-radius:999px; background:#EFF4FE; color:#1645B2; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; }
+.person .name { font-size:16px; font-weight:700; color:#111827; }
+.person .role { font-size:12px; color:#6B7280; }
+.detailrow { display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid #F3F4F6; }
+.detailrow .k { color:#6B7280; }
+.detailrow .v { color:#111827; font-weight:600; }
+.reasonbox { background:#F9FAFB; border:1px solid #E5E7EB; border-radius:10px; padding:12px; font-size:13px; color:#374151; margin:12px 0 18px; font-style:italic; }
+.btnrow { display:flex; gap:10px; }
+.btn { flex:1; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; }
+.btn.approve { background:#1A56DB; color:#fff; }
+.btn.reject { background:#fff; border:1.5px solid #C92A2A; color:#C92A2A; }
+.icon { stroke:currentColor; stroke-width:2; fill:none; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="stagelabel">Frame A — Employee: Apply for leave (Arjun, Mon–Fri)</div>
+  <div class="device">
+    <div class="statusbar"><span>11:04</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Apply for leave</h1></div>
+    <div class="content">
+      <div>
+        <div class="fieldlabel">Type</div>
+        <div class="segmented">
+          <div class="seg active">Full day</div>
+          <div class="seg">First half</div>
+          <div class="seg">Second half</div>
+        </div>
+      </div>
+      <div>
+        <div class="fieldlabel">Dates</div>
+        <div class="daterow">
+          <div class="datebox"><div class="lbl">From</div><div class="val">Mon, 14 Sep</div></div>
+          <div class="datebox"><div class="lbl">To</div><div class="val">Fri, 18 Sep</div></div>
+        </div>
+      </div>
+      <div class="workdaychip">
+        <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;display:inline;vertical-align:-2px;margin-right:4px;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        5 working days
+      </div>
+      <div>
+        <div class="fieldlabel">Reason (required)</div>
+        <div class="textarea"><span class="placeholder">Family function, need the full week</span></div>
+        <div class="counter">32 / 500</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="submitbtn">Submit for approval</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="stagelabel">Frame B — Owner: Pending leave detail (Approve / Reject)</div>
+  <div class="device">
+    <div class="statusbar"><span>11:06</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Pending leave</h1></div>
+    <div class="content" style="padding-top:0;">
+      <div style="opacity:0.35; padding-top:16px;">
+        <div class="fieldlabel">Pending requests (2)</div>
+        <div style="border:1px solid #E5E7EB; border-radius:14px; padding:14px; background:#fff; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+          <div class="avatar">AJ</div>
+          <div style="flex:1;">
+            <div style="font-weight:700; font-size:14px; color:#111827;">Arjun Joshi</div>
+            <div style="font-size:12px; color:#6B7280;">14–18 Sep · 5 working days</div>
+          </div>
+        </div>
+      </div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="grabber"></div>
+          <div class="person">
+            <div class="avatar">AJ</div>
+            <div>
+              <div class="name">Arjun Joshi</div>
+              <div class="role">Thane Office · office staff</div>
+            </div>
+          </div>
+          <div class="detailrow"><span class="k">Type</span><span class="v">Full day</span></div>
+          <div class="detailrow"><span class="k">Dates</span><span class="v">Mon 14 – Fri 18 Sep</span></div>
+          <div class="detailrow"><span class="k">Working days</span><span class="v">5</span></div>
+          <div class="reasonbox">"Family function, need the full week"</div>
+          <div class="btnrow">
+            <div class="btn reject">Reject</div>
+            <div class="btn approve">Approve</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

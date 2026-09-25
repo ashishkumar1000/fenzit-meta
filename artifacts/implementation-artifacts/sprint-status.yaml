@@ -155,3 +155,60 @@ development_status:
   epic-13: done  # 2026-09-21 — 13-1 + 13-2 both done (correlation/session ids end to end: FE stamps, BE validates/echoes/logs)
   13-1-backend-correlation-id-session-id-propagation: done  # implemented + user-verified + BMAD review applied (9 patches + 1 decision + 3 defers completed); 714/714; commit pending user consent
   13-2-frontend-correlation-id-session-id-headers: done  # implemented 2026-09-21: one sync axios interceptor in src/services/api/apiClient.ts (fresh X-Correlation-ID per request + module-load X-Session-ID, generator reused from utils/idempotency.ts; r2Upload excluded by construction); user device-confirmed; tests written after confirmation (apiClient.test.ts 8/8); BMAD 4-layer review: 3 patches applied, 13 dismissed; commit pending user consent
+
+  # Epics 14-19: Attendance & Leave — optional new module (offices, geofenced
+  # check-in/out, leave lifecycle, weekly offs, holidays, corrections, day
+  # status, reminders, technician notification inbox), spanning fenzit-be +
+  # fenzo-app. PRD/UX/Architecture all final (2026-09-25):
+  # artifacts/planning-artifacts/prds/prd-Fenzo-attendance-2026-09-25/prd.md
+  # artifacts/planning-artifacts/ux-designs/ux-Fenzo-2026-09-25-attendance-leave/
+  # artifacts/planning-artifacts/architecture/architecture-attendance-leave-2026-09-25/ARCHITECTURE-SPINE.md
+  # Epics + stories breakdown: artifacts/planning-artifacts/epics-attendance-leave.md
+  # Fixed execution order (dependency-driven, per epic's own FR coverage):
+  # Epic 14 (security prereq + technician notifications) → Epic 15 (setup:
+  # offices/rules/weekly-offs/holidays/enrolment) → Epic 16 (check-in/out) →
+  # Epic 17 (leave management, incl. FR-9) → Epic 18 (day status/days-worked/
+  # corrections) → Epic 19 (reminders + dashboard/monthly/self views). Within
+  # each epic, backend stories ship before frontend stories, per CLAUDE.md
+  # cross-repo ordering rule. None started yet.
+  epic-14: backlog  # Security Prerequisite & Technician Notification Access — 3 stories
+  14-1-backend-security-prerequisite-job-rpc-and-users-update-own: backlog
+  14-2-backend-notifications-generalization-and-realtime-token: backlog
+  14-3-frontend-technician-notification-bell-and-role-aware-inbox: backlog
+  epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories
+  15-1-frontend-map-library-spike: backlog
+  15-2-backend-attendance-module-foundation-timezone-settings-setup-gating: backlog
+  15-3-backend-offices-and-office-rules: backlog
+  15-4-frontend-office-management-ui-with-map-picker: backlog
+  15-5-backend-weekly-offs-and-holidays: backlog
+  15-6-frontend-weekly-off-and-holiday-settings-ui: backlog
+  15-7-backend-enrollment-office-assignment-and-access-state: backlog
+  15-8-frontend-setup-wizard: backlog
+  15-9-frontend-employee-enrollment-and-reassignment-ui: backlog
+  15-10-frontend-employee-onboarding-and-entry-point-states: backlog
+  epic-16: backlog  # Check-in & Check-out — 4 stories
+  16-1-backend-check-in-rpc-day-context-helper-and-attempt-logging: backlog
+  16-2-backend-check-out-rpc: backlog
+  16-3-frontend-attendance-only-location-capture-service: backlog
+  16-4-frontend-check-in-out-button-and-today-screen: backlog
+  epic-17: backlog  # Leave Management (incl. FR-9 check-in-on-leave-day) — 8 stories
+  17-1-backend-leave-data-model-and-apply: backlog
+  17-2-backend-approve-reject-leave: backlog
+  17-3-backend-revoke-and-cancel-leave-with-split-logic: backlog
+  17-4-backend-leave-on-behalf-and-check-in-auto-cancel: backlog
+  17-5-frontend-leave-apply-form: backlog
+  17-6-frontend-leave-history-and-pending-queue: backlog
+  17-7-frontend-revoke-and-cancel-sheets-with-split-outcome-preview: backlog
+  17-8-frontend-check-in-leave-holiday-confirmation-dialogs: backlog
+  epic-18: backlog  # Day Status, Days Worked & Attendance Corrections — 4 stories
+  18-1-backend-day-status-and-days-worked-function: backlog
+  18-2-backend-attendance-corrections: backlog
+  18-3-frontend-month-calendar-and-day-detail-sheet: backlog
+  18-4-frontend-correction-sheet-ui: backlog
+  epic-19: backlog  # Reminders & Consolidated Views — 6 stories
+  19-1-backend-scheduled-reminders: backlog
+  19-2-backend-owner-dashboard-read-api: backlog
+  19-3-backend-monthly-and-self-view-read-api: backlog
+  19-4-frontend-owner-dashboard-ui: backlog
+  19-5-frontend-owner-monthly-view-ui: backlog
+  19-6-frontend-employee-self-view-ui: backlog

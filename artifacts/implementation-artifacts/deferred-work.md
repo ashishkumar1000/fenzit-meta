@@ -538,3 +538,11 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 ## Deferred from: code review of 13-1-backend-correlation-id-session-id-propagation (2026-09-21)
 
 (None remain — all 3 deferred items were completed on user request, 2026-09-21, before commit.)
+
+vvcccbvnnkijbebbgluhbjghcrhnhjthlgflgffiufhb
+## Deferred from: Attendance & Leave PRD reviewer pass (2026-09-25)
+
+- **Database functions callable directly with the public key** (fenzit-be) — Postgres grants EXECUTE to PUBLIC by default and no migration revokes it on the job/workflow RPCs (e.g. `advance_workflow_step`), which trust caller-supplied tenant/actor IDs. The Supabase publishable key ships in fenzo-app (`src/config/index.ts`, used only by `src/services/supabaseRealtime.ts` for live notifications — that part is correct and stays). A token holder could call these RPCs directly, skipping NestJS. Evidence: DB reviewer's read-only anon probe of `workflow_steps_valid` returned 200; live `pg_proc` grants not checked (Supabase MCP not connected). Fix: `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated` on every existing RPC (follow the report-RPC pattern), plus a direct-call probe in `test/integration/rls-isolation.integration.spec.ts`. Details: `artifacts/planning-artifacts/prds/prd-Fenzo-attendance-2026-09-25/review-backend.md`, `review-database.md`.
+- **`users_update_own` policy has no column limit** (fenzit-be) — a token holder can likely update their own `role` / `tenant_id`, and the next login would mint an owner / cross-tenant JWT. Fix: restrict updatable columns (column-level grants or a trigger), add a probe to the RLS isolation test.
+- **Risk note:** today only owners get a realtime token. Attendance FR-27 gives one to every technician, which widens exposure. Revisit these two items before FR-27 ships. User chose to defer (2026-09-25).
+- **Update (2026-09-25, later):** both items above moved INTO scope of the Attendance & Leave initiative as a prerequisite story (architecture spine AD-18; PRD NFR-1 / §7.1). They ship before the technician realtime token and the app attendance release.

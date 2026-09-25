@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Owner monthly view: employee list</title>
+<style>
+/*
+  Governed by:
+  DESIGN.md → Components → Employee list row (Monthly view, Owner)
+  EXPERIENCE.md → Information Architecture (Owner → Monthly view → Employee list); FR-25
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; justify-content:center; padding:48px 24px; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; }
+.header { padding:4px 20px 10px; background:#F9FAFB; display:flex; align-items:center; justify-content:space-between; }
+.header h1 { font-size:18px; font-weight:700; color:#111827; }
+.filter { display:flex; align-items:center; gap:4px; background:#F3F4F6; border-radius:999px; padding:6px 12px; font-size:12px; color:#374151; font-weight:600; }
+.monthsel { display:flex; align-items:center; justify-content:space-between; padding:0 20px 10px; }
+.monthsel .m { font-size:14px; font-weight:700; color:#111827; }
+.monthsel .arrow { color:#6B7280; font-size:16px; }
+.content { flex:1; background:#F9FAFB; padding:0 20px 16px; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
+.rowcard { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:12px 14px; }
+.avatar { width:38px; height:38px; border-radius:999px; background:#EFF4FE; color:#1645B2; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+.rowmain { flex:1; }
+.rowmain .name { font-size:14px; font-weight:700; color:#111827; }
+.rowmain .office { font-size:11px; color:#6B7280; }
+.chiprow { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.mchip { font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; }
+.mchip.days { background:#E9F8F3; color:#06624A; }
+.mchip.late { background:#FEF6EB; color:#92490A; }
+.mchip.leave { background:#EFF4FE; color:#1645B2; }
+.mchip.flag { background:#FEF6EB; color:#92490A; }
+.chev { color:#9CA3AF; }
+</style>
+</head>
+<body>
+<div class="col">
+  <div class="stagelabel">Owner — Monthly view, employee list (tap a row → their calendar)</div>
+  <div class="device">
+    <div class="statusbar"><span>9:53</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><h1>Monthly view</h1><div class="filter">Office: All ▾</div></div>
+    <div class="monthsel"><span class="arrow">‹</span><span class="m">September 2026</span><span class="arrow">›</span></div>
+    <div class="content">
+      <div class="rowcard">
+        <div class="avatar">PS</div>
+        <div class="rowmain">
+          <div class="name">Priya Sharma</div>
+          <div class="office">Andheri Office</div>
+          <div class="chiprow">
+            <span class="mchip days">17.5 worked</span>
+            <span class="mchip late">Late 3</span>
+            <span class="mchip flag">Checkout missing 1</span>
+          </div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="rowcard">
+        <div class="avatar">AJ</div>
+        <div class="rowmain">
+          <div class="name">Arjun Joshi</div>
+          <div class="office">Thane Office</div>
+          <div class="chiprow">
+            <span class="mchip days">16 worked</span>
+            <span class="mchip leave">Leave 5</span>
+          </div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="rowcard">
+        <div class="avatar">MP</div>
+        <div class="rowmain">
+          <div class="name">Meena Pillai</div>
+          <div class="office">Andheri Office</div>
+          <div class="chiprow">
+            <span class="mchip days">21 worked</span>
+          </div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="rowcard">
+        <div class="avatar">SN</div>
+        <div class="rowmain">
+          <div class="name">Sunita Naik</div>
+          <div class="office">Thane Office · starts 1 Nov</div>
+          <div class="chiprow">
+            <span class="mchip" style="background:#F3F4F6; color:#4B5563;">Not tracked yet</span>
+          </div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

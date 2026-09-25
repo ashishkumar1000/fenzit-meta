@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Office map picker (pin + radius circle)</title>
+<style>
+/*
+  Governed by:
+  DESIGN.md → Colors (geofence circle), Components → Office map picker
+  EXPERIENCE.md → Component Patterns → Office map picker; FR-5
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; justify-content:center; padding:48px 24px; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; position:relative; z-index:3; }
+.topbar { position:relative; z-index:3; padding:6px 16px; display:flex; align-items:center; justify-content:space-between; }
+.iconbtn { width:36px; height:36px; border-radius:999px; background:#fff; box-shadow:0 2px 6px rgba(17,24,39,0.16); display:flex; align-items:center; justify-content:center; }
+.title { font-size:15px; font-weight:700; color:#111827; background:#fff; padding:6px 14px; border-radius:999px; box-shadow:0 2px 6px rgba(17,24,39,0.16); }
+.mapwrap { flex:1; position:relative; background:
+  linear-gradient(0deg, rgba(0,0,0,0.02) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px),
+  #DCE8DA;
+  background-size:100% 40px, 40px 100%, auto;
+  overflow:hidden;
+}
+.road { position:absolute; background:#F3EAD0; }
+.circle { position:absolute; width:190px; height:190px; border-radius:50%; background:rgba(26,86,219,0.16); border:2px solid #1A56DB; top:50%; left:50%; transform:translate(-50%,-50%); }
+.pin { position:absolute; top:50%; left:50%; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; }
+.pin svg { width:40px; height:40px; }
+.pin .shadow { width:14px; height:5px; background:rgba(17,24,39,0.25); border-radius:50%; margin-top:-4px; }
+.sheet { background:#fff; border-radius:20px 20px 0 0; box-shadow:0 -8px 28px rgba(17,24,39,0.14); padding:18px 20px 22px; position:relative; z-index:3; }
+.grabber { width:36px; height:4px; background:#D1D5DB; border-radius:999px; margin:0 auto 14px; }
+.addressbtn { display:flex; align-items:center; gap:10px; border:1px solid #E5E7EB; border-radius:10px; padding:12px; margin-bottom:12px; }
+.addressbtn svg { width:18px; height:18px; color:#6B7280; }
+.addressbtn .txt { font-size:14px; color:#6B7280; }
+.currentbtn { display:flex; align-items:center; gap:10px; border:1px solid #BFD0FB; background:#EFF4FE; border-radius:10px; padding:12px; margin-bottom:16px; }
+.currentbtn svg { width:18px; height:18px; color:#1A56DB; }
+.currentbtn .txt { font-size:14px; color:#1645B2; font-weight:700; }
+.radiusrow { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.radiusrow .lbl { font-size:13px; font-weight:700; color:#374151; }
+.radiusrow .val { font-size:15px; font-weight:800; color:#1A56DB; }
+.slider { height:4px; background:#E5E7EB; border-radius:999px; position:relative; margin-bottom:18px; }
+.slider .fill { position:absolute; left:0; top:0; height:4px; width:22%; background:#1A56DB; border-radius:999px; }
+.slider .knob { position:absolute; left:22%; top:50%; transform:translate(-50%,-50%); width:20px; height:20px; border-radius:999px; background:#1A56DB; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3); }
+.confirmbtn { width:100%; height:52px; border-radius:12px; background:#1A56DB; color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.icon { stroke:currentColor; stroke-width:2; fill:none; }
+</style>
+</head>
+<body>
+<div class="col">
+  <div class="stagelabel">Owner — Office map picker: dragged pin, 100 m radius circle live</div>
+  <div class="device">
+    <div class="statusbar"><span>9:44</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="topbar">
+      <div class="iconbtn"><span style="font-size:20px;">‹</span></div>
+      <div class="title">Andheri Office</div>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="mapwrap">
+      <div class="road" style="top:120px; left:0; width:100%; height:14px;"></div>
+      <div class="road" style="top:0; left:60px; width:10px; height:100%;"></div>
+      <div class="road" style="top:300px; left:0; width:100%; height:10px;"></div>
+      <div class="circle"></div>
+      <div class="pin">
+        <svg viewBox="0 0 24 24" stroke="#1A56DB" stroke-width="2" fill="#EFF4FE"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5" fill="#1A56DB"/></svg>
+        <div class="shadow"></div>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="currentbtn">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        <span class="txt">Use my current location</span>
+      </div>
+      <div class="addressbtn">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="txt">Search for an address</span>
+      </div>
+      <div style="font-size:12px; color:#6B7280; margin-bottom:12px;">Pinned near: Link Road, Andheri West, Mumbai — text fallback for the dragged pin, so placement can be confirmed without seeing or dragging the map</div>
+      <div class="radiusrow">
+        <span class="lbl">Radius</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:26px;height:26px;border-radius:999px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-weight:700;color:#374151;">−</div>
+          <span class="val">100 m</span>
+          <div style="width:26px;height:26px;border-radius:999px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-weight:700;color:#374151;">+</div>
+        </div>
+      </div>
+      <div class="slider"><div class="fill"></div><div class="knob"></div></div>
+      <div class="confirmbtn">Confirm location</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

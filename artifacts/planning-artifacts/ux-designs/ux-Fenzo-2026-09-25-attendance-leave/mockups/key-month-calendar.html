@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Month calendar + Day detail / Correction sheet</title>
+<style>
+/*
+  Governed by:
+  DESIGN.md → Components → MonthCalendar, Correction sheet, StatusBadge/Flag tag family colours
+  EXPERIENCE.md → Component Patterns → MonthCalendar, Correction sheet; Key Flows → UJ-4
+  Data matches the PRD's own UJ-4 worked example (Priya, September, 30-day month,
+  Sat+Sun off, 1 holiday, 1 worked-on-holiday Saturday): 21 working days =
+  17 Present + 1 Half day + 2 Leave + 1 Checkout missing = 21.
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; gap:48px; justify-content:center; padding:48px 24px; flex-wrap:wrap; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; }
+.header { padding:4px 20px 10px; background:#F9FAFB; }
+.header h1 { font-size:18px; font-weight:700; color:#111827; }
+.header .sub { font-size:13px; color:#6B7280; margin-top:2px; }
+.content { flex:1; background:#F9FAFB; padding:12px 16px; overflow:hidden; display:flex; flex-direction:column; gap:12px; position:relative; }
+.summary { display:flex; gap:6px; overflow-x:auto; }
+.chip { background:#fff; border:1px solid #E5E7EB; border-radius:999px; padding:5px 10px; font-size:11px; font-weight:700; color:#374151; white-space:nowrap; }
+.grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.dow { text-align:center; font-size:10px; font-weight:700; color:#9CA3AF; padding-bottom:2px; }
+.cell { aspect-ratio:1; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:11px; font-weight:700; position:relative; }
+.cell svg { width:12px; height:12px; }
+.cell.blank { background:transparent; }
+.cell.present { background:#E9F8F3; color:#06624A; }
+.cell.leave { background:#EFF4FE; color:#1645B2; }
+.cell.halfday { background:#FEF6EB; color:#92490A; }
+.cell.checkout { background:#FEF6EB; color:#92490A; box-shadow:0 0 0 2px #1A56DB inset; }
+.cell.off { background:#F3F4F6; color:#4B5563; }
+.cell.holiday { background:#F3F4F6; color:#4B5563; }
+.cell.workedholiday { background:#E9F8F3; color:#06624A; box-shadow:0 0 0 2px #D97706 inset; }
+.legend { display:flex; flex-wrap:wrap; gap:8px; font-size:10px; color:#4B5563; }
+.legend span { display:flex; align-items:center; gap:4px; }
+.dot { width:8px; height:8px; border-radius:2px; display:inline-block; }
+/* Sheet overlay (Frame B) */
+.overlay { position:absolute; inset:0; background:rgba(17,24,39,0.45); display:flex; align-items:flex-end; }
+.sheet { width:100%; background:#fff; border-radius:20px 20px 0 0; padding:20px 20px 24px; box-shadow:0 -8px 28px rgba(17,24,39,0.14); }
+.sheet .grabber { width:36px; height:4px; background:#D1D5DB; border-radius:999px; margin:0 auto 14px; }
+.sheet h2 { font-size:18px; font-weight:700; color:#111827; }
+.sheet .datesub { font-size:13px; color:#6B7280; margin-top:2px; margin-bottom:14px; }
+.flagbadge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; border:1px solid #F9CF94; background:#FEF6EB; color:#92490A; font-size:12px; font-weight:700; margin-bottom:16px; }
+.flagbadge svg { width:14px; height:14px; }
+.fieldlabel { font-size:12px; font-weight:700; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.03em; }
+.segmented { display:flex; background:#F3F4F6; border-radius:10px; padding:3px; margin-bottom:16px; }
+.seg { flex:1; text-align:center; padding:8px 0; font-size:13px; font-weight:600; color:#6B7280; border-radius:8px; }
+.seg.active { background:#fff; color:#111827; box-shadow:0 1px 3px rgba(17,24,39,0.12); }
+.notefield { border:1px solid #1A56DB; border-radius:10px; padding:12px; font-size:14px; color:#111827; margin-bottom:16px; min-height:56px; }
+.notefield .placeholder { color:#111827; }
+.savebtn { width:100%; height:48px; border-radius:12px; background:#1A56DB; color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.icon { stroke:currentColor; stroke-width:2; fill:none; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="stagelabel">Frame A — Owner viewing Priya's month calendar</div>
+  <div class="device">
+    <div class="statusbar"><span>9:41</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header">
+      <h1>Priya Sharma · September</h1>
+      <div class="sub">Days worked 17.5 · Andheri Office</div>
+    </div>
+    <div class="content">
+      <div class="summary">
+        <div class="chip">Days worked 17.5</div>
+        <div class="chip">Late 3</div>
+        <div class="chip">Leave 2</div>
+        <div class="chip">Checkout missing 1</div>
+        <div class="chip">Absent 0</div>
+      </div>
+      <div class="grid">
+        <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+        <div class="cell blank"></div><div class="cell blank"></div>
+        <div class="cell present">1<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell leave">2<svg viewBox="0 0 24 24" stroke="#1645B2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg></div>
+        <div class="cell leave">3<svg viewBox="0 0 24 24" stroke="#1645B2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg></div>
+        <div class="cell present">4<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell off">5<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+
+        <div class="cell off">6<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+        <div class="cell present">7<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">8<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell halfday">9<svg viewBox="0 0 24 24" stroke="#92490A"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></div>
+        <div class="cell present">10<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">11<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell workedholiday">12<svg viewBox="0 0 24 24" stroke="#06624A"><rect x="3" y="7" width="18" height="12" rx="2"/><rect x="8" y="4" width="8" height="4" rx="1"/></svg></div>
+
+        <div class="cell off">13<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+        <div class="cell checkout" style="outline:2px solid #1A56DB;">14<svg viewBox="0 0 24 24" stroke="#92490A"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="16" r="0.9" fill="#92490A"/></svg></div>
+        <div class="cell present">15<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell holiday">16<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg></div>
+        <div class="cell present">17<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">18<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell off">19<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+
+        <div class="cell off">20<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+        <div class="cell present">21<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">22<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">23<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">24<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">25<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell off">26<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+
+        <div class="cell off">27<svg viewBox="0 0 24 24" stroke="#4B5563"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg></div>
+        <div class="cell present">28<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">29<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+        <div class="cell present">30<svg viewBox="0 0 24 24" stroke="#06624A"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
+      </div>
+      <div class="legend">
+        <span><svg viewBox="0 0 24 24" stroke="#06624A" style="width:12px;height:12px;"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>Present</span>
+        <span><svg viewBox="0 0 24 24" stroke="#06624A" style="width:12px;height:12px;"><rect x="3" y="7" width="18" height="12" rx="2"/><rect x="8" y="4" width="8" height="4" rx="1"/></svg>Worked on holiday</span>
+        <span><svg viewBox="0 0 24 24" stroke="#1645B2" style="width:12px;height:12px;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>Leave</span>
+        <span><svg viewBox="0 0 24 24" stroke="#92490A" style="width:12px;height:12px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>Half day</span>
+        <span><svg viewBox="0 0 24 24" stroke="#92490A" style="width:12px;height:12px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="16" r="0.9" fill="#92490A"/></svg>Checkout missing</span>
+        <span><svg viewBox="0 0 24 24" stroke="#4B5563" style="width:12px;height:12px;"><path d="M20 14a8 8 0 01-9-13 8 8 0 109 13z"/></svg>Weekly off</span>
+        <span><svg viewBox="0 0 24 24" stroke="#4B5563" style="width:12px;height:12px;"><path d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg>Holiday</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="stagelabel">Frame B — Day detail (14th, tapped) → Owner correction, note required</div>
+  <div class="device">
+    <div class="statusbar"><span>9:42</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header">
+      <h1>Priya Sharma · September</h1>
+      <div class="sub">Days worked 17.5 · Andheri Office</div>
+    </div>
+    <div class="content">
+      <div class="grid" style="opacity:0.35;">
+        <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+        <div class="cell blank"></div><div class="cell blank"></div>
+        <div class="cell present">1</div><div class="cell leave">2</div><div class="cell leave">3</div><div class="cell present">4</div><div class="cell off">5</div>
+        <div class="cell off">6</div><div class="cell present">7</div><div class="cell present">8</div><div class="cell halfday">9</div><div class="cell present">10</div><div class="cell present">11</div><div class="cell workedholiday">12</div>
+        <div class="cell off">13</div><div class="cell checkout" style="outline:2px solid #1A56DB;">14</div><div class="cell present">15</div><div class="cell holiday">16</div><div class="cell present">17</div><div class="cell present">18</div><div class="cell off">19</div>
+      </div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="grabber"></div>
+          <h2>Monday, 14 September</h2>
+          <div class="datesub">Check-in 10:05 AM · No check-out recorded</div>
+          <span class="flagbadge">
+            <svg viewBox="0 0 24 24" stroke="#92490A" stroke-width="2" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="16" r="0.6" fill="#92490A"/></svg>
+            Checkout missing · counted 0
+          </span>
+          <div class="fieldlabel">Set day status</div>
+          <div class="segmented">
+            <div class="seg active">Present</div>
+            <div class="seg">Half day</div>
+            <div class="seg">Absent</div>
+          </div>
+          <div class="fieldlabel">Note (required)</div>
+          <div class="notefield">Forgot to check out, confirmed with Priya</div>
+          <div class="savebtn">Save correction</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

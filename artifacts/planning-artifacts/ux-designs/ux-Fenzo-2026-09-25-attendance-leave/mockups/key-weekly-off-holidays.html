@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Weekly off + Holidays settings</title>
+<style>
+/*
+  Governed by:
+  EXPERIENCE.md → Information Architecture (Owner → Settings → Weekly off / Holidays); FR-18, FR-19, FR-20
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; gap:40px; justify-content:center; padding:48px 24px; flex-wrap:wrap; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; }
+.header { padding:8px 20px 12px; background:#fff; display:flex; align-items:center; gap:12px; }
+.header .back { font-size:22px; color:#111827; }
+.header h1 { font-size:17px; font-weight:700; color:#111827; }
+.content { flex:1; background:#F9FAFB; padding:16px 20px; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+.fieldlabel { font-size:12px; font-weight:700; color:#374151; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.03em; }
+.hint { font-size:12px; color:#6B7280; margin-bottom:6px; }
+.daypills { display:flex; gap:6px; }
+.daypill { flex:1; text-align:center; padding:10px 0; border-radius:10px; font-size:13px; font-weight:700; border:1px solid #E5E7EB; color:#374151; background:#fff; }
+.daypill.on { background:#1A56DB; border-color:#1A56DB; color:#fff; }
+.card { background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:14px; }
+.card .name { font-size:14px; font-weight:700; color:#111827; }
+.card .meta { font-size:12px; color:#6B7280; margin-top:2px; }
+.effrow { font-size:12px; color:#6B7280; background:#F3F4F6; border-radius:8px; padding:8px 10px; }
+.overriderow { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:12px 14px; }
+.avatar { width:32px; height:32px; border-radius:999px; background:#EFF4FE; color:#1645B2; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
+.overriderow .name { font-size:13px; font-weight:700; color:#111827; }
+.overriderow .off { font-size:11px; color:#6B7280; }
+.addbtn { border:1.5px dashed #BFD0FB; color:#1A56DB; border-radius:14px; padding:12px; text-align:center; font-size:13px; font-weight:700; }
+.holidayrow { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:12px 14px; }
+.datebadge { width:44px; height:44px; border-radius:10px; background:#F3F4F6; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.datebadge .d { font-size:16px; font-weight:800; color:#111827; line-height:1; }
+.datebadge .m { font-size:9px; font-weight:700; color:#6B7280; text-transform:uppercase; }
+.holidayrow .name { font-size:14px; font-weight:700; color:#111827; }
+.holidayrow .sub { font-size:12px; color:#6B7280; }
+.spacer { flex:1; }
+.addfab { align-self:flex-end; width:48px; height:48px; border-radius:999px; background:#1A56DB; color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 4px 10px rgba(26,86,219,0.3); }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="stagelabel">Weekly off — tenant default + per-employee override</div>
+  <div class="device">
+    <div class="statusbar"><span>9:47</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Weekly off</h1></div>
+    <div class="content">
+      <div>
+        <div class="fieldlabel">Tenant default</div>
+        <div class="hint">Applies to every employee unless overridden below</div>
+        <div class="daypills">
+          <div class="daypill on" title="Sunday, selected">S</div><div class="daypill" title="Monday">M</div><div class="daypill" title="Tuesday">T</div><div class="daypill" title="Wednesday">W</div><div class="daypill" title="Thursday">T</div><div class="daypill" title="Friday">F</div><div class="daypill on" title="Saturday, selected">S</div>
+        </div>
+        <div class="hint" style="margin-top:6px;">Saturday + Sunday selected</div>
+      </div>
+      <div class="effrow">Effective from today · at least one working day per week must remain</div>
+      <div class="fieldlabel" style="margin-top:8px;">Per-employee overrides</div>
+      <div class="overriderow">
+        <div class="avatar">RK</div>
+        <div style="flex:1;"><div class="name">Ramesh Kadam</div><div class="off">Friday only (Thane store day)</div></div>
+        <span style="color:#6B7280; font-size:18px;">›</span>
+      </div>
+      <div class="addbtn">+ Add override</div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="stagelabel">Holidays — list + add</div>
+  <div class="device">
+    <div class="statusbar"><span>9:48</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Holidays</h1></div>
+    <div class="content">
+      <div class="fieldlabel">Upcoming</div>
+      <div class="holidayrow">
+        <div class="datebadge"><div class="d">16</div><div class="m">Sep</div></div>
+        <div style="flex:1;"><div class="name">Ganesh Visarjan</div><div class="sub">All tracked employees</div></div>
+      </div>
+      <div class="fieldlabel" style="margin-top:8px;">Past</div>
+      <div class="holidayrow" style="opacity:0.6;">
+        <div class="datebadge"><div class="d">15</div><div class="m">Aug</div></div>
+        <div style="flex:1;"><div class="name">Independence Day</div><div class="sub">All tracked employees</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div style="display:flex; justify-content:flex-end;">
+        <div class="addfab">+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

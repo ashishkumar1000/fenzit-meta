@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Key screen — Employee enrollment (enable/disable, future start date)</title>
+<style>
+/*
+  Governed by:
+  DESIGN.md → Components → Enrolment row (bulk enable/disable)
+  EXPERIENCE.md → Component Patterns → Enrolment rows; FR-2, FR-6
+  Frame B answers the "set up a new joiner before day one" case discussed
+  during PRD review: future start date, picked before the employee's first login.
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#EDEFF2; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; gap:40px; justify-content:center; padding:48px 24px; flex-wrap:wrap; }
+.col { display:flex; flex-direction:column; align-items:center; }
+.stagelabel { text-align:center; font-size:13px; color:#6B7280; margin-bottom:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+.device { width:375px; height:812px; background:#FFFFFF; border-radius:40px; border:10px solid #111827; box-shadow:0 20px 50px rgba(17,24,39,0.25); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; font-size:13px; font-weight:600; color:#111827; }
+.header { padding:8px 20px 12px; background:#fff; display:flex; align-items:center; gap:12px; }
+.header .back { font-size:22px; color:#111827; }
+.header h1 { font-size:17px; font-weight:700; color:#111827; }
+.content { flex:1; background:#F9FAFB; padding:16px 20px; display:flex; flex-direction:column; gap:10px; overflow:hidden; }
+.card { background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:12px 14px; }
+.rowtop { display:flex; align-items:center; gap:10px; }
+.avatar { width:36px; height:36px; border-radius:999px; background:#EFF4FE; color:#1645B2; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+.rowtop .txt { flex:1; }
+.rowtop .name { font-size:14px; font-weight:700; color:#111827; }
+.rowtop .office { font-size:12px; color:#6B7280; }
+.switch { width:44px; height:26px; border-radius:999px; background:#E5E7EB; position:relative; flex-shrink:0; }
+.switch.on { background:#1A56DB; }
+.switch .knob { width:20px; height:20px; border-radius:999px; background:#fff; position:absolute; top:3px; left:3px; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.switch.on .knob { left:21px; }
+.inlinepanel { margin-top:10px; padding-top:10px; border-top:1px solid #F3F4F6; }
+.startlink { font-size:13px; color:#1A56DB; font-weight:700; }
+.datebox { display:flex; align-items:center; justify-content:space-between; border:1px solid #BFD0FB; background:#EFF4FE; border-radius:10px; padding:10px 12px; margin-top:6px; }
+.datebox .lbl { font-size:11px; color:#1645B2; font-weight:600; }
+.datebox .val { font-size:14px; color:#1645B2; font-weight:800; }
+.pickbtn { border:1.5px dashed #F9CF94; background:#FEF6EB; color:#92490A; border-radius:10px; padding:10px 12px; font-size:12px; font-weight:700; margin-top:6px; text-align:center; }
+.spacer { flex:1; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="stagelabel">Frame A — Employees list, mixed enabled/disabled</div>
+  <div class="device">
+    <div class="statusbar"><span>9:50</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Employees</h1></div>
+    <div class="content">
+      <div class="card">
+        <div class="rowtop">
+          <div class="avatar">PS</div>
+          <div class="txt"><div class="name">Priya Sharma</div><div class="office">Andheri Office · tracking since 1 Sep</div></div>
+          <div class="switch on"><div class="knob"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="rowtop">
+          <div class="avatar">RK</div>
+          <div class="txt"><div class="name">Ramesh Kadam</div><div class="office">Field technician · not tracked</div></div>
+          <div class="switch"><div class="knob"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="rowtop">
+          <div class="avatar">SN</div>
+          <div class="txt"><div class="name">Sunita Naik</div><div class="office">Thane Office · starts 1 Nov</div></div>
+          <div class="switch on"><div class="knob"></div></div>
+        </div>
+        <div class="inlinepanel">
+          <span class="startlink">Change start date</span>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="stagelabel">Frame B — Enabling a new joiner, future start date</div>
+  <div class="device">
+    <div class="statusbar"><span>9:52</span><span>●●●●&nbsp;5G&nbsp;🔋</span></div>
+    <div class="header"><span class="back">‹</span><h1>Employees</h1></div>
+    <div class="content">
+      <div class="card">
+        <div class="rowtop">
+          <div class="avatar">SN</div>
+          <div class="txt"><div class="name">Sunita Naik</div><div class="office">Invited · hasn't logged in yet</div></div>
+          <div class="switch on"><div class="knob"></div></div>
+        </div>
+        <div class="inlinepanel">
+          <div style="font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:4px;">Office</div>
+          <div class="pickbtn">Thane Office · assigned</div>
+          <div style="font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.03em; margin:10px 0 4px;">Start date</div>
+          <div class="datebox"><span class="lbl">Starts on</span><span class="val">1 Nov 2026</span></div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#6B7280; text-align:center; padding:8px;">
+        Sunita is set up now. Nothing happens until 1 Nov — no reminders, no absent marks, no attendance UI for her until then.
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

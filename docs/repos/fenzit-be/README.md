@@ -18,7 +18,7 @@ Keep this current whenever a cross-repo change lands — this is what lets an ag
 
 ## Build History (BMAD)
 
-This repo was built solo with BMAD before `fenzo-meta` existed — its own `_bmad-output/` is the real, authoritative record and stays there (not duplicated here). This section is just a map to it, kept current as new epics land.
+This repo was built solo with BMAD before `fenzo-meta` existed. On 2026-09-25 that history was moved out of the child repo into `bmad-history/` next to this README (a frozen record; internal links inside it still use the old `_bmad-output/` paths). All new BMAD work lives in meta's `artifacts/` — meta is the single source of truth.
 
 As of 2026-08-30, all 4 defined epics are implemented and every story is `done` (per `sprint-status.yaml`) — there is no pending/unfinished story right now.
 
@@ -27,12 +27,12 @@ As of 2026-08-30, all 4 defined epics are implemented and every story is `done` 
 - Epic 3 — Job Lifecycle (create/list/detail/edit/workflow steps/attachments)
 - Epic 4 — Offline-First Mobile Sync (delta sync, idempotent replay, conflict resolution)
 
-Source files (in the cloned repo, `workspace/core/backend/fenzit-be/`):
-- `_bmad-output/planning-artifacts/epics.md` — full epic/story breakdown, FRs and ARs
-- `_bmad-output/planning-artifacts/prds/` — PRD + addendum
-- `_bmad-output/planning-artifacts/architecture.md` — architecture doc
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` — per-story status, source of truth for what's done
-- `_bmad-output/implementation-artifacts/deferred-work.md` — real known gaps from past code reviews (see below)
+Source files (frozen, in `docs/repos/fenzit-be/bmad-history/`):
+- `bmad-history/planning-artifacts/epics.md` — full epic/story breakdown, FRs and ARs
+- `bmad-history/planning-artifacts/prds/` — PRD + addendum
+- `bmad-history/planning-artifacts/architecture.md` — architecture doc
+- `bmad-history/implementation-artifacts/sprint-status.yaml` — per-story status, source of truth for what's done
+- `bmad-history/implementation-artifacts/deferred-work.md` — real known gaps from past code reviews (see below)
 
 ### Known deferred work (genuinely pending, from `deferred-work.md`)
 
