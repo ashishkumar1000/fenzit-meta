@@ -558,3 +558,15 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - **RLS isolation suite (incl. the new 14-1 probes) runs in no automated path** — jest rootDir is `src/` so `bun run test` never loads `test/integration/`; `bun run test:e2e` gates every block on real `SUPABASE_*` credentials; `.github/workflows/render-status.yml` has no test job. A future migration re-granting EXECUTE to PUBLIC or whole-table UPDATE on `users` ships green everywhere. Already tracked under the CI-DB enablement work (same bucket as J1/E2/W2/AR-20); a scheduled CI job exporting real credentials and running `bun run test:e2e -- rls-isolation` closes it without suite changes.
 - **Default-privilege guard covers only `FOR ROLE postgres`** — `pg_default_acl` still shows a `supabase_admin`-owned public-schema functions entry granting `anon=X,authenticated=X`, so a function created by any role other than postgres in `public` keeps public EXECUTE. App migrations run as postgres via MCP/SQL editor, so the guard holds for everything the repo ships today; touching `supabase_admin`'s ADP entries is Supabase-managed territory and not attempted. Residual risk noted for awareness.
 - **Rule 5 compliance is not machine-checked** — nothing lints `pg_proc` for residual PUBLIC EXECUTE grants; compliance rests on agents reading `project-context.md` rule 5. Fold into the CI-DB enablement work (the same real-DB job could assert ACL end-state).
+
+- source_spec: `spec-14-2-backend-notifications-generalization-and-realtime-token.md`
+  summary: Decide dedupe_key index scoping (global vs (tenant_id, user_id)) when the first insert path starts setting dedupe_key.
+  evidence: `notifications_dedupe_key_uniq` (20260925000005) is unique on dedupe_key alone, global across tenants; today no src/ insert path sets it, and the migration comment now documents the convention that keys must embed tenant/recipient context (e.g. `<tenantId>:<eventType>:<entityId>`). Review flagged that two tenants deriving the same key text would collide with 23505. The AD-13 event-type registry epic must either keep the convention or migrate the index to (tenant_id, dedupe_key).
+
+- source_spec: `spec-14-2-backend-notifications-generalization-and-realtime-token.md`
+  summary: Define the canonical entity_type vocabulary (CHECK constraint or documented constant) when the AD-13 registry epic lands.
+  evidence: `entity_type` is free-text TEXT with no CHECK or documented value set; misspellings ('attendance' vs 'attendence') would silently split the deep-link space. Spec's frozen boundary explicitly defers the AD-13 registry to later epics.
+
+- source_spec: `spec-14-2-backend-notifications-generalization-and-realtime-token.md`
+  summary: Application-level cleanup of notifications whose entity_id target row is deleted (dangling deep links).
+  evidence: entity_id is polymorphic with no FK by design (AD-13); a deleted attendance/leave row leaves a notification pointing at nothing. No insert path sets entity references yet — the epic that introduces them must also delete dependent notifications when the target row is deleted.
