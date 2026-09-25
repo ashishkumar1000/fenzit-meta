@@ -5,6 +5,20 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 - `workspace/core/frontend/fenzo-app` → https://github.com/ashishkumar1000/fenzo-app.git
 - `workspace/core/backend/fenzit-be` → https://github.com/ashishkumar1000/fenzit-be.git
 
+## Key working rules
+
+- No branches — work only on main in all repos.
+- No commit/push without consent — always ask first, even if tests pass.
+- No commit before BMAD code review — run `/bmad-code-review` before every commit.
+- Test timing — implement feature → user confirms it works → write tests → review (never write tests upfront).
+- Compact after each task — run `/compact` between story tasks.
+
+## Project context
+
+- Fenzit pre-launch — app/backend not live; any DB/schema/shape changes allowed.
+- Single sprint — one source of truth: `artifacts/implementation-artifacts/sprint-status.yaml`.
+- Cross-repo structure — fenzo-app and fenzit-be deploy independently; backend changes deploy first.
+
 ## Commit in the repo the change belongs to — never here
 
 - Files under `workspace/core/frontend/fenzo-app/` → run git with that directory as cwd (or `git -C workspace/core/frontend/fenzo-app ...`), push to its own remote. Same for `workspace/core/backend/fenzit-be/`.
@@ -15,7 +29,12 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 
 ## Bun only
 
-This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml` — each repo keeps its own `bun.lock`.
+This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. `fenzit-be` has no lockfile — never commit `bun.lock` there. On `fenzo-app`, run tests via `bun run test` — bare `bun test` breaks on RN Flow types.
+
+## Tech constraints
+
+- Android needs JDK 17 — system JDK 26 breaks the build.
+- Supabase MCP for DB — use MCP tools, not CLI scripts.
 
 ## Cross-repo change ordering
 
@@ -32,10 +51,18 @@ When writing backend code (database schema, RLS policies, API endpoints, busines
 When writing frontend code (screens, components, hooks, state management in `fenzo-app`), think **as a frontend/UX/React Native engineer**, not as a backend engineer trying to mirror API responses. Backend capabilities don't translate directly to frontend performance, UX, or accessibility. Drive fenzo-app frontend development with a UX-first mindset by strictly enforcing design system tokens and atomic components, applying tiered state management, optimizing performance and resilience with list virtualization, client-side validation, and explicit loading/error/empty states, adhering to accessibility standards and briefing AI dev agents using design-focused prompts, comprehensive checklists, and pre-merge code reviews. Always generate explicit loading skeletons and handle network timeout/offline boundaries gracefully rather than letting the screen freeze or crash.
 Do not make any changes until you 95% confidence in what you need to build. Ask me follow-up questions until you reach that confidence.
 
-- **Test timing — confirm the feature first.** When writing a feature, do NOT
-  write test cases immediately. Wait until the user has confirmed the feature
-  is working properly (e.g. on a device/simulator); only then write the tests,
-  and run the code review after that. Only do code review after the feature is confirmed working and the tests are written.
+## Agent/skill guidance
+
+- BMAD code review — always use `/bmad-code-review`, not generic `/code-review`.
+- BMAD resolver sandbox-blocked — skip `resolve_customization.py`, use manual fallback.
+- Verify BMAD skill first — read `SKILL.md` before recommending a skill.
+- Indian English — plain English, no Hindi words mixed in.
+- Small modular code — ~300 line limit per file, docs updated in the same change.
+
+## Platform tips
+
+- iOS simulator — no backspace key; use `ui_describe_all` for coordinates.
+- Render dashboard — NODE_ENV overrides Dockerfile env (currently set to development).
 
 ## Where things live
 
