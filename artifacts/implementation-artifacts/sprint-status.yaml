@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-25-2026  # epic-14: 14-1 done, 14-2 implemented + BMAD review applied (review; commit pending consent)
+last_updated: 09-26-2026  # epic-14: 14-1 + 14-2 done and committed (fenzit-be ee44907, pushed)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -172,8 +172,8 @@ development_status:
   # each epic, backend stories ship before frontend stories, per CLAUDE.md
   # cross-repo ordering rule. None started yet.
   epic-14: in-progress  # Security Prerequisite & Technician Notification Access — 3 stories
-  14-1-backend-security-prerequisite-job-rpc-and-users-update-own: done  # BMAD standalone code review passed: 8 patches applied (incl. user-sanctioned REFERENCES/TRIGGER revokes, migration 20260925000004); 11/11 RLS probes, 714/714 unit green; commit pending user consent
-  14-2-backend-notifications-generalization-and-realtime-token: review  # impl + live probe + tests (716/716, 13/13 real-DB) + BMAD 3-layer review (7 patches, 3 defers, migration 20260925000006); commit pending user consent
+  14-1-backend-security-prerequisite-job-rpc-and-users-update-own: done  # BMAD standalone code review passed: 8 patches applied (incl. user-sanctioned REFERENCES/TRIGGER revokes, migration 20260925000004); 11/11 RLS probes, 714/714 unit green; committed + pushed as fenzit-be d5c3b91
+  14-2-backend-notifications-generalization-and-realtime-token: done  # committed + pushed 2026-09-26: fenzit-be ee44907 (migrations 20260925000005/06 applied via MCP), fenzit-meta ee52985; 716/716 unit, 13/13 real-DB, tsc baseline parity; BMAD review 7 patches + 3 defers
   14-3-frontend-technician-notification-bell-and-role-aware-inbox: backlog
   epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories
   15-1-frontend-map-library-spike: backlog
