@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-21-2026  # epic-13 correlation-id opened (13-1 story created)
+last_updated: 09-25-2026  # epic-14 started (14-1 in progress)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -171,8 +171,8 @@ development_status:
   # corrections) → Epic 19 (reminders + dashboard/monthly/self views). Within
   # each epic, backend stories ship before frontend stories, per CLAUDE.md
   # cross-repo ordering rule. None started yet.
-  epic-14: backlog  # Security Prerequisite & Technician Notification Access — 3 stories
-  14-1-backend-security-prerequisite-job-rpc-and-users-update-own: backlog
+  epic-14: in-progress  # Security Prerequisite & Technician Notification Access — 3 stories
+  14-1-backend-security-prerequisite-job-rpc-and-users-update-own: done  # BMAD standalone code review passed: 8 patches applied (incl. user-sanctioned REFERENCES/TRIGGER revokes, migration 20260925000004); 11/11 RLS probes, 714/714 unit green; commit pending user consent
   14-2-backend-notifications-generalization-and-realtime-token: backlog
   14-3-frontend-technician-notification-bell-and-role-aware-inbox: backlog
   epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories

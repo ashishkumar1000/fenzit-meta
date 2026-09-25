@@ -12,6 +12,10 @@
 # and point agents at the repo catalog and workspace layout this meta
 # repo already uses, so cross-repo tooling can find both child repos.
 [core]
+project_name = "Fenzo"
+user_name = "Ashish.kumar"
+communication_language = "English"
+document_output_language = "English"
 output_folder = "{project-root}/artifacts"
 workspace_root = "{project-root}/workspace"
 workspace_core = "{project-root}/workspace/core"
