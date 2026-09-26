@@ -174,7 +174,7 @@ development_status:
   epic-14: in-progress  # Security Prerequisite & Technician Notification Access — 3 stories
   14-1-backend-security-prerequisite-job-rpc-and-users-update-own: done  # BMAD standalone code review passed: 8 patches applied (incl. user-sanctioned REFERENCES/TRIGGER revokes, migration 20260925000004); 11/11 RLS probes, 714/714 unit green; committed + pushed as fenzit-be d5c3b91
   14-2-backend-notifications-generalization-and-realtime-token: done  # committed + pushed 2026-09-26: fenzit-be ee44907 (migrations 20260925000005/06 applied via MCP), fenzit-meta ee52985; 716/716 unit, 13/13 real-DB, tsc baseline parity; BMAD review 7 patches + 3 defers
-  14-3-frontend-technician-notification-bell-and-role-aware-inbox: backlog
+  14-3-frontend-technician-notification-bell-and-role-aware-inbox: done  # BMAD review passed 2026-09-26 (4 layers): 3 decisions resolved (jobId-authoritative kept, tech empty copy kept, separate test commit), 10 patches applied, 5 deferred; 126/126 suites, 1215/1215 tests, tsc clean; NOT yet committed (awaiting consent)
   epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories
   15-1-frontend-map-library-spike: backlog
   15-2-backend-attendance-module-foundation-timezone-settings-setup-gating: backlog

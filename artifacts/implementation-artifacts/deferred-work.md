@@ -570,3 +570,11 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - source_spec: `spec-14-2-backend-notifications-generalization-and-realtime-token.md`
   summary: Application-level cleanup of notifications whose entity_id target row is deleted (dangling deep links).
   evidence: entity_id is polymorphic with no FK by design (AD-13); a deleted attendance/leave row leaves a notification pointing at nothing. No insert path sets entity references yet — the epic that introduces them must also delete dependent notifications when the target row is deleted.
+
+## Deferred from: code review of spec-14-3-frontend-technician-notification-bell-and-role-aware-inbox (2026-09-26)
+
+- `failedReportCopy` doc comment contradicts behaviour — the comment promises "never a raw code (FR21)" but the `default` arm returns `Error (code: …)`, and the two engine codes `REPORT_RANGE_TOO_LARGE` / `REPORT_PRESIGN_FAILED` lost their friendly lines entirely. Pre-existing at HEAD (source untouched by 14-3); restore the friendly lines in a small owner-facing copy change.
+- Garbage date strings pass `validateRange` as a 0-day range — `rangeDays` returns 0 for unparseable dates and `validateRange` has no explicit date-validity check; rejection is a lexicographic-comparison accident. Pre-existing; form inputs are date-picker driven so not reachable today.
+- `mergeNotificationCards` comparator produces NaN ordering on an unparseable `latestCreatedAt` — pre-existing sort pattern; `createdAt` is a typed ISO server field, drift is theoretical.
+- Badge pill markup duplicated between `JobsScreen` and `TodayScreen` (only the label function is shared via `bellBadge.ts`) — spec said mirror the owner bell; extract a shared pill component as later cleanup.
+- Unread generic (unknown-event-type) cards cannot be individually marked read — inert by design; "Mark all read" covers them today; later epics that emit those event types own per-row read handling.
