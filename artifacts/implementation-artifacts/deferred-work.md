@@ -578,3 +578,10 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - `mergeNotificationCards` comparator produces NaN ordering on an unparseable `latestCreatedAt` — pre-existing sort pattern; `createdAt` is a typed ISO server field, drift is theoretical.
 - Badge pill markup duplicated between `JobsScreen` and `TodayScreen` (only the label function is shared via `bellBadge.ts`) — spec said mirror the owner bell; extract a shared pill component as later cleanup.
 - Unread generic (unknown-event-type) cards cannot be individually marked read — inert by design; "Mark all read" covers them today; later epics that emit those event types own per-row read handling.
+
+## Deferred from: code review of epics-attendance-leave.md Story 15.1 (2026-09-26)
+
+- Unthrottled reverse geocode vs Nominatim's ~1 req/s usage policy — `MapSpikeScreen.tsx` reverse-geocode fires on every pan settle with no minimum interval. Throwaway spike, single dev device; production fix is the 15.4 fenzit-be geocoding proxy (already the recorded plan).
+- Search failures cleared silently — the debounced search effect's catch wipes `results` with no error message, unlike the locate-me flow which surfaces `locateError`. Spike-level polish; the real picker (15.4) must show an error state.
+- Programmatic `animateToRegion` (locate-me, search selection) triggers `onRegionChange` → `isPanning`/"picking…" hint and the pin-lift flash during the fly-over — react-native-maps gives no clean way to distinguish programmatic pans from user pans; cosmetic, disposable screen.
+- iOS mount effect does not check location permission before `getCurrentPosition` (the Android path checks `PermissionsAndroid.check` first) — an iOS build would prompt on open, breaking the no-prompt contract. Spike is Android-validated only; mirror the pre-check when 15.4 does the iOS half.
