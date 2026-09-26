@@ -592,3 +592,11 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - No e2e HTTP-boundary spec for the attendance routes (mounting, 401/403, ValidationPipe 422) — sibling modules pin this via e2e; add `test/attendance.e2e-spec.ts` when Story 15-3 adds the module's real endpoints.
 - No `^(attendance|leave)_` pg_proc privilege scan — AD-3 asks for one, but pg_proc is unreachable via supabase-js (PGRST205), so coverage is the hand-added RPC_FUNCTIONS map; revisit in 15-3 with MCP-side verification of new functions' ACLs.
 - `SETUP_STEPS` DTO vocabulary and the `attendance_setup_progress_step_check` DB CHECK are duplicated with no cross-pin — both are individually tested (422 unit + probe inserts); a true cross-pin needs pg catalog access; revisit when the step vocabulary next changes.
+
+## Deferred from: code review of spec-15-3-backend-offices-and-office-rules (2026-09-26)
+
+- No pagination/search on office list (unbounded for many archived offices) — 15-4 UX story decides [fenzit-be/src/attendance/dto/list-offices-query.dto.ts].
+- DONE 2026-09-26: UUID validation added (`requireOfficeId` → 400) [fenzit-be/src/attendance/offices.controller.ts].
+- Blockers RPC unbounded/unordered/possible duplicates + copy-pasted blocker predicate between `attendance_archive_office` and `attendance_office_archive_blockers` — 15-7 owns these lazy-compiled functions [fenzit-be/supabase/migrations/20260926000006].
+- Version-tolerant 42P01 archive/blockers probes never auto-tighten after 15-7 — tracked in the spec's 15-7 note [fenzit-be/test/integration/rls-isolation.integration.spec.ts].
+- DONE 2026-09-26: name trim via DTO `@Transform` (whitespace-only rejected 422) [fenzit-be/src/attendance/dto/create-office.dto.ts].

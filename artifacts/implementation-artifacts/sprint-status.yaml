@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-26-2026  # 15-2 done: implemented+tested+BMAD-reviewed (1 decision+11 patches applied, 4 deferred); commit pending consent
+last_updated: 09-26-2026  # 15-3 done: implemented+tested+BMAD-reviewed (4 decisions+12 patches applied, 5 deferred); 
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -153,8 +153,8 @@ development_status:
   # Execution order = backend 13-1 first (fenzit-be), then frontend 13-2
   # (fenzo-app), per CLAUDE.md cross-repo ordering rule.
   epic-13: done  # 2026-09-21 — 13-1 + 13-2 both done (correlation/session ids end to end: FE stamps, BE validates/echoes/logs)
-  13-1-backend-correlation-id-session-id-propagation: done  # implemented + user-verified + BMAD review applied (9 patches + 1 decision + 3 defers completed); 714/714; commit pending user consent
-  13-2-frontend-correlation-id-session-id-headers: done  # implemented 2026-09-21: one sync axios interceptor in src/services/api/apiClient.ts (fresh X-Correlation-ID per request + module-load X-Session-ID, generator reused from utils/idempotency.ts; r2Upload excluded by construction); user device-confirmed; tests written after confirmation (apiClient.test.ts 8/8); BMAD 4-layer review: 3 patches applied, 13 dismissed; commit pending user consent
+  13-1-backend-correlation-id-session-id-propagation: done  # implemented + user-verified + BMAD review applied (9 patches + 1 decision + 3 defers completed); 714/714
+  13-2-frontend-correlation-id-session-id-headers: done  # implemented 2026-09-21: one sync axios interceptor in src/services/api/apiClient.ts (fresh X-Correlation-ID per request + module-load X-Session-ID, generator reused from utils/idempotency.ts; r2Upload excluded by construction); user device-confirmed; tests written after confirmation (apiClient.test.ts 8/8); BMAD 4-layer review: 3 patches applied, 13 dismissed
 
   # Epics 14-19: Attendance & Leave — optional new module (offices, geofenced
   # check-in/out, leave lifecycle, weekly offs, holidays, corrections, day
@@ -178,7 +178,7 @@ development_status:
   epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories
   15-1-frontend-map-library-spike: done  # Android validated on device 2026-09-26, react-native-maps 1.29.8 works on RN 0.87 Fabric; findings: key via FENZIT_MAPS_API_KEY manifestPlaceholder + console-side auth (DEVELOPER_ERROR = Maps SDK/billing/SHA-1 restrictions); draggable Marker janky+undiscoverable → delivery-app centre-pin pattern (overlay pin, map pans under it, pick = camera target on settle); Circle follows pan LIVE via onRegionChange (re-key remount flashes — escape hatch only); search/reverse-geocode = Nominatim keyless for spike, 15.4 MUST proxy via fenzit-be with server-side Google key (Android-app-restricted key cannot call Google REST geocoding APIs); forced light map via customMapStyle; iOS half wired 2026-09-26 (Podfile react-native-maps/Google subspec, AppDelegate GMSServices.provideAPIKey from Info.plist GOOGLE_MAPS_API_KEY, provider=google both platforms) — device validation pending on an Xcode machine (pod install + build); spike is disposable — delete MapSpikeScreen + mapSpike/ + routes + Today button after 15.4; BMAD code review done 2026-09-26 (4 layers): 10 patches applied (stepper +/− now absolute-value contract fixing jump-to-700 bug, initialRouteName reverted to MainTabs, reverse-geocode failure state, unique search keys, Nominatim NaN/array guards, DS tokens + 44px chips, SHA-1 comment clarified both keystores, dead code removed, trailing newlines), 4 deferred (unthrottled reverse geocode, silent search errors, programmatic-pan hint flicker, iOS permission prompt), Maps key kept tracked (user-approved, consistent with keystore passwords) — restrict before launch
   15-2-backend-attendance-module-foundation-timezone-settings-setup-gating: done  # implemented + walked live + tested + BMAD-reviewed 2026-09-26 (spec-15-2-*.md): 4 migrations applied via MCP (tenants.timezone+trigger PT422; settings/progress tables; helpers+complete_setup PL/pgSQL pre-tables; attendance_start_setup RPC), attendance module + /attendance/setup routes, api-contracts.md; review (4 layers): 1 decision (RLS → policies DROPPED, deny-by-default admin-client-only) + 11 patches applied (GET/saveStep tenant guards, attendance_today/lock fail-loud, start-RPC functional probe, London-date assertion, docs/swagger) + 4 deferred (deferred-work.md) + 11 dismissed; corrective MCP apply fix_15_2_review_deny_by_default_and_fail_loud_helpers; 54 suites/758 passed, tsc 65==baseline (jest under Node 24.13.0); committed+pushed fenzit-be bae054e (backend-first; deploy before fenzo-app)
-  15-3-backend-offices-and-office-rules: backlog
+  15-3-backend-offices-and-office-rules: done  # review complete 2026-09-26: BMAD 4-layer × 3-chunk review, 4 decisions + 12 patches applied (composite-FK migration 000007, 23514/22003→422, DTO cross-field validators, tenant filter, test additions); 834/834 unit + 304/304 e2e/integration green; 
   # 15-4 carry-forwards from 15.1 review (2026-09-26): (1) RESTRICT the Maps key before launch
   # (Android app + com.fenzitapp + debug SHA-1 for dev builds, release SHA-1 for launch builds);
   # (2) add scripts/verify-maps-key.js (verify-release-signing.js mould) — a missing/renamed
