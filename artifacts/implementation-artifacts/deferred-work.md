@@ -600,3 +600,21 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - Blockers RPC unbounded/unordered/possible duplicates + copy-pasted blocker predicate between `attendance_archive_office` and `attendance_office_archive_blockers` — 15-7 owns these lazy-compiled functions [fenzit-be/supabase/migrations/20260926000006].
 - Version-tolerant 42P01 archive/blockers probes never auto-tighten after 15-7 — tracked in the spec's 15-7 note [fenzit-be/test/integration/rls-isolation.integration.spec.ts].
 - DONE 2026-09-26: name trim via DTO `@Transform` (whitespace-only rejected 422) [fenzit-be/src/attendance/dto/create-office.dto.ts].
+
+## Deferred from: code review of story-15-4, group 1 BE reverse geocode (2026-09-27)
+
+- `attendance_archive_office` accepts `p_actor_id` but never uses it — no audit trail of who archived an office. Pre-existing 15-3 function shape, copied verbatim by the amendment; an audit column/story would own this.
+- Geocoding request sends no `language`/`region` param — `formattedAddress` locale is left to Google's server defaults, so the same pin can render differently across environments. Add alongside any i18n story.
+- No cache/dedupe on `GET /places/reverse` — repeated pan-settles around one spot re-hit Google and consume the per-tenant budget (increment happens before the provider call, sibling-consistent). A short-TTL cache keyed on rounded coordinates is the carry-forward.
+- Reverse `city` extraction matches only the `locality` component (mirrors the pinned resolve contract) — rural/industrial pins may return null city. A fallback (sublocality/administrative_area) needs a product decision on what "city" means for the address row.
+
+## Deferred from: code review of story-15-4, groups 2–3 fenzo-app (2026-09-27)
+
+- Reverse geocode fires on mount for the default pin (one billed Geocoding call before user intent) — product/budget call; spec pins settle-only reverse.
+- Confirm always enabled in add mode — untouched Bengaluru default can be committed without placing a pin — product UX call.
+- Map-style hex values hand-synced to palette with no token-pinning test (extend the colors.test.ts convention).
+- geolocation.ts contract suite — timeout/permission error classification that useLocateMe's distinct copy depends on.
+- Unmount-safety tests for useLocateMe (slow fix resolving after unmount).
+- Navigator smoke test rendering RootNavigator's screen registrations (MoreScreen row test covers the navigate target meanwhile).
+- useOffices throttle near-boundary tests and retry-after-error assertions.
+- Full screen-level test suites for OfficesScreen/OfficeFormScreen/OfficeMapPickerScreen (loading/error/empty states, save flows, 409 handling, archive flow) — deferred in favour of targeted contract tests (15-4 review, decision 3a).

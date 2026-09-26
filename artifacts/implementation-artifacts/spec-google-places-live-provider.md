@@ -20,7 +20,11 @@ baseline_commit: 'eb425d1a4e8669aaaa567e176d104dd25d6d69ea'
 
 **Always:**
 - `GooglePlacesProvider` has the same injectable shape as `MockPlacesProvider`: `constructor(private readonly configService: ConfigService)`, reads `GOOGLE_PLACES_API_KEY` via `getOrThrow`.
-- API key is sent only as the `X-Goog-Api-Key` header — never logged, never in a query string or response body.
+- API key is never logged and never appears in a response body. Places (New) carries it in the
+  `X-Goog-Api-Key` header. **Renegotiated 2026-09-27 (Story 15-4):** the legacy Geocoding API — the only
+  Google surface with a server-side reverse lookup — rejects header auth (live-verified 2026-09-26:
+  `X-Goog-Api-Key` → REQUEST_DENIED), so reverse geocoding sends `key=` in the query string instead;
+  the URL is never logged and error messages carry only status + Google's `error_message`.
 - Autosuggest maps Google's actual nested response `suggestions[].placePrediction.{placeId, text.text}` into `PlaceSuggestion[] {placeId, text}` — never expose Google's raw shape to callers. Always sends `includedRegionCodes: ['IN']` and the caller's `sessionToken`.
 - Resolve always uses field mask `id,formattedAddress,location,addressComponents,postalAddress` (Essentials tier only, already approved in Story 1.2 — never add `displayName`/Pro-tier fields). Reads `pincode` as `postalAddress?.postalCode ?? null` (never assumes `postalAddress` exists — confirmed absent entirely for some places) and `city` from the `addressComponents` entry typed `locality`, `?? null` if absent.
 - If Google returns a valid place with `location` absent, `resolve()` throws — never a null-coordinate success (same contract `MockPlacesProvider` already honors).
@@ -92,7 +96,7 @@ This is the first real outbound-HTTP provider in the codebase (no `fetch`/`Abort
 - **DI binding — the core risk area.** `PlacesModule`'s binding is now `NODE_ENV`-conditional; a broken condition here would silently send production traffic to the mock or vice versa. The factory was extracted to a named export specifically so this branch has direct unit coverage, not just e2e-by-implication.
   [`places.module.ts:12-19`](../../workspace/core/backend/fenzit-be/src/places/places.module.ts#L12)
   [`places.module.spec.ts`](../../workspace/core/backend/fenzit-be/src/places/places.module.spec.ts)
-- **Live provider — request construction and response mapping.** API key only in the `X-Goog-Api-Key` header; field mask restricted to Essentials tier; nested Google response shapes normalized to this codebase's own contract.
+- **Live provider — request construction and response mapping.** API key in the `X-Goog-Api-Key` header for Places (New) (`key=` query param on the legacy Geocoding API — see the key-handling constraint above); field mask restricted to Essentials tier; nested Google response shapes normalized to this codebase's own contract.
   [`google-places.provider.ts`](../../workspace/core/backend/fenzit-be/src/places/google-places.provider.ts)
 - **Null-safety on `pincode`/`city` (amended after review).** Empty-string values from Google now normalize to `null`, matching `ResolvedPlace`'s documented contract ("never omitted or `''`") — the original pass only handled `undefined`/absent.
   [`google-places.provider.ts:163`](../../workspace/core/backend/fenzit-be/src/places/google-places.provider.ts#L163)

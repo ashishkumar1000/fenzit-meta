@@ -22,12 +22,11 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-26-2026  # 15-3 done: implemented+tested+BMAD-reviewed (4 decisions+12 patches applied, 5 deferred); 
+last_updated: 09-27-2026  # 15-4: device confirmed → spike deleted + post-confirmation tests both repos (new FE offices suites caught + fixed a real useOffices throttle stale-closure bug); FE 130/1266, BE 57/852 green; next /bmad-code-review
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
-story_location: 
-  /Users/ashish.kumar/workspace/fenzo-meta/artifacts/implementation-artifacts
+story_location: artifacts/implementation-artifacts  # this meta-repo only — FE/BE repos are not tracked separately
 development_status:
   epic-1: done
   1-1-backend-address-autosuggest-endpoint: done
@@ -175,7 +174,7 @@ development_status:
   14-1-backend-security-prerequisite-job-rpc-and-users-update-own: done  # BMAD standalone code review passed: 8 patches applied (incl. user-sanctioned REFERENCES/TRIGGER revokes, migration 20260925000004); 11/11 RLS probes, 714/714 unit green; committed + pushed as fenzit-be d5c3b91
   14-2-backend-notifications-generalization-and-realtime-token: done  # committed + pushed 2026-09-26: fenzit-be ee44907 (migrations 20260925000005/06 applied via MCP), fenzit-meta ee52985; 716/716 unit, 13/13 real-DB, tsc baseline parity; BMAD review 7 patches + 3 defers
   14-3-frontend-technician-notification-bell-and-role-aware-inbox: done  # BMAD review passed 2026-09-26 (4 layers): 3 decisions resolved (jobId-authoritative kept, tech empty copy kept, separate test commit), 10 patches applied, 5 deferred; 126/126 suites, 1215/1215 tests, tsc clean; committed + pushed as fenzo-app 11db679 (+29676ee test commit)
-  epic-15: backlog  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories
+  epic-15: in-progress  # Attendance Setup — Offices, Rules, Weekly Offs, Holidays & Enrollment — 10 stories (15-1..15-3 done; 15-4 next)
   15-1-frontend-map-library-spike: done  # Android validated on device 2026-09-26, react-native-maps 1.29.8 works on RN 0.87 Fabric; findings: key via FENZIT_MAPS_API_KEY manifestPlaceholder + console-side auth (DEVELOPER_ERROR = Maps SDK/billing/SHA-1 restrictions); draggable Marker janky+undiscoverable → delivery-app centre-pin pattern (overlay pin, map pans under it, pick = camera target on settle); Circle follows pan LIVE via onRegionChange (re-key remount flashes — escape hatch only); search/reverse-geocode = Nominatim keyless for spike, 15.4 MUST proxy via fenzit-be with server-side Google key (Android-app-restricted key cannot call Google REST geocoding APIs); forced light map via customMapStyle; iOS half wired 2026-09-26 (Podfile react-native-maps/Google subspec, AppDelegate GMSServices.provideAPIKey from Info.plist GOOGLE_MAPS_API_KEY, provider=google both platforms) — device validation pending on an Xcode machine (pod install + build); spike is disposable — delete MapSpikeScreen + mapSpike/ + routes + Today button after 15.4; BMAD code review done 2026-09-26 (4 layers): 10 patches applied (stepper +/− now absolute-value contract fixing jump-to-700 bug, initialRouteName reverted to MainTabs, reverse-geocode failure state, unique search keys, Nominatim NaN/array guards, DS tokens + 44px chips, SHA-1 comment clarified both keystores, dead code removed, trailing newlines), 4 deferred (unthrottled reverse geocode, silent search errors, programmatic-pan hint flicker, iOS permission prompt), Maps key kept tracked (user-approved, consistent with keystore passwords) — restrict before launch
   15-2-backend-attendance-module-foundation-timezone-settings-setup-gating: done  # implemented + walked live + tested + BMAD-reviewed 2026-09-26 (spec-15-2-*.md): 4 migrations applied via MCP (tenants.timezone+trigger PT422; settings/progress tables; helpers+complete_setup PL/pgSQL pre-tables; attendance_start_setup RPC), attendance module + /attendance/setup routes, api-contracts.md; review (4 layers): 1 decision (RLS → policies DROPPED, deny-by-default admin-client-only) + 11 patches applied (GET/saveStep tenant guards, attendance_today/lock fail-loud, start-RPC functional probe, London-date assertion, docs/swagger) + 4 deferred (deferred-work.md) + 11 dismissed; corrective MCP apply fix_15_2_review_deny_by_default_and_fail_loud_helpers; 54 suites/758 passed, tsc 65==baseline (jest under Node 24.13.0); committed+pushed fenzit-be bae054e (backend-first; deploy before fenzo-app)
   15-3-backend-offices-and-office-rules: done  # review complete 2026-09-26: BMAD 4-layer × 3-chunk review, 4 decisions + 12 patches applied (composite-FK migration 000007, 23514/22003→422, DTO cross-field validators, tenant filter, test additions); 834/834 unit + 304/304 e2e/integration green; 
@@ -188,7 +187,7 @@ development_status:
   # before launch restrict the iOS key by bundle id com.fenzitapp, Maps SDK for iOS);
   # (4) iOS silent-locate must check permission before getCurrentPosition (Android does, iOS prompts);
   # (5) delete spike (MapSpikeScreen + mapSpike/ + routes + Today button); (6) fenzit-be geocoding proxy.
-  15-4-frontend-office-management-ui-with-map-picker: backlog
+  15-4-frontend-office-management-ui-with-map-picker: review  # spec approved 2026-09-26; BE /places/reverse walked live 2026-09-26 (all 6 probes green); FE screens built + edit-page polish per user reference (GPS Verified chip = real pin provenance) 2026-09-26; archive 500 fixed 2026-09-26 (15-3 amendment, migration 20260926000008 via MCP + live verify); device confirmed 2026-09-27 → spike deleted (MapSpikeScreen + mapSpike/ + both-stack routes + Today test button) and post-confirmation tests written both repos (FE: offices service/model/useOffices/useLocateMe — caught a real useOffices throttle stale-closure bug, fixed with hasLoadedRef; BE: reverse geocode in places.service/google/mock provider specs) — FE 130 suites/1266 tests, BE 57 suites/852 tests, tsc clean both (BE 65 = baseline) — next: /bmad-code-review
   15-5-backend-weekly-offs-and-holidays: backlog
   15-6-frontend-weekly-off-and-holiday-settings-ui: backlog
   15-7-backend-enrollment-office-assignment-and-access-state: backlog
