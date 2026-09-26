@@ -585,3 +585,10 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - Search failures cleared silently — the debounced search effect's catch wipes `results` with no error message, unlike the locate-me flow which surfaces `locateError`. Spike-level polish; the real picker (15.4) must show an error state.
 - Programmatic `animateToRegion` (locate-me, search selection) triggers `onRegionChange` → `isPanning`/"picking…" hint and the pin-lift flash during the fly-over — react-native-maps gives no clean way to distinguish programmatic pans from user pans; cosmetic, disposable screen.
 - iOS mount effect does not check location permission before `getCurrentPosition` (the Android path checks `PermissionsAndroid.check` first) — an iOS build would prompt on open, breaking the no-prompt contract. Spike is Android-validated only; mirror the pre-check when 15.4 does the iOS half.
+
+## Deferred from: code review of spec-15-2-backend-attendance-module-foundation-timezone-settings-setup-gating (2026-09-26)
+
+- complete-setup Gate 2 ignores office `archived_at` and `users.status` when counting tracked employees — the enrolment/assignment shapes are AD-8 provisional and are reconciled in Story 15-7, where these predicates belong; revisit there.
+- No e2e HTTP-boundary spec for the attendance routes (mounting, 401/403, ValidationPipe 422) — sibling modules pin this via e2e; add `test/attendance.e2e-spec.ts` when Story 15-3 adds the module's real endpoints.
+- No `^(attendance|leave)_` pg_proc privilege scan — AD-3 asks for one, but pg_proc is unreachable via supabase-js (PGRST205), so coverage is the hand-added RPC_FUNCTIONS map; revisit in 15-3 with MCP-side verification of new functions' ACLs.
+- `SETUP_STEPS` DTO vocabulary and the `attendance_setup_progress_step_check` DB CHECK are duplicated with no cross-pin — both are individually tested (422 unit + probe inserts); a true cross-pin needs pg catalog access; revisit when the step vocabulary next changes.
