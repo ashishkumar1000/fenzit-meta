@@ -2,7 +2,7 @@
 title: 'Offices management UI with map picker — office list, add/edit, full-screen picker & reverse-geocode proxy'
 type: 'feature'
 created: '2026-09-26'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 context:
   - '{project-root}/artifacts/planning-artifacts/epics-attendance-leave.md'
