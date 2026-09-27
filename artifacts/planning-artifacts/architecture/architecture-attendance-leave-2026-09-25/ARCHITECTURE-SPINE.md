@@ -102,6 +102,7 @@ Allowed dependencies are the arrows. `attendance` never imports `jobs`, `workflo
   - Single-row, single-table writes with no side effect (wizard step marker, office name) may be plain guarded SQL through the admin client with an explicit `tenant_id` filter.
   - This is a **conscious exception** (user decision, 2026-09-25) to the 2026-09-20 "keep stored procedures to a minimum" rule.
   - `test/integration/rls-isolation.integration.spec.ts` scans `pg_proc` for names matching `^(attendance|leave)_` and asserts that `anon` and `authenticated` lack EXECUTE on every one.
+- **Amendment (user decision, 2026-09-27) — Epics 16–19 minimise new RPCs.** The 2026-09-25 exception is narrowed going forward: NestJS-first. Every new stored function must be justified in its story spec in plain English (which multi-row write or same-transaction side effect makes app code unsafe). Prefer a single guarded UPDATE or plain admin-client write even at the cost of an extra round-trip; restructure the write (narrower row, derive-on-read instead of write-time fan-out) before proposing an RPC. The 15-x RPCs already shipped stay as they are.
 
 ### AD-4 — Check-in/out rejections are committed outcomes with a fixed error catalogue
 
