@@ -11,6 +11,8 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 - No commit/push without consent — always ask first, even if tests pass.
 - No commit before BMAD code review — run `/bmad-code-review` before every commit.
 - Test timing — implement feature → user confirms it works → write tests → review (never write tests upfront).
+- Test-writing mindset — when writing test cases, think as a tester/QA engineer, not as a developer. Test the requirement's behaviour, not the code's happy path: hunt boundaries (empty / zero / one / many), malformed and adversarial input, failure and error paths, race and ordering, permissions and tenant isolation. A test that merely restates the current implementation proves nothing — if the implementation changed but the requirement did not, the test must still pass.
+- When a test and the code disagree, fix the code — never weaken the assertion to match the implementation. Only change the test if the test itself is wrong about the requirement, and say so explicitly.
 - Compact after each task — run `/compact` between story tasks.
 
 ## Project context
