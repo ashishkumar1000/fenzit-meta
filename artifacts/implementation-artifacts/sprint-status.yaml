@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-29-2026  # 16-1 + 16-2 DONE together (one spec/review/commit): check-in + check-out SHIPPED (zero new RPCs — NestJS pg transactions per AD-3 amendment; day-context = TS module D1); migration 20260928000002 + corrective applies LIVE; BMAD 3-lens review triaged 16 patched / 3 deferred / 3 dismissed incl. CRITICAL missing @Body() (routes dead over HTTP) + HIGH uuid-'' crash on never-enrolled; 74 suites/1158 unit + 20/399 real-DB e2e (19 journey probes), tsc clean; FE 16-3/16-4 next
+last_updated: 09-29-2026  # EPIC 17 BE DONE (17-1..17-4 in one pass, user asleep-autonomous): leave data model (3 tables + AD-11 guard trigger — the ONE new SQL function) + apply/preview + approve/reject + revoke/cancel split + on-behalf + FR-9 check-in auto-cancel + D12 disable ripple + reads/lists; migration 20260929000001 + corrective FK apply LIVE; adversarial spec review (20 findings) + BMAD 3-lens code review triaged 20 patched / 3 deferred / 2 dismissed incl. 3-reviewer UTC current_date bug, span-cap DoS, D9 floor, missing split-array responses; 81 suites/1278 unit + 21 suites/425 real-DB e2e (26-probe journey), tsc clean; FE 17-5..17-8 next (16-3/16-4 also pending)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -199,11 +199,11 @@ development_status:
   16-2-backend-check-out-rpc: done  # DONE 2026-09-29 together with 16-1: same gates, guarded UPDATE, workedMinutes + earlyCheckout; BMAD 3-lens review (16 patched/3 deferred/3 dismissed) — see spec §10
   16-3-frontend-attendance-only-location-capture-service: backlog
   16-4-frontend-check-in-out-button-and-today-screen: backlog
-  epic-17: backlog  # Leave Management (incl. FR-9 check-in-on-leave-day) — 8 stories
-  17-1-backend-leave-data-model-and-apply: backlog
-  17-2-backend-approve-reject-leave: backlog
-  17-3-backend-revoke-and-cancel-leave-with-split-logic: backlog
-  17-4-backend-leave-on-behalf-and-check-in-auto-cancel: backlog
+  epic-17: in-progress  # Leave Management — BE half done 2026-09-29 (17-1..17-4 together, one spec/review/commit)
+  17-1-backend-leave-data-model-and-apply: done  # DONE 2026-09-29 together with 17-2..17-4 (spec-17-1-to-17-4): 3 tables + guard trigger + apply/preview; adversarial spec review patched 20 findings pre-code
+  17-2-backend-approve-reject-leave: done  # DONE 2026-09-29: state-guarded + seq-ordered own-retry (D7); parallel double-approve probe
+  17-3-backend-revoke-and-cancel-leave-with-split-logic: done  # DONE 2026-09-29: D8 split (cutoff from day-context, DB clock); previews share the write path (probed)
+  17-4-backend-leave-on-behalf-and-check-in-auto-cancel: done  # DONE 2026-09-29: FR-16 approved-immediately + FR-9 gate/confirm/auto-cancel (only today) + D12 disable ripple
   17-5-frontend-leave-apply-form: backlog
   17-6-frontend-leave-history-and-pending-queue: backlog
   17-7-frontend-revoke-and-cancel-sheets-with-split-outcome-preview: backlog
