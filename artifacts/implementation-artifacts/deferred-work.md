@@ -641,3 +641,20 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - **Employees-loading vs genuinely-none conflation** [fenzo-app useOverrideSheet.ts] — the Add-override CTA and sheet copy say "No employees yet" while `useMyProfile` is still loading; needs loading-state plumbing from the profile hook.
 - **"Save empty to clear" copy on a never-configured tenant** [fenzo-app WeeklyOffDefaultSection.tsx] — in the never-configured + all-deselected state the copy promises clearing a rule that does not exist, and the save is a no-op PUT; copy refinement.
 - **Impact-banner flicker + silent failure** [fenzo-app HolidayImpactNotice.tsx] — the old banner vanishes during the 300ms debounce before the interim state appears, and a failed impact call renders nothing with no retry; minor UX polish.
+
+## Deferred from: device QA + spec-15-8 scoping (2026-09-28) — 15-6 cosmetic nits
+
+- **Edit-holiday sheet helper text shows through the translucent disabled Save button** [fenzo-app HolidayFormSheet] — cosmetic layering; fold into any future HolidayFormSheet touch.
+- **Add-holiday sheet shows "Name is required." before any interaction** [fenzo-app holidayFormModel/validate] — validate should gate on `hasTouched` like the weekly-off default form does.
+- **Reused SelectTechnicians copy says "Choose who will do the job." in the weekly-off override context** [fenzo-app SelectTechniciansScreen] — needs a context-param for the heading, not a per-caller fork.
+
+(The fourth finding from the same device session — add-mode Sunday-only override unsavable — is NOT deferred: it blocks the 15-8 wizard's weekly-off step and is fixed in spec-15-8 with a pinning test.)
+
+## Deferred from: spec-15-8 review (2026-09-28) — fenzit-be docs, one line
+
+- **api-contracts.md roster prose is wrong** [fenzit-be docs/api-contracts.md:1097] — "Empty until anyone is enrolled (200 [], never 404)" contradicts the shipped `listEnrolments` (returns EVERY tenant technician joined with the access view — `enrolments.service.ts:76-99`); the roster is empty only when the tenant has no technicians. One-line doc fix for the next fenzit-be change to own.
+
+## Deferred from: spec-15-8 device walkthrough (2026-09-28) — fenzit-be docs, field semantics
+
+- **api-contracts.md roster field semantics need one honest paragraph** [fenzit-be docs/api-contracts.md — the "Attendance enrolments" GET section] — the shipped view's `attendance_enabled` is the TENANT MODULE flag (`settings.enabled AND setup_completed_at IS NOT NULL` — false for every row until setup completes), while `attendance_start_date` carries the per-employee enrolment truth UNGATED (`<= today` covers, `> today` upcoming, `null` not enrolled) and `office_id` is null for archived offices. The 15-8 FE misread these (Review Findings #7/#8 in spec-15-8; fixed FE-side — the view's semantics are correct for `/users/me` and 15-10's technician surfaces, so the DB view stays as shipped). The contract doc should state the three fields' exact semantics so no future consumer (15-9 roster UI included) repeats the misread; fold into the same fenzit-be docs change as the :1097 roster-prose fix above.
+- **VirtualizedLists nesting warning** [fenzo-app OfficePickerSheet] — FIXED in 15-8 (FlatList → plain map; office lists are hand-scale). If a future sheet needs roster-scale lists, give Sheet a proper bottom-sheet list pattern first (RN warns on VirtualizedList-inside-ScrollView).
