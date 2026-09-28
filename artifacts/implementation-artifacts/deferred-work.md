@@ -668,3 +668,21 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 ## Deferred from: story 15-9 full-screen DatePicker (2026-09-28, user direction)
 
 - **Adopt `AttendanceEnrolments/DatePickerScreen` at every remaining date-input site** (user: "we will use this common screen at all the applicable places"). The generic full-screen picker route (react-native-ui-datepicker + navigate-back-with-params) currently serves the 15-9 surfaces. Candidates, each a small mechanical swap of its inline `DatePickerField` expansion for a read-only field + route push (opener gains a `pickedDate` param + return-dispatch): `HolidayFormSheet` (holiday add/edit dates), `OfficeForm` (rule `validFrom`), `WeeklyOffOverrideSheet` (override start), `NewJob` `DateTimeFields` + `Reports` `ReportRangeFields` (these two are date-TIME/range — need a range or datetime mode decision first). Fold into whichever story next touches each surface; do NOT fork a second picker implementation.
+
+## 2026-09-28 — 15-10 walkthrough carry-forwards
+
+- **Suspected pre-existing nested-navigate defect (verify):** the owner empty-state CTA in
+  `NotificationsScreen` calls `navigation.navigate('Jobs', { scope: 'today' })` from the ROOT
+  stack — the same shape that device-testing proved broken for the technician attendance card
+  (a tab route one navigator down is "not handled" from the root stack: "The action 'NAVIGATE'
+  with payload … was not handled"). If confirmed, the fix is the same nested-delegate form
+  (`navigate('MainTabs', { screen: 'Jobs', params: { scope: 'today' } })`) + typing
+  `RootStackParamList.MainTabs` with the delegation shape. Not touched in 15-10 (owner tree is
+  out of scope; possibly never exercised on device since the empty state needs zero rows).
+- **Android permission rationale on the attendance intro** is the shared job helper's copy
+  ("…verify step completion") — accepted for 15-10 (AD-20 forbids changing the job helper). If
+  reworded later, thread a message param through `requestLocationPermission` with the job flow
+  keeping its current text.
+- **history_only end-date copy** needs a disable/end date in the `me/access` (or summary)
+  payload if the UX's "Attendance tracking ended on {date}" copy is wanted — a BE contract
+  addition, deferred.
