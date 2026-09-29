@@ -692,3 +692,7 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - **E2e raw-SQL dispatcher answers unknown SQL with `{ rows: [] }`** — broken read shapes whose substrings match keep passing; only the supabase `qbFor` path throws. A fail-loud unknown-statement catch is a house-wide fake-harness change across every domain's e2e specs; the substance of the CI-path patch already moved to the real-DB integration spec.
 - **~100 lines of fake infrastructure duplicated verbatim across the two attendance e2e specs** (`qbFor`, `baseFacts`, `dispatch`, pg-tx override, JWT helpers) — extract into a shared test util when another domain's e2e spec next touches the harness.
 - **CI without real-DB credentials silently skips all `.integration.spec.ts` tests** (`IS_REAL_DB ? it : it.skip` while the jest env setup provides dummies) — the rule/write/grid-SQL checks run only where real dev-DB credentials are exported; wire them into the CI runner env.
+
+## Deferred from: code review of spec-19-1-to-19-3-backend-reminders-and-read-views.md (2026-09-29)
+
+- **tenants.timezone write-side lacks IANA validation** — an invalid stored timezone reaches the new dashboard read (`DashboardFlagReads.readTimezone` and the reminder/dashboard tz casts) and fails the request with a 500; validation of the timezone WRITE path (tenant creation, earlier story) predates this change. Deferred as pre-existing; revisit when tenant-creation validation is touched.

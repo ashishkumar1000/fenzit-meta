@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-29-2026  # HOUSEKEEPING 2026-09-29: stale 'commit 18-1/18-2 consent pending' note removed — both already committed+pushed (fenzit-be 218c16c, in sync with origin); epic-16 CLOSED (16-1..16-4 all done, BE+FE committed & pushed). USER DECISION 2026-09-29: Epic 19 BE next in ONE SHARED SPEC — 19-1 (scheduled reminders) + 19-2 (owner dashboard read) + 19-3 (monthly/self-view read) + 18-5 (office rule mandatory, prefilled default) folded in; then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
+last_updated: 09-29-2026  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, BMAD review group A complete (5 decisions + 16 patches applied), batteries green (unit 90/1400, real DB 28/535); fenzit-be commit consent pending. Then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -213,11 +213,11 @@ development_status:
   18-2-backend-attendance-corrections: done  # DONE 2026-09-29: PUT/DELETE corrections (single-transaction day_recompute, AD-5 locked recompute), acknowledge gate, history cursor; same verified totals; review findings shared with 18-1 spec §9/§10
   18-3-frontend-month-calendar-and-day-detail-sheet: backlog
   18-4-frontend-correction-sheet-ui: backlog
-  18-5-office-rule-mandatory-with-prefilled-default: backlog  # NEW 2026-09-29, user ruling from 18-1/18-2 review D2: office setup must make the attendance rule mandatory (fenzo-app office form prefills a default, e.g. 09:30-18:30 cutoff 15) + fenzit-be validator so tracking can't run against a rule-less office; FOLDED IN — user decision 2026-09-29 to ship inside the shared Epic 19 BE spec (19-1..19-3)
-  epic-19: backlog  # Reminders & Consolidated Views — 6 stories
-  19-1-backend-scheduled-reminders: backlog
-  19-2-backend-owner-dashboard-read-api: backlog
-  19-3-backend-monthly-and-self-view-read-api: backlog
+  18-5-office-rule-mandatory-with-prefilled-default: done  # BE gate 3 shipped in the shared Epic 19 BE pass (migration 20260929000005, review-amended owner-facing messages); FE prefill (fenzo-app office form 09:30/18:30) is its OWN separate fenzo-app commit — pending
+  epic-19: in-progress  # Reminders & Consolidated Views — 6 stories; BE half (19-1..19-3) codes+tests green, commit consent pending
+  19-1-backend-scheduled-reminders: done  # 2026-09-29 — implementation + BMAD review (group A) patches applied; unit 90/1400 + real-DB 28/535 green; 18-x tests-only-after-walkthrough rule overridden by review-driven patch tests (user "apply every patch"); commit on explicit consent
+  19-2-backend-owner-dashboard-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
+  19-3-backend-monthly-and-self-view-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-4-frontend-owner-dashboard-ui: backlog
   19-5-frontend-owner-monthly-view-ui: backlog
   19-6-frontend-employee-self-view-ui: backlog
