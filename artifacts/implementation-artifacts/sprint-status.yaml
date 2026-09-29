@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-30-2026  # HOUSEKEEPING 2026-09-30: 17-6 FE DONE end-to-end (fenzo-app bcfb659); 17-7/17-8 next  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, BMAD review group A complete (5 decisions + 16 patches applied), batteries green (unit 90/1400, real DB 28/535); fenzit-be committed+pushed (a3c8aa8). Then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
+last_updated: 09-30-2026  # HOUSEKEEPING 2026-09-30: 17-6 FE DONE end-to-end (fenzo-app bcfb659); 17-8 BE prerequisite SHIPPED (fenzit-be 337cd9f, deployed+probed); 17-7 FE building  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, BMAD review group A complete (5 decisions + 16 patches applied), batteries green (unit 90/1400, real DB 28/535); fenzit-be committed+pushed (a3c8aa8). Then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
