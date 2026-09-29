@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-29-2026  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, BMAD review group A complete (5 decisions + 16 patches applied), batteries green (unit 90/1400, real DB 28/535); fenzit-be commit consent pending. Then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
+last_updated: 09-29-2026  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, BMAD review group A complete (5 decisions + 16 patches applied), batteries green (unit 90/1400, real DB 28/535); fenzit-be committed+pushed (a3c8aa8). Then Epic 17 FE (17-5..17-8) → Epic 18 FE (18-3/18-4) → Epic 19 FE (19-4..19-6)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -214,8 +214,8 @@ development_status:
   18-3-frontend-month-calendar-and-day-detail-sheet: backlog
   18-4-frontend-correction-sheet-ui: backlog
   18-5-office-rule-mandatory-with-prefilled-default: done  # BE gate 3 shipped in the shared Epic 19 BE pass (migration 20260929000005, review-amended owner-facing messages); FE prefill (fenzo-app office form 09:30/18:30) is its OWN separate fenzo-app commit — pending
-  epic-19: in-progress  # Reminders & Consolidated Views — 6 stories; BE half (19-1..19-3) codes+tests green, commit consent pending
-  19-1-backend-scheduled-reminders: done  # 2026-09-29 — implementation + BMAD review (group A) patches applied; unit 90/1400 + real-DB 28/535 green; 18-x tests-only-after-walkthrough rule overridden by review-driven patch tests (user "apply every patch"); commit on explicit consent
+  epic-19: in-progress  # Reminders & Consolidated Views — 6 stories; BE half (19-1..19-3) committed+pushed (fenzit-be a3c8aa8); FE stories remain
+  19-1-backend-scheduled-reminders: done  # 2026-09-29 — implementation + BMAD review (group A) patches applied; unit 90/1400 + real-DB 28/535 green; 18-x tests-only-after-walkthrough rule overridden by review-driven patch tests (user "apply every patch"); fenzit-be a3c8aa8 committed+pushed
   19-2-backend-owner-dashboard-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-3-backend-monthly-and-self-view-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-4-frontend-owner-dashboard-ui: backlog
