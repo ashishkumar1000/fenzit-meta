@@ -686,3 +686,9 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - **history_only end-date copy** needs a disable/end date in the `me/access` (or summary)
   payload if the UX's "Attendance tracking ended on {date}" copy is wanted — a BE contract
   addition, deferred.
+
+## Deferred from: code review of spec-18-1-and-18-2 (2026-09-29 — group 2)
+
+- **E2e raw-SQL dispatcher answers unknown SQL with `{ rows: [] }`** — broken read shapes whose substrings match keep passing; only the supabase `qbFor` path throws. A fail-loud unknown-statement catch is a house-wide fake-harness change across every domain's e2e specs; the substance of the CI-path patch already moved to the real-DB integration spec.
+- **~100 lines of fake infrastructure duplicated verbatim across the two attendance e2e specs** (`qbFor`, `baseFacts`, `dispatch`, pg-tx override, JWT helpers) — extract into a shared test util when another domain's e2e spec next touches the harness.
+- **CI without real-DB credentials silently skips all `.integration.spec.ts` tests** (`IS_REAL_DB ? it : it.skip` while the jest env setup provides dummies) — the rule/write/grid-SQL checks run only where real dev-DB credentials are exported; wire them into the CI runner env.

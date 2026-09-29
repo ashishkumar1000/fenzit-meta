@@ -1,0 +1,2527 @@
+diff --git a/src/attendance/correction.model.ts b/src/attendance/correction.model.ts
+new file mode 100644
+index 0000000..2f157bd
+--- /dev/null
++++ b/src/attendance/correction.model.ts
+@@ -0,0 +1,105 @@
++/**
++ * Pure model for corrections (Epic 18, 18-2): the FR-21 audit value shape
++ * (the JSON `old_value`/`new_value` carry and the wire entries echo) and
++ * the history view. No I/O, fully unit-testable.
++ *
++ * The audit value is the day's OBSERVABLE shape — the status, or the
++ * instants, or both — never the override row itself. Instants travel as
++ * tenant-offset ISO (AD-7) in wire entrys; the audit stores what the
++ * response showed.
++ */
++import type { DayMarkerKey, DayStatusKey } from './day-status-response.model';
++import { STATUS_KEYS_READONLY } from './day-status-response.model';
++
++/** The audit JSON shape: exactly one of status XOR times (DTO-enforced). A
++ *  seeded old_value carries the day's FR-10 grade — any status key. */
++export interface CorrectionValue {
++  status: DayStatusKey | null;
++  checkinAt: string | null;
++  checkoutAt: string | null;
++}
++
++export const EMPTY_CORRECTION_VALUE: CorrectionValue = Object.freeze({
++  status: null,
++  checkinAt: null,
++  checkoutAt: null,
++});
++
++/** One history entry (owner or `me`, cursor-paginated). */
++export interface CorrectionEntry {
++  id: string;
++  employeeId: string;
++  workDate: string;
++  correctedAt: string;
++  actorName: string | null;
++  /** Why the value changed (required, 1-500 after trim). */
++  note: string;
++  oldValue: CorrectionValue;
++  newValue: CorrectionValue;
++}
++
++/** { correctedAt, actorName, note, oldValue, newValue } — the one-liner the
++ *  day-detail sheet shows and the pre-fill source (the full history is the
++ *  corrections read). */
++export interface LatestCorrectionView {
++  correctedAt: string;
++  actorName: string | null;
++  note: string;
++  oldValue: CorrectionValue;
++  newValue: CorrectionValue;
++}
++
++/** Wire entry builder (history rows, already-read). */
++export function toCorrectionEntry(
++  row: {
++    id: string;
++    employee_id: string;
++    work_date: string;
++    created_at: Date | string;
++    note: string;
++    old_value: unknown;
++    new_value: unknown;
++  },
++  actorName: string | null,
++): CorrectionEntry {
++  return {
++    id: row.id,
++    employeeId: row.employee_id,
++    workDate: row.work_date,
++    correctedAt: new Date(row.created_at).toISOString(),
++    actorName,
++    note: row.note,
++    oldValue: validateCorrectionValue(row.old_value),
++    newValue: validateCorrectionValue(row.new_value),
++  };
++}
++
++/**
++ * The audit JSON columns are written by exactly one TS path (D4) — but the
++ * read must not trust the stored shape blindly (the jsonb could carry an
++ * old/foreign shape). Anything unexpected becomes an empty value, never a
++ * crash.
++ */
++export function validateCorrectionValue(raw: unknown): CorrectionValue {
++  if (typeof raw !== 'object' || raw === null) {
++    return { ...EMPTY_CORRECTION_VALUE };
++  }
++  const value = raw as Partial<Record<keyof CorrectionValue | string, unknown>>;
++  const status = value.status;
++  return {
++    status:
++      typeof status === 'string' && STATUS_KEYS_READONLY.includes(status as never)
++        ? (status as DayStatusKey)
++        : null,
++    checkinAt: typeof value.checkinAt === 'string' ? value.checkinAt : null,
++    checkoutAt: typeof value.checkoutAt === 'string' ? value.checkoutAt : null,
++  };
++}
++
++/** The markers the correction surface can act on (the sheet's rows). */
++export const CORRECTION_MARKER_KEYS: readonly DayMarkerKey[] = [
++  'corrected',
++  'leave_pending',
++  'checkout_missing',
++  'fake_location_attempt',
++];
+\ No newline at end of file
+diff --git a/src/attendance/corrections.controller.ts b/src/attendance/corrections.controller.ts
+new file mode 100644
+index 0000000..4f9add2
+--- /dev/null
++++ b/src/attendance/corrections.controller.ts
+@@ -0,0 +1,156 @@
++import {
++  Body,
++  Controller,
++  Delete,
++  Get,
++  HttpCode,
++  HttpStatus,
++  Param,
++  ParseUUIDPipe,
++  Post,
++  Put,
++  Query,
++} from '@nestjs/common';
++import {
++  ApiBearerAuth,
++  ApiOperation,
++  ApiResponse,
++  ApiTags,
++} from '@nestjs/swagger';
++import { Roles } from '../common/decorators/roles.decorator';
++import { CurrentUser } from '../common/decorators/current-user.decorator';
++import { Role } from '../common/enums/role.enum';
++import type { RequestUser } from '../common/interfaces/request-user.interface';
++import { CorrectionsService } from './corrections.service';
++import {
++  AcknowledgeDto,
++  ListCorrectionsQueryDto,
++  PutCorrectionDto,
++} from './dto/correction.dto';
++
++/**
++ * The corrections routes (18-2). Owner class-level; the `me` history read
++ * is a method-level @Roles(Role.TECHNICIAN) override (RolesGuard
++ * getAllAndOverride). Cross-tenant ids 404 with no existence leak (D6).
++ */
++@ApiTags('Attendance')
++@ApiBearerAuth()
++@Controller('attendance')
++@Roles(Role.OWNER)
++export class CorrectionsController {
++  constructor(private readonly correctionsService: CorrectionsService) {}
++
++  @Put('corrections/:employeeId/:workDate')
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'FR-21 correct a day: exactly one of status XOR check-in/out instants; appends one audit row, originals stay untouched',
++  })
++  @ApiResponse({
++    status: 200,
++    description:
++      '{ workDate, override, correctedAt, actorId } — the recompute-live response (next reads show the correction)',
++  })
++  @ApiResponse({
++    status: 404,
++    description: 'ATTENDANCE_EMPLOYEE_NOT_FOUND — employee outside this tenant',
++  })
++  @ApiResponse({
++    status: 422,
++    description:
++      'ATTENDANCE_FUTURE_DATE | ATTENDANCE_DATE_NOT_TRACKED | ATTENDANCE_INVALID_RANGE | VALIDATION_ERROR (mixed arms, note hygiene)',
++  })
++  putCorrection(
++    @CurrentUser() owner: RequestUser,
++    // :employeeId is a UUID (ParseUUIDPipe); :workDate is a calendar date —
++    // the service asserts its shape as a 422 (VALIDATION_ERROR).
++    @Param('employeeId', ParseUUIDPipe) employeeId: string,
++    @Param('workDate') workDate: string,
++    @Body() dto: PutCorrectionDto,
++  ) {
++    return this.correctionsService.put(owner, employeeId, workDate, dto, dto.note);
++  }
++
++  @Delete('corrections/:employeeId/:workDate')
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'FR-21 remove a correction (soft delete) — the underlying record state shows through again; own retries answer 200 { deleted: false }',
++  })
++  @ApiResponse({ status: 200, description: '{ deleted: boolean }' })
++  @ApiResponse({
++    status: 404,
++    description: 'ATTENDANCE_EMPLOYEE_NOT_FOUND — employee outside this tenant',
++  })
++  @ApiResponse({
++    status: 422,
++    description: 'ATTENDANCE_DATE_NOT_TRACKED (a non-tracked date has nothing to remove)',
++  })
++  removeCorrection(
++    @CurrentUser() owner: RequestUser,
++    // :workDate is a calendar date (asserted in the service as a 422).
++    @Param('employeeId', ParseUUIDPipe) employeeId: string,
++    @Param('workDate') workDate: string,
++  ) {
++    return this.correctionsService.remove(owner, employeeId, workDate);
++  }
++
++  @Get('corrections')
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'FR-21 the owner-visible correction history (employeeId required; optional workDate filter), cursor-paginated',
++  })
++  @ApiResponse({
++    status: 200,
++    description: 'PaginatedResponse<CorrectionEntry>, newest first',
++  })
++  listCorrections(
++    @CurrentUser() owner: RequestUser,
++    @Query('employeeId', ParseUUIDPipe) employeeId: string,
++    @Query() query: ListCorrectionsQueryDto,
++  ) {
++    return this.correctionsService.listOwner(owner, employeeId, query);
++  }
++
++  @Post('attempts/acknowledge')
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'AD-10 acknowledge the fake-location attempts on an employee-date — clears the day marker; the attempt rows are kept',
++  })
++  @ApiResponse({ status: 200, description: '{ acknowledgedCount } (200 even at 0)' })
++  @ApiResponse({
++    status: 404,
++    description: 'ATTENDANCE_EMPLOYEE_NOT_FOUND — employee outside this tenant',
++  })
++  acknowledgeAttempts(
++    @CurrentUser() owner: RequestUser,
++    @Body() dto: AcknowledgeDto,
++  ) {
++    return this.correctionsService.acknowledge(
++      owner,
++      dto.employeeId,
++      dto.workDate,
++    );
++  }
++
++  /** The technician's own correction history (identity from the JWT). */
++  @Get('me/corrections')
++  @Roles(Role.TECHNICIAN)
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'FR-21 my correction history (own entries only, optional workDate filter)',
++  })
++  @ApiResponse({
++    status: 200,
++    description: 'PaginatedResponse<CorrectionEntry>, newest first',
++  })
++  listMyCorrections(
++    @CurrentUser() user: RequestUser,
++    @Query() query: ListCorrectionsQueryDto,
++  ) {
++    return this.correctionsService.listMine(user, query);
++  }
++}
+\ No newline at end of file
+diff --git a/src/attendance/corrections.repository.ts b/src/attendance/corrections.repository.ts
+new file mode 100644
+index 0000000..b2b526a
+--- /dev/null
++++ b/src/attendance/corrections.repository.ts
+@@ -0,0 +1,274 @@
++import type { PoolClient } from 'pg';
++
++/**
++ * Every SQL statement for the corrections writes/reads (Epic 18, 18-2) —
++ * parameterised, tenant/employee-scoped, running inside the caller's
++ * transaction (the 15-7/16-1/17-1 pattern; NO new SQL functions, AD-3
++ * amendment). The override is UPSERTed against
++ * `attendance_day_overrides_empdate_uq`: DO UPDATE resets `deleted_at` to
++ * null, so a re-created correction on a previously removed date un-deletes
++ * the same physical row (the composite FK from the audit's
++ * `(employee_id, work_date)` stays valid on every path — no hard delete
++ * anywhere). `attendance_records` is NEVER touched here (AD-12).
++ */
++
++export interface OverrideRowFull {
++  id: string;
++  status: string | null;
++  manual_checkin_at: Date | string | null;
++  manual_checkout_at: Date | string | null;
++  deleted_at: Date | string | null;
++  created_by: string;
++}
++
++/** One active (not soft-deleted) override for the employee-date, else null. */
++export async function findActiveOverride(
++  tx: PoolClient,
++  tenantId: string,
++  employeeId: string,
++  workDate: string,
++): Promise<OverrideRowFull | null> {
++  const result = await tx.query<OverrideRowFull>(
++    `select id, status, manual_checkin_at, manual_checkout_at, deleted_at, created_by
++     from public.attendance_day_overrides
++     where tenant_id = $1::uuid and employee_id = $2::uuid
++       and work_date = $3::date and deleted_at is null
++     limit 1`,
++    [tenantId, employeeId, workDate],
++  );
++  return result.rows[0] ?? null;
++}
++
++/**
++ * The upsert-and-undelete write: fields not in the new value are reset to
++ * null so the row always carries exactly one arm (status XOR times) — a
++ * later status-only correction clears the manual instants of the previous
++ * times-only one (D4: "full current value replaces the previous one").
++ */
++export async function upsertOverride(
++  tx: PoolClient,
++  input: {
++    tenantId: string;
++    employeeId: string;
++    workDate: string;
++    status: string | null;
++    manualCheckinAt: string | null;
++    manualCheckoutAt: string | null;
++    createdBy: string;
++  },
++): Promise<void> {
++  await tx.query(
++    `insert into public.attendance_day_overrides
++       (tenant_id, employee_id, work_date, status, manual_checkin_at,
++        manual_checkout_at, created_by)
++     values ($1::uuid, $2::uuid, $3::date, $4::text, $5::timestamptz,
++             $6::timestamptz, $7::uuid)
++     on conflict (employee_id, work_date) do update set
++       status = excluded.status,
++       manual_checkin_at = excluded.manual_checkin_at,
++       manual_checkout_at = excluded.manual_checkout_at,
++       deleted_at = null,
++       created_by = excluded.created_by,
++       updated_at = now()`,
++    [
++      input.tenantId,
++      input.employeeId,
++      input.workDate,
++      input.status,
++      input.manualCheckinAt,
++      input.manualCheckoutAt,
++      input.createdBy,
++    ],
++  );
++}
++
++/** The day's original record row (old_value seeding; never mutated). */
++export async function findOriginalRecordForDate(
++  tx: PoolClient,
++  tenantId: string,
++  employeeId: string,
++  workDate: string,
++): Promise<{ checkin_at: Date | string } | null> {
++  const result = await tx.query<{ checkin_at: Date | string }>(
++    `select checkin_at from public.attendance_records
++     where tenant_id = $1::uuid and employee_id = $2::uuid
++       and work_date = $3::date
++     limit 1`,
++    [tenantId, employeeId, workDate],
++  );
++  return result.rows[0] ?? null;
++}
++
++/**
++ * Appends ONE audit row per correction/removal. `seq` (identity) orders
++ * a per-date chain; the row returns `created_at` for correctedAt.
++ */
++export async function insertCorrection(
++  tx: PoolClient,
++  input: {
++    tenantId: string;
++    employeeId: string;
++    workDate: string;
++    actorId: string;
++    oldValue: unknown;
++    newValue: unknown;
++    note: string;
++  },
++): Promise<{ id: string; created_at: Date | string }> {
++  const result = await tx.query<{ id: string; created_at: Date | string }>(
++    `insert into public.attendance_corrections
++       (tenant_id, employee_id, work_date, actor_id, note, old_value, new_value)
++     values ($1::uuid, $2::uuid, $3::date, $4::uuid, $5::text,
++             $6::jsonb, $7::jsonb)
++     returning id, created_at`,
++    [
++      input.tenantId,
++      input.employeeId,
++      input.workDate,
++      input.actorId,
++      input.note,
++      JSON.stringify(input.oldValue),
++      JSON.stringify(input.newValue),
++    ],
++  );
++  return result.rows[0];
++}
++
++/** Soft-delete: zero rows = nothing active was removed (own retry). */
++export async function softDeleteOverride(
++  tx: PoolClient,
++  tenantId: string,
++  employeeId: string,
++  workDate: string,
++): Promise<number> {
++  const result = await tx.query(
++    `update public.attendance_day_overrides
++     set deleted_at = now(), updated_at = now()
++     where tenant_id = $1::uuid and employee_id = $2::uuid
++       and work_date = $3::date and deleted_at is null`,
++    [tenantId, employeeId, workDate],
++  );
++  return result.rowCount ?? 0;
++}
++
++/**
++ * AD-10 / D5: clears the fake-location marker. The cast order matters —
++ * `attempted_at AT TIME ZONE $tz` renders the tenant-local wall time, whose
++ * `::date` equals `dateInTz`'s Intl computation (both read the IANA
++*tz database). Rows are kept (the dispute view, AD-4).
++ */
++export async function ackAttempts(
++  tx: PoolClient,
++  input: {
++    tenantId: string;
++    employeeId: string;
++    workDate: string;
++    timezone: string;
++  },
++): Promise<number> {
++  const result = await tx.query(
++    `update public.attendance_attempts
++     set acknowledged_at = now()
++     where tenant_id = $1::uuid and employee_id = $2::uuid
++       and outcome = 'mocked' and acknowledged_at is null
++       and (attempted_at at time zone $3::text)::date = $4::date`,
++    [
++      input.tenantId,
++      input.employeeId,
++      input.timezone,
++      input.workDate,
++    ],
++  );
++  return result.rowCount ?? 0;
++}
++
++/** One history page (keyset on created_at desc — the 17-1 D13 shape). */
++export async function findCorrectionHistory(
++  tx: PoolClient,
++  input: {
++    tenantId: string;
++    employeeId?: string;
++    workDate?: string;
++    cursorCreatedAt?: string;
++    cursorId?: string;
++    limit: number;
++  },
++): Promise<
++  {
++    id: string;
++    employee_id: string;
++    work_date: string;
++    created_at: Date | string;
++    note: string;
++    old_value: unknown;
++    new_value: unknown;
++    actor_name: string | null;
++  }[]
++> {
++  const conditions = ['c.tenant_id = $1::uuid'];
++  const params: unknown[] = [input.tenantId];
++  if (input.employeeId) {
++    params.push(input.employeeId);
++    conditions.push(`c.employee_id = $${params.length}::uuid`);
++  }
++  if (input.workDate) {
++    params.push(input.workDate);
++    conditions.push(`c.work_date = $${params.length}::date`);
++  }
++  if (input.cursorCreatedAt && input.cursorId) {
++    params.push(input.cursorCreatedAt, input.cursorId);
++    conditions.push(
++      `(c.created_at, c.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`,
++    );
++  }
++  params.push(input.limit + 1);
++  const result = await tx.query<{
++    id: string;
++    employee_id: string;
++    work_date: string;
++    created_at: Date | string;
++    note: string;
++    old_value: unknown;
++    new_value: unknown;
++    actor_name: string | null;
++  }>(
++    `select c.id, c.employee_id, c.work_date::text, c.created_at, c.note,
++            c.old_value, c.new_value, u.name as actor_name
++     from public.attendance_corrections c
++     left join public.users u on u.id = c.actor_id
++     where ${conditions.join(' and ')}
++     order by c.created_at desc, c.id desc
++     limit $${params.length}`,
++    params,
++  );
++  return result.rows;
++}
++
++/**
++ * The leave mirror gate's fact read (D2): dates in `[start, end]` the
++ * employee carries a NON-ABSENT override on — a status arm of present /
++ * half_day, or a times-only row (a corrected instant proves presence).
++ * Only plain `absent` correction rows may sit under approved leave.
++ */
++export async function findActiveOverrideDates(
++  tx: PoolClient,
++  input: {
++    tenantId: string;
++    employeeId: string;
++    start: string;
++    end: string;
++  },
++): Promise<string[]> {
++  const result = await tx.query<{ work_date: string }>(
++    `select work_date::text from public.attendance_day_overrides
++     where tenant_id = $1::uuid and employee_id = $2::uuid
++       and work_date between $3::date and $4::date
++       and deleted_at is null
++       and (status in ('present', 'half_day')
++            or (status is null
++                and (manual_checkin_at is not null
++                     or manual_checkout_at is not null)))`,
++    [input.tenantId, input.employeeId, input.start, input.end],
++  );
++  return result.rows.map((r) => r.work_date);
++}
+\ No newline at end of file
+diff --git a/src/attendance/corrections.service.ts b/src/attendance/corrections.service.ts
+new file mode 100644
+index 0000000..e6c1bf1
+--- /dev/null
++++ b/src/attendance/corrections.service.ts
+@@ -0,0 +1,467 @@
++import { Injectable, Logger } from '@nestjs/common';
++import { HttpException, HttpStatus } from '@nestjs/common';
++import { ErrorCode } from '../common/enums/error-code.enum';
++import type { RequestUser } from '../common/interfaces/request-user.interface';
++import type { PoolClient } from 'pg';
++import { CursorScope, decodeCursor, encodeCursor } from '../common/utils/cursor.util';
++import { PgPoolFactory } from '../common/pg/pg-pool.factory';
++import { dbNow } from './check-in-out.repository';
++import { toTenantOffsetIso } from './check-in-out.model';
++import { dateInTz } from './day-context';
++import {
++  attendanceEmployeeNotFound,
++  readDayStatusGrid,
++  type DayGridRow,
++} from './day-status.read';
++import { computeDayStatus } from './day-status.model';
++import { internalError, requireTenant } from './attendance-rpc.helpers';
++import { employeeExistsInTenant } from './leave.repository';
++import { AttendanceCalendarDateConstraint } from './dto/attendance-date.validator';
++import {
++  EMPTY_CORRECTION_VALUE,
++  toCorrectionEntry,
++  type CorrectionEntry,
++  type CorrectionValue,
++} from './correction.model';
++import {
++  ackAttempts,
++  findCorrectionHistory,
++  insertCorrection,
++  softDeleteOverride,
++  upsertOverride,
++} from './corrections.repository';
++
++/**
++ * Corrections write/read service (Epic 18, 18-2). Every write runs ONE
++ * `withTransaction`: tenant + employee scope → `attendance_lock_employee`
++ * (AD-5; also serialises the audit's seq ordering) → the D4 gates → the
++ * upsert/soft-delete → ONE audit row → COMMIT. `attendance_records` is
++ * never touched (AD-12). No idempotency header (AD-6's letter): a replayed
++ * PUT is a legitimate re-correction (FR-21); the UNIQUE pair + seq are the
++ * last guards.
++ */
++
++const logger = new Logger('Corrections');
++
++/** Note limits (also the DB CHECK's backstop). */
++const NOTE_MAX = 500;
++/** Control chars: C0 minus \t \n \r, DEL, zero-widths, BOM. */
++const CONTROL_CHARS =
++  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B\u200C\u200D\uFEFF]/;
++
++export interface PutCorrectionResponse {
++  workDate: string;
++  override: { status: string | null; checkinAt: string | null; checkoutAt: string | null };
++  correctedAt: string;
++  actorId: string;
++}
++
++export interface AcknowledgeResponse {
++  acknowledgedCount: number;
++}
++
++export interface CorrectionPage {
++  data: CorrectionEntry[];
++  nextCursor: string | null;
++  hasMore: boolean;
++}
++
++const DEFAULT_PAGE_SIZE = 20;
++const MAX_PAGE_SIZE = 50;
++
++/** One 422 helper — the house HttpException shape (leave.controller). */
++function unprocessable(code: string, message: string): HttpException {
++  return new HttpException(
++    { error_code: code, message },
++    HttpStatus.UNPROCESSABLE_ENTITY,
++  );
++}
++
++/** The observable shape of an override row (audit + write response). */
++function valueOfOverride(
++  override: {
++    status: string | null;
++    manual_checkin_at: Date | string | null;
++    manual_checkout_at: Date | string | null;
++  },
++  timezone: string,
++): CorrectionValue {
++  return {
++    status: (override.status as CorrectionValue['status']) ?? null,
++    checkinAt:
++      override.manual_checkin_at != null
++        ? toTenantOffsetIso(new Date(override.manual_checkin_at), timezone)
++        : null,
++    checkoutAt:
++      override.manual_checkout_at != null
++        ? toTenantOffsetIso(new Date(override.manual_checkout_at), timezone)
++        : null,
++  };
++}
++
++function dayAfter(isoDate: string): string {
++  const [y, m, d] = isoDate.split('-').map(Number);
++  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
++}
++
++@Injectable()
++export class CorrectionsService {
++  private readonly logger = new Logger(CorrectionsService.name);
++
++  constructor(private readonly pg: PgPoolFactory) {}
++
++  /**
++   * PUT /attendance/corrections/:employeeId/:workDate (owner). Gates in
++   * D4's priority order, one upsert + one audit row, COMMIT.
++   */
++  put(
++    owner: RequestUser,
++    employeeId: string,
++    workDate: string,
++    value: { status?: string | null; checkinAt?: string | null; checkoutAt?: string | null },
++    rawNote: string,
++  ): Promise<PutCorrectionResponse> {
++    const tenantId = requireTenant(owner);
++    const actorId = owner.userId;
++    this.assertWorkDate(workDate);
++    return this.pg.withTransaction(async (tx) => {
++      await this.lockEmployee(tx, employeeId);
++      const row = await this.dayRow(tx, tenantId, employeeId, workDate);
++
++      // Gate 1: employee scope (no existence leak) + note hygiene
++      if (!(await employeeExistsInTenant(tx, tenantId, employeeId))) {
++        throw attendanceEmployeeNotFound();
++      }
++      const note = rawNote.trim();
++      if (CONTROL_CHARS.test(note)) {
++        throw unprocessable(
++          ErrorCode.VALIDATION_ERROR,
++          'note contains invalid control characters',
++        );
++      }
++      if (note.length < 1 || note.length > NOTE_MAX) {
++        throw unprocessable(
++          ErrorCode.VALIDATION_ERROR,
++          'note must be between 1 and 500 characters after trimming',
++        );
++      }
++
++      // Gate 2: the FR-21 date window (any past or current date)
++      if (workDate > row.today) {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_FUTURE_DATE,
++          'Corrections cannot target a future date',
++        );
++      }
++
++      // Gate 3: tracked dates only (D4 rule 2; includes the FR-2 grace)
++      if (computeDayStatus(row).status === 'not_tracked') {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_DATE_NOT_TRACKED,
++          'Attendance is not tracked for this date',
++        );
++      }
++
++      // Exactly one of status XOR times (mixing → 422 VALIDATION_ERROR)
++      const hasStatus = value.status != null;
++      const hasTimes = value.checkinAt != null || value.checkoutAt != null;
++      if (hasStatus === hasTimes) {
++        throw unprocessable(
++          ErrorCode.VALIDATION_ERROR,
++          'Provide exactly one of status or check-in/check-out times',
++        );
++      }
++
++      const tz = row.ctx.timezone;
++      let newValue: CorrectionValue;
++      if (hasStatus) {
++        newValue = {
++          status: value.status as CorrectionValue['status'],
++          checkinAt: null,
++          checkoutAt: null,
++        };
++      } else {
++        // Gate 4: instants anchor the work_date (16-2's string compares)
++        await this.validateInstants(tx, row, value.checkinAt ?? null, value.checkoutAt ?? null);
++        newValue = {
++          status: null,
++          checkinAt: value.checkinAt
++            ? toTenantOffsetIso(new Date(value.checkinAt), tz)
++            : null,
++          checkoutAt: value.checkoutAt
++            ? toTenantOffsetIso(new Date(value.checkoutAt), tz)
++            : null,
++        };
++      }
++
++      const oldValue = this.captureOldValue(row, tz);
++      await upsertOverride(tx, {
++        tenantId,
++        employeeId,
++        workDate,
++        status: hasStatus ? (value.status as string) : null,
++        manualCheckinAt: value.checkinAt ?? null,
++        manualCheckoutAt: value.checkoutAt ?? null,
++        createdBy: actorId,
++      });
++      const audit = await insertCorrection(tx, {
++        tenantId,
++        employeeId,
++        workDate,
++        actorId,
++        oldValue,
++        newValue,
++        note,
++      });
++      logger.log('correction applied', { tenantId, employeeId, workDate });
++      return {
++        workDate,
++        override: { ...newValue },
++        correctedAt: new Date(audit.created_at).toISOString(),
++        actorId,
++      };
++    });
++  }
++
++  /** DELETE — soft delete; 200 { deleted:false } on an own retry. */
++  remove(
++    owner: RequestUser,
++    employeeId: string,
++    workDate: string,
++  ): Promise<{ deleted: boolean }> {
++    const tenantId = requireTenant(owner);
++    const actorId = owner.userId;
++    this.assertWorkDate(workDate);
++    return this.pg.withTransaction(async (tx) => {
++      if (!(await employeeExistsInTenant(tx, tenantId, employeeId))) {
++        throw attendanceEmployeeNotFound();
++      }
++      await this.lockEmployee(tx, employeeId);
++      const row = await this.dayRow(tx, tenantId, employeeId, workDate);
++
++      // Non-tracked dates have nothing to remove → the same 422 as gate 3.
++      if (computeDayStatus(row).status === 'not_tracked') {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_DATE_NOT_TRACKED,
++          'Attendance is not tracked for this date',
++        );
++      }
++      if (!row.override || workDate > row.today) {
++        // An own removal retry (already soft-deleted, or nothing was ever
++        // corrected) is 200-false — free.
++        return { deleted: false };
++      }
++
++      const oldValue = valueOfOverride(row.override, row.ctx.timezone);
++      const count = await softDeleteOverride(tx, tenantId, employeeId, workDate);
++      if (count > 0) {
++        await insertCorrection(tx, {
++          tenantId,
++          employeeId,
++          workDate,
++          actorId,
++          oldValue,
++          newValue: { ...EMPTY_CORRECTION_VALUE },
++          note: 'Removed correction',
++        });
++        logger.log('correction removed', { tenantId, employeeId, workDate });
++      } else {
++        logger.warn('soft delete landed zero rows', {
++          tenantId,
++          employeeId,
++          workDate,
++        });
++      }
++      return { deleted: count > 0 };
++    });
++  }
++
++  /**
++   * POST /attendance/attempts/acknowledge (D5) — 200 even at 0 (a
++   * read-shaped write; the UPDATE is naturally idempotent, rows are kept).
++   */
++  acknowledge(
++    owner: RequestUser,
++    employeeId: string,
++    workDate: string,
++  ): Promise<AcknowledgeResponse> {
++    const tenantId = requireTenant(owner);
++    this.assertWorkDate(workDate);
++    return this.pg.withTransaction(async (tx) => {
++      if (!(await employeeExistsInTenant(tx, tenantId, employeeId))) {
++        throw attendanceEmployeeNotFound();
++      }
++      const row = await tx.query<{ timezone: string }>(
++        'select timezone from public.tenants where id = $1::uuid',
++        [tenantId],
++      );
++      const timezone = row.rows[0]?.timezone;
++      if (!timezone) {
++        logger.error('Tenant timezone missing', { tenantId });
++        throw internalError('Failed to resolve the tenant timezone');
++      }
++      const count = await ackAttempts(tx, {
++        tenantId,
++        employeeId,
++        workDate,
++        timezone,
++      });
++      return { acknowledgedCount: count };
++    });
++  }
++
++  /** Owner history: one employee (required), optional workDate filter. */
++  listOwner(
++    owner: RequestUser,
++    employeeId: string,
++    input: { workDate?: string; cursor?: string; limit?: number },
++  ): Promise<CorrectionPage> {
++    return this.listTransact(owner, employeeId, input, 'day-corrections-owner');
++  }
++
++  /** Technician history: own entries only (identity from the JWT). */
++  listMine(
++    user: RequestUser,
++    input: { workDate?: string; cursor?: string; limit?: number },
++  ): Promise<CorrectionPage> {
++    return this.listTransact(user, user.userId, input, 'day-corrections-me');
++  }
++
++  private async listTransact(
++    user: RequestUser,
++    employeeId: string,
++    input: { workDate?: string; cursor?: string; limit?: number },
++    scope: CursorScope,
++  ): Promise<CorrectionPage> {
++    const pageSize = Math.min(
++      Math.max(input.limit ?? DEFAULT_PAGE_SIZE, 1),
++      MAX_PAGE_SIZE,
++    );
++    const tenantId = requireTenant(user);
++    return this.pg.withTransaction(async (tx) => {
++      let cursorCreatedAt: string | undefined;
++      let cursorId: string | undefined;
++      if (input.cursor) {
++        const decoded = decodeCursor(input.cursor, scope); // 400 on a foreign scope
++        cursorCreatedAt = decoded.createdAt;
++        cursorId = decoded.id;
++      }
++      const found = await findCorrectionHistory(tx, {
++        tenantId,
++        employeeId,
++        workDate: input.workDate,
++        cursorCreatedAt,
++        cursorId,
++        limit: pageSize,
++      });
++      const hasMore = found.length > pageSize;
++      const page = hasMore ? found.slice(0, pageSize) : found;
++      const last = page[page.length - 1];
++      const nextCursor =
++        hasMore && last
++          ? encodeCursor(last.id, new Date(last.created_at).toISOString(), scope)
++          : null;
++      return {
++        data: page.map((r) => toCorrectionEntry(r, r.actor_name)),
++        nextCursor,
++        hasMore,
++      };
++    });
++  }
++
++  private async lockEmployee(tx: PoolClient, employeeId: string): Promise<void> {
++    await tx.query('select public.attendance_lock_employee($1)', [employeeId]);
++  }
++
++  /** Route param shape gate: workDate is a calendar date, not garbage. */
++  private assertWorkDate(workDate: string): void {
++    if (!new AttendanceCalendarDateConstraint().validate(workDate)) {
++      throw unprocessable(
++        ErrorCode.VALIDATION_ERROR,
++        'workDate must be a valid calendar date in YYYY-MM-DD format',
++      );
++    }
++  }
++
++  private async dayRow(
++    tx: PoolClient,
++    tenantId: string,
++    employeeId: string,
++    workDate: string,
++  ): Promise<DayGridRow> {
++    const rows = await readDayStatusGrid(tx, tenantId, [employeeId], workDate, workDate);
++    const row = rows[0];
++    if (!row) {
++      logger.error('Day grid returned no row', { tenantId, employeeId, workDate });
++      throw internalError('Failed to read the correction facts');
++    }
++    return row;
++  }
++
++  /** old_value seeding (D4): prior override shape → record grade → empty. */
++  private captureOldValue(row: DayGridRow, timezone: string): CorrectionValue {
++    if (row.override) {
++      return valueOfOverride(row.override, timezone);
++    }
++    if (row.record) {
++      const recordWithoutOverride: DayGridRow = { ...row, override: null };
++      const outcome = computeDayStatus(recordWithoutOverride);
++      return {
++        status: outcome.status,
++        checkinAt: toTenantOffsetIso(new Date(row.record.checkin_at), timezone),
++        checkoutAt: row.record.checkout_at
++          ? toTenantOffsetIso(new Date(row.record.checkout_at), timezone)
++          : null,
++      };
++    }
++    return { ...EMPTY_CORRECTION_VALUE };
++  }
++
++  /** Gate 4: instants anchor the work_date — 16-2's compare shape, plus
++   *  checkinAt not in the future relative to DB now. */
++  private async validateInstants(
++    tx: PoolClient,
++    row: DayGridRow,
++    checkinAt: string | null,
++    checkoutAt: string | null,
++  ): Promise<void> {
++    const tz = row.ctx.timezone;
++    if (checkinAt !== null) {
++      const anchor = dateInTz(new Date(checkinAt), tz);
++      if (anchor !== row.workDate) {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_INVALID_RANGE,
++          'checkinAt must fall on the work date',
++        );
++      }
++      const now = await dbNow(tx);
++      if (new Date(checkinAt).getTime() > now.getTime()) {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_INVALID_RANGE,
++          'checkinAt cannot be in the future',
++        );
++      }
++    }
++    if (checkoutAt !== null) {
++      const anchor = dateInTz(new Date(checkoutAt), tz);
++      if (anchor !== row.workDate && anchor !== dayAfter(row.workDate)) {
++        throw unprocessable(
++          ErrorCode.ATTENDANCE_INVALID_RANGE,
++          'checkoutAt must fall on the work date (or the next day)',
++        );
++      }
++    }
++    if (
++      checkinAt !== null &&
++      checkoutAt !== null &&
++      new Date(checkoutAt).getTime() <= new Date(checkinAt).getTime()
++    ) {
++      throw unprocessable(
++        ErrorCode.ATTENDANCE_INVALID_RANGE,
++        'checkoutAt must be after checkinAt',
++      );
++    }
++  }
++}
++
++export { attendanceEmployeeNotFound };
+\ No newline at end of file
+diff --git a/src/attendance/day-status-response.model.ts b/src/attendance/day-status-response.model.ts
+new file mode 100644
+index 0000000..988ae41
+--- /dev/null
++++ b/src/attendance/day-status-response.model.ts
+@@ -0,0 +1,138 @@
++/**
++ * Pure response model for the day-statuses reads (Epic 18, 18-1): the
++ * `DayStatusRow` a range read renders and its list envelope. The engine
++ * (day-status.model.ts) computes every number this file only shapes —
++ * nothing here re-derives a grade, a late count or a credit (AD-22: one
++ * implementation).
++ *
++ * The 12 keys of UX-DR1 ride on the engine's STATUS_KEYS (its own source
++ * of truth); the FE Badge vocabulary (18-3) is generated from that array's
++ * documentation, never re-enumerated here.
++ */
++import { toTenantOffsetIso } from './check-in-out.model';
++import type { LatestCorrectionView } from './correction.model';
++
++const STATUS_KEYS = [
++  'not_tracked',
++  'not_checked_in_yet',
++  'in_progress',
++  'weekly_off',
++  'holiday',
++  'worked_on_holiday',
++  'leave',
++  'half_day_leave',
++  'present',
++  'half_day',
++  'absent',
++  'checkout_missing',
++] as const;
++
++const MARKER_KEYS = [
++  'corrected',
++  'leave_pending',
++  'checkout_missing',
++  'fake_location_attempt',
++] as const;
++
++export type DayStatusKey = (typeof STATUS_KEYS)[number];
++export type DayMarkerKey = (typeof MARKER_KEYS)[number];
++export type AttendanceSource = 'gps' | 'manual' | null;
++
++/** One employee-day of the FR-10 grid (a `me` or owner range read row). */
++export interface DayStatusRow {
++  workDate: string;
++  status: DayStatusKey;
++  lateMinutes: number | null;
++  isLate: boolean;
++  earlyCheckoutMinutes: number | null;
++  earlyCheckout: boolean;
++  workedMinutes: number | null;
++  /** FR-11 credits — decimal, summing over any range (Epic 19 reads them). */
++  daysWorked: number;
++  leaveCredit: number;
++  workedOnHolidayCredit: number;
++  isWeeklyOff: boolean;
++  holidayName: string | null;
++  isWorkingDay: boolean;
++  officeId: string | null;
++  officeName: string | null;
++  /** Check-in/out as AD-7 tenant-offset ISO, from the effective instants
++   *  (a times-only override's instants replace the record's). */
++  checkinAt: string | null;
++  checkoutAt: string | null;
++  checkinSource: AttendanceSource;
++  checkoutSource: AttendanceSource;
++  markers: DayMarkerKey[];
++  /** One-liner for the sheet: the newest entry in the day's audit chain. */
++  latestCorrection?: LatestCorrectionView;
++}
++
++/** Owner: the single-employee range (the multi-employee grid is Epic 19). */
++export interface DayStatusesResponse {
++  employeeId: string;
++  from: string;
++  to: string;
++  days: DayStatusRow[];
++}
++
++/** Technician: the own range (identity from the JWT only). */
++export interface MeDayStatusesResponse {
++  from: string;
++  to: string;
++  days: DayStatusRow[];
++}
++
++export const STATUS_KEYS_READONLY: readonly DayStatusKey[] = STATUS_KEYS;
++export const MARKER_KEYS_READONLY: readonly DayMarkerKey[] = MARKER_KEYS;
++
++/**
++ * Wire mapper for one engine outcome: the ctx labels plus the instants as
++ * AD-7 tenant-offset ISO. `checkin`/`checkout` are the day's effective
++ * instants (the read layer passes them once). `isLate`/`earlyCheckout` are
++ * the same booleans the FR-4 today-record derives from the same imported
++ * math — the parity probe pins them.
++ */
++export function toDayStatusRow(input: {
++  workDate: string;
++  isWeeklyOff: boolean;
++  holidayName: string | null;
++  isWorkingDay: boolean;
++  officeId: string | null;
++  officeName: string | null;
++  timezone: string;
++  outcome: import('./day-status.model').DayStatusOutcome;
++  checkin: Date | null;
++  checkout: Date | null;
++  latestCorrection: LatestCorrectionView | null;
++}): DayStatusRow {
++  const { outcome, latestCorrection } = input;
++  return {
++    workDate: input.workDate,
++    status: outcome.status,
++    lateMinutes: outcome.lateMinutes,
++    isLate: outcome.isLate,
++    earlyCheckoutMinutes: outcome.earlyCheckoutMinutes,
++    earlyCheckout: outcome.earlyCheckout,
++    workedMinutes: outcome.workedMinutes,
++    daysWorked: outcome.daysWorked,
++    leaveCredit: outcome.leaveCredit,
++    workedOnHolidayCredit: outcome.workedOnHolidayCredit,
++    isWeeklyOff: input.isWeeklyOff,
++    holidayName: input.holidayName,
++    isWorkingDay: input.isWorkingDay,
++    officeId: input.officeId,
++    officeName: input.officeName,
++    checkinAt:
++      input.checkin != null
++        ? toTenantOffsetIso(input.checkin, input.timezone)
++        : null,
++    checkoutAt:
++      input.checkout != null
++        ? toTenantOffsetIso(input.checkout, input.timezone)
++        : null,
++    checkinSource: outcome.checkinSource,
++    checkoutSource: outcome.checkoutSource,
++    markers: [...outcome.markers],
++    ...(latestCorrection ? { latestCorrection } : {}),
++  };
++}
+\ No newline at end of file
+diff --git a/src/attendance/day-status.model.ts b/src/attendance/day-status.model.ts
+new file mode 100644
+index 0000000..54c2824
+--- /dev/null
++++ b/src/attendance/day-status.model.ts
+@@ -0,0 +1,421 @@
++/**
++ * THE FR-10 day-status engine (18-1) — first-match-wins through the ten
++ * rules and the FR-11 credit graders, in exactly ONE place. Every Epic 18
++ * route, and every Epic 19 aggregate, reads rows only from here — a
++ * calendar cell, a day-detail sheet and an owner dashboard can never
++ * disagree about a day's status (the 15-9 drift class, closed).
++ *
++ * Pure over already-read facts (AD-22 shape): a `DayContext` per row (the
++ * assembled facts, including the leave seam), the day's record row, the
++ * day's ACTIVE override row and the unacknowledged-mocked-attempt flag.
++ * Interplay rules the ladder carries:
++ *  - A status-only correction short-circuits; a times-only correction
++ *    replaces the instants and evaluation CONTINUES through rules 2-10
++ *    (a corrected check-in on a Weekly off/Holiday reads worked_on_holiday,
++ *    never 'present' on an off-day).
++ *  - Leave outranked by rules 1/3/4/7 keeps its day rows as data but earns
++ *    NO credits (the row shows the winning status).
++ *  - No Late/Early flag on any off-day-derived status (PRD decided v1).
++ *  - `not_tracked` loses only to rule 1 — a history-preservation arm for
++ *    dates whose enrolment ended later (the write gate blocks NEW
++ *    corrections on untracked dates).
++ */
++import type { DayContext } from './day-context';
++import {
++  computeEarlyCheckoutMinutes,
++  computeLateMinutes,
++  minuteOfDayInTz,
++  workedMinutesBetween,
++} from './day-context';
++import type {
++  AttendanceSource,
++  DayMarkerKey,
++  DayStatusKey,
++} from './day-status-response.model';
++
++export { STATUS_KEYS_READONLY as STATUS_KEYS } from './day-status-response.model';
++export { MARKER_KEYS_READONLY as MARKER_KEYS } from './day-status-response.model';
++export type {
++  AttendanceSource,
++  DayMarkerKey,
++  DayStatusKey,
++} from './day-status-response.model';
++
++/** The day's `attendance_records` row (the subset the engine reads). */
++export interface EngineRecordRow {
++  checkin_at: Date | string;
++  checkout_at: Date | string | null;
++}
++
++/** The day's ACTIVE override row (deleted_at IS NULL — pre-filtered). */
++export interface EngineOverrideRow {
++  status: string | null;
++  manual_checkin_at: Date | string | null;
++  manual_checkout_at: Date | string | null;
++}
++
++/** Per-date engine input. `today` is the DB-clock tenant-local date. */
++export interface DayStatusInput {
++  ctx: DayContext;
++  record: EngineRecordRow | null;
++  override: EngineOverrideRow | null;
++  /** AD-10: any unacknowledged mocked attempt on this employee-date. */
++  hasUnackMockedAttempt: boolean;
++  today: string;
++}
++
++/** The engine outcome — the numbers one row shows (the wire mapping adds
++ *  ISO instants and the ctx labels). */
++export interface DayStatusOutcome {
++  status: DayStatusKey;
++  lateMinutes: number | null;
++  isLate: boolean;
++  earlyCheckoutMinutes: number | null;
++  earlyCheckout: boolean;
++  workedMinutes: number | null;
++  daysWorked: number;
++  leaveCredit: number;
++  workedOnHolidayCredit: number;
++  /** Effective instants' sources — a times-only override marks its fields. */
++  checkinSource: AttendanceSource;
++  checkoutSource: AttendanceSource;
++  markers: DayMarkerKey[];
++}
++
++/** The zero metrics a rule without any instants returns. */
++function nullMetrics(): Pick<
++  DayStatusOutcome,
++  'lateMinutes' | 'isLate' | 'earlyCheckoutMinutes' | 'earlyCheckout'
++> {
++  return {
++    lateMinutes: null,
++    isLate: false,
++    earlyCheckoutMinutes: null,
++    earlyCheckout: false,
++  };
++}
++
++/**
++ * The instants rule 1's times-only arm substitutes — PER FIELD: a
++ * checkout-only row corrects only the checkout and keeps the record's
++ * check-in (each corrected field carries its 'manual' source, each
++ * record-served field stays 'gps').
++ */
++export function effectiveInstants(
++  record: EngineRecordRow | null,
++  override: EngineOverrideRow | null,
++): {
++  checkin: Date | null;
++  checkout: Date | null;
++  checkinSource: AttendanceSource;
++  checkoutSource: AttendanceSource;
++} {
++  const overrideCheckin = override?.manual_checkin_at != null;
++  const overrideCheckout = override?.manual_checkout_at != null;
++  const checkin = overrideCheckin
++    ? new Date(override!.manual_checkin_at as Date | string)
++    : record
++      ? new Date(record.checkin_at)
++      : null;
++  const checkout = overrideCheckout
++    ? new Date(override!.manual_checkout_at as Date | string)
++    : record?.checkout_at
++      ? new Date(record.checkout_at as Date | string)
++      : null;
++  return {
++    checkin,
++    checkout,
++    checkinSource: overrideCheckin ? 'manual' : record ? 'gps' : null,
++    checkoutSource: overrideCheckout
++      ? 'manual'
++      : record?.checkout_at
++        ? 'gps'
++        : null,
++  };
++}
++
++/** GR-1: a status-only correction fixes the grade directly (FR-11). */
++function daysWorkedForFixed(
++  status: 'present' | 'half_day' | 'absent',
++): number {
++  return status === 'present' ? 1 : status === 'half_day' ? 0.5 : 0;
++}
++
++/** GR-2: rule 3's grade — credit by the same thresholds; open → 0. */
++function workedOnHolidayGrade(
++  workedMinutes: number | null,
++  fullDayMinutes: number | null,
++): number {
++  if (workedMinutes === null) return 0;
++  if (fullDayMinutes === null) {
++    // No rule covers the date — no thresholds exist; the permissive
++    // reading credits any positive shift as full (GR-3's no-rule arm).
++    return workedMinutes > 0 ? 1 : 0;
++  }
++  if (workedMinutes >= fullDayMinutes) return 1;
++  if (workedMinutes >= fullDayMinutes / 2) return 0.5;
++  return 0;
++}
++
++/**
++ * GR-3: rule 7's grade. No rule → the permissive reading (worked minutes
++ * present reads present — a record without a covering rule has no
++ * thresholds to compare against).
++ */
++function gradeWorked(
++  workedMinutes: number,
++  fullDayMinutes: number | null,
++): DayStatusKey {
++  if (fullDayMinutes === null) {
++    return workedMinutes > 0 ? 'present' : 'absent';
++  }
++  if (workedMinutes >= fullDayMinutes) return 'present';
++  if (workedMinutes >= fullDayMinutes / 2) return 'half_day';
++  return 'absent';
++}
++
++/**
++ * computeDayStatus — the ten FR-10 rules, first-match-wins. The
++ * `leave_pending` marker (any pending-leave part covering the date) rides
++ * every status, per rule 10's letter — the calendar keeps the indication
++ * on the one day it is most actionable.
++ */
++export function computeDayStatus(input: DayStatusInput): DayStatusOutcome {
++  const { ctx, record, override, today } = input;
++  const isPast = ctx.workDate < today;
++  const markers: DayMarkerKey[] = [];
++  if (input.hasUnackMockedAttempt) markers.push('fake_location_attempt');
++  if (override) markers.push('corrected');
++  if (ctx.leaveState === 'pending') markers.push('leave_pending');
++
++  const { checkin, checkout, checkinSource, checkoutSource } =
++    effectiveInstants(record, override);
++  const fullDayMinutes =
++    ctx.startMinute !== null && ctx.endMinute !== null
++      ? ctx.endMinute - ctx.startMinute
++      : null;
++  const workingMinutes =
++    checkin && checkout ? workedMinutesBetween(checkin, checkout) : null;
++
++  // Late / early ride every rule with a covering rule + instants — except
++  // the off-day statuses (rule 3's decided suppression carries to rule 4).
++  const metrics = (): Pick<
++    DayStatusOutcome,
++    'lateMinutes' | 'isLate' | 'earlyCheckoutMinutes' | 'earlyCheckout'
++  > => {
++    if (!checkin || ctx.startMinute === null) return nullMetrics();
++    const lateMinutes = computeLateMinutes(
++      minuteOfDayInTz(checkin, ctx.timezone),
++      ctx.startMinute,
++      ctx.lateCutoffMinutes ?? 0,
++    );
++    const earlyCheckoutMinutes =
++      checkout && ctx.endMinute !== null
++        ? computeEarlyCheckoutMinutes(
++            minuteOfDayInTz(checkout, ctx.timezone),
++            ctx.endMinute,
++          )
++        : null;
++    return {
++      lateMinutes,
++      isLate: lateMinutes > 0,
++      earlyCheckoutMinutes,
++      earlyCheckout: earlyCheckoutMinutes !== null,
++    };
++  };
++
++  // ---- Rule 1: an active correction wins ----------------------------------
++  if (override?.status != null) {
++    const status = override.status as 'present' | 'half_day' | 'absent';
++    // A status-only arm never yields an off-day status (worked_on_holiday
++    // comes only from rule 3), so Late/Early read the effective instants
++    // like any stored record.
++    return {
++      status,
++      ...metrics(),
++      workedMinutes: workingMinutes,
++      daysWorked: daysWorkedForFixed(status),
++      leaveCredit: 0, // outranked leave keeps its rows as data, earns none
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++
++  // ---- Rule 2: not tracked ------------------------------------------------
++  if (!ctx.tracked) {
++    return {
++      status: 'not_tracked',
++      ...nullMetrics(),
++      workedMinutes: workingMinutes, // history the owner may still review
++      daysWorked: 0,
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++
++  // ---- Rule 3: worked on a weekly off / holiday (credit separate) ---------
++  if ((ctx.isWeeklyOff || ctx.holidayId !== null) && checkin) {
++    return {
++      status: 'worked_on_holiday',
++      ...nullMetrics(), // no Late/Early flag on Weekly off / Holiday check-ins
++      workedMinutes: workingMinutes,
++      daysWorked: 0, // never mixed in (FR-11)
++      leaveCredit: 0, // leave behind rule 3 stays data-only
++      workedOnHolidayCredit: workedOnHolidayGrade(workingMinutes, fullDayMinutes),
++      checkinSource,
++      checkoutSource,
++      markers:
++        isPast && !checkout ? [...markers, 'checkout_missing'] : markers,
++    };
++  }
++
++  // ---- Rule 4: weekly off, else holiday (no check-in) -----------------------
++  if (ctx.isWeeklyOff) {
++    return {
++      status: 'weekly_off',
++      ...nullMetrics(),
++      workedMinutes: null,
++      daysWorked: 0,
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++  if (ctx.holidayId !== null) {
++    return {
++      status: 'holiday',
++      ...nullMetrics(),
++      workedMinutes: null,
++      daysWorked: 0,
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++
++  // ---- Rule 5: approved full-day leave, no check-in --------------------------
++  if (
++    ctx.leaveState === 'approved' &&
++    ctx.leavePart === 'full_day' &&
++    !checkin
++  ) {
++    return {
++      status: 'leave',
++      ...nullMetrics(),
++      workedMinutes: null,
++      daysWorked: 0,
++      leaveCredit: 1,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++
++  // ---- Rule 6: approved half-day leave ---------------------------------------
++  // An OPEN record on TODAY defers to rule 10 ("open by midnight" cannot
++  // be known yet) — the open-record arm (working half 0 + checkout_missing)
++  // is PAST-only.
++  if (ctx.leaveState === 'approved' && ctx.leavePart !== 'full_day') {
++    const openToday = checkin !== null && checkout === null && !isPast;
++    if (!openToday) {
++      const pastOpen = checkin !== null && checkout === null && isPast;
++      const earnedHalf =
++        workingMinutes !== null &&
++        fullDayMinutes !== null &&
++        workingMinutes >= fullDayMinutes / 2;
++      return {
++        status: 'half_day_leave',
++        ...metrics(),
++        workedMinutes: workingMinutes,
++        daysWorked: earnedHalf && checkout !== null ? 0.5 : 0,
++        leaveCredit: 0.5,
++        workedOnHolidayCredit: 0,
++        checkinSource,
++        checkoutSource,
++        markers: pastOpen ? [...markers, 'checkout_missing'] : markers,
++      };
++    }
++  }
++
++  // ---- Rule 7: check-in with check-out, graded by the worked minutes --------
++  if (checkin && checkout) {
++    const status = gradeWorked(workingMinutes as number, fullDayMinutes);
++    return {
++      status,
++      ...metrics(),
++      workedMinutes: workingMinutes,
++      daysWorked: status === 'present' ? 1 : status === 'half_day' ? 0.5 : 0,
++      leaveCredit: 0, // leave outranked by a worked day stays data-only
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers, // a pending leave riding a worked day keeps the marker
++    };
++  }
++
++  // ---- Rule 8: past date, check-in with no check-out --------------------------
++  if (isPast && checkin) {
++    return {
++      status: 'checkout_missing',
++      ...metrics(), // late still shows; early is null without a checkout
++      workedMinutes: null,
++      daysWorked: 0, // zero "until corrected" — a later correction flips it live
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers: [...markers, 'checkout_missing'],
++    };
++  }
++
++  // ---- Rule 9: past date, no check-in, no approved leave ----------------------
++  if (isPast) {
++    return {
++      status: 'absent',
++      ...nullMetrics(),
++      workedMinutes: null,
++      daysWorked: 0,
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers, // pending leave shows the marker, never a status change
++    };
++  }
++
++  // ---- Rule 10: today / future -------------------------------------------------
++  if (!checkin) {
++    return {
++      status: 'not_checked_in_yet',
++      ...nullMetrics(),
++      workedMinutes: null,
++      daysWorked: 0,
++      leaveCredit: 0,
++      workedOnHolidayCredit: 0,
++      checkinSource,
++      checkoutSource,
++      markers,
++    };
++  }
++  return {
++    status: 'in_progress',
++    ...metrics(),
++    workedMinutes: null,
++    daysWorked: 0,
++    leaveCredit: 0,
++    workedOnHolidayCredit: 0,
++    checkinSource,
++    checkoutSource,
++    markers,
++  };
++}
+\ No newline at end of file
+diff --git a/src/attendance/day-status.read.ts b/src/attendance/day-status.read.ts
+new file mode 100644
+index 0000000..3c017ea
+--- /dev/null
++++ b/src/attendance/day-status.read.ts
+@@ -0,0 +1,555 @@
++import { ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
++import type { PoolClient } from 'pg';
++import { PgPoolFactory } from '../common/pg/pg-pool.factory';
++import { SupabaseClientFactory } from '../common/factories/supabase-client.factory';
++import { ErrorCode } from '../common/enums/error-code.enum';
++import type { RequestUser } from '../common/interfaces/request-user.interface';
++import { internalError, requireTenant } from './attendance-rpc.helpers';
++import { employeeExistsInTenant } from './leave.repository';
++import { tenantToday } from './enrolments.repository';
++import type { AccessStateRow } from './enrolments-response.model';
++import { parseDateRange } from './enrolments-response.model';
++import type { OfficeRuleRow, WeeklyOffRow } from './me-summary.model';
++import { pickRuleForDate, pickWeeklyOffDays } from './me-summary.model';
++import type {
++  DayContext,
++  DayFacts,
++  OfficeJoinRow,
++} from './day-context';
++import { assembleDayContext } from './day-context';
++import {
++  computeDayStatus,
++  effectiveInstants,
++  type DayStatusOutcome,
++} from './day-status.model';
++import {
++  toDayStatusRow,
++  type DayStatusRow,
++  type DayStatusesResponse,
++  type MeDayStatusesResponse,
++} from './day-status-response.model';
++import { validateCorrectionValue, type LatestCorrectionView } from './correction.model';
++
++/**
++ * The day-statuses reads (18-1): the per-employee-date fact grid and the
++ * FR-10 engine outcomes over a range, inside ONE transaction. The SQL is
++ * the batched shape of day-context.read.ts (AD-22) — the statements all
++ * carry a `valid && range` / BETWEEN overlap cut, then assemble per date
++ * with the same pickers `me/summary` and the day context use (one
++ * implementation; the 15-9 drift class stays closed). No per-date SQL: the
++ * 50-employee × 31-day NFR-7 budget rides on the batch even though the
++ * owner route admits a single employee (Epic 19 aggregates reuse this
++ * exactly).
++ *
++ * Owner routes verify the employee 404-no-leak (D6). `me` routes run the
++ * AD-17 access gate (none → 403; history_only readable).
++ */
++
++const logger = new Logger('DayStatusRead');
++
++export const DAY_STATUSES_MAX_SPAN_DAYS = 62;
++
++interface EnrolmentFactRow {
++  employee_id: string;
++  valid: string;
++  enabled_at: Date | string;
++}
++
++interface AssignmentRow {
++  employee_id: string;
++  valid: string;
++  office_id: string;
++  office_name: string;
++  office_lat: number;
++  office_lng: number;
++  radius_m: number;
++}
++
++type RuleRow = OfficeRuleRow & { office_id: string };
++
++interface RecordRow {
++  employee_id: string;
++  work_date: string;
++  checkin_at: Date | string;
++  checkout_at: Date | string | null;
++}
++
++interface AttemptFactRow {
++  employee_id: string;
++  attempt_date: string;
++  n: string;
++}
++
++interface LeaveDayRow {
++  employee_id: string;
++  leave_date: string;
++  state: 'pending' | 'approved';
++  part: 'full_day' | 'first_half' | 'second_half';
++}
++
++interface OverrideRow {
++  employee_id: string;
++  work_date: string;
++  status: string | null;
++  manual_checkin_at: Date | string | null;
++  manual_checkout_at: Date | string | null;
++}
++
++interface CorrectionRow {
++  employee_id: string;
++  work_date: string;
++  created_at: Date | string;
++  note: string;
++  old_value: unknown;
++  new_value: unknown;
++  actor_name: string | null;
++}
++
++/** One assembled employee-date of the grid (the engine input bundle). */
++export interface DayGridRow {
++  employeeId: string;
++  workDate: string;
++  today: string;
++  ctx: DayContext;
++  record: RecordRow | null;
++  override: OverrideRow | null;
++  hasUnackMockedAttempt: boolean;
++  latestCorrection: CorrectionRow | null;
++}
++
++/** The D6/D7 range validator (owner + me): the span cap runs BEFORE any
++ *  per-date work (the leave-validation DoS lesson). */
++export function validateDayStatusRange(
++  from: string,
++  to: string,
++): { ok: false; message: string } | { ok: true } {
++  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
++  if (!dateRe.test(from) || !dateRe.test(to)) {
++    return { ok: false, message: 'Dates must be in YYYY-MM-DD format' };
++  }
++  if (to < from) {
++    return {
++      ok: false,
++      message: 'The end date cannot be before the start date',
++    };
++  }
++  const spanDays = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1;
++  if (spanDays > DAY_STATUSES_MAX_SPAN_DAYS) {
++    return {
++      ok: false,
++      message: `A day-status range covers at most ${DAY_STATUSES_MAX_SPAN_DAYS} days`,
++    };
++  }
++  return { ok: true };
++}
++
++/** Every date of `[from, to]` inclusive (span-capped upstream). */
++function enumerateRange(from: string, to: string): string[] {
++  const dates: string[] = [];
++  let cursor = from;
++  while (cursor <= to) {
++    dates.push(cursor);
++    const [y, m, d] = cursor.split('-').map(Number);
++    cursor = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
++  }
++  return dates;
++}
++
++const keyOf = (employeeId: string, date: string): string =>
++  `${employeeId}|${date}`;
++
++/**
++ * Reads the grid's batched facts (ONE transaction client) and assembles the
++ * per-date engine inputs — the queries mirror buildDayContext's shape,
++ * generalised from one date to `employeeIds[] × [from, to]`.
++ */
++export async function readDayStatusGrid(
++  tx: PoolClient,
++  tenantId: string,
++  employeeIds: string[],
++  from: string,
++  to: string,
++): Promise<DayGridRow[]> {
++  const today = await tenantToday(tx, tenantId);
++  const [timezone, settings, enrolments, assignments, woOverrides, woDefaults, holidays] =
++    await Promise.all([
++      tx
++        .query<{ timezone: string }>(
++          'select timezone from public.tenants where id = $1::uuid',
++          [tenantId],
++        )
++        .then((r) => r.rows[0]?.timezone ?? null),
++      tx
++        .query<{ enabled: boolean; setup_completed_at: Date | string | null }>(
++          `select enabled, setup_completed_at from public.attendance_settings
++           where tenant_id = $1::uuid`,
++          [tenantId],
++        )
++        .then((r) => r.rows[0] ?? null),
++      tx
++        .query<EnrolmentFactRow>(
++          `select employee_id, valid::text, enabled_at
++           from public.attendance_enrolments
++           where tenant_id = $1::uuid
++             and employee_id = any($2::uuid[]) and valid && $3::daterange`,
++          [tenantId, employeeIds, `[${from},${to}]`],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<AssignmentRow>(
++          `select a.employee_id, a.office_id, a.valid::text, o.name as office_name,
++                  o.latitude as office_lat, o.longitude as office_lng, o.radius_m
++           from public.attendance_office_assignments a
++           join public.attendance_offices o on o.id = a.office_id
++           where a.tenant_id = $1::uuid
++             and a.employee_id = any($2::uuid[]) and a.valid && $3::daterange`,
++          [tenantId, employeeIds, `[${from},${to}]`],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<WeeklyOffRow & { employee_id: string }>(
++          `select employee_id, valid::text, days
++           from public.attendance_weekly_off_overrides
++           where tenant_id = $1::uuid
++             and employee_id = any($2::uuid[]) and valid && $3::daterange`,
++          [tenantId, employeeIds, `[${from},${to}]`],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<WeeklyOffRow>(
++          `select valid::text, days from public.attendance_weekly_off_defaults
++           where tenant_id = $1::uuid and valid && $2::daterange`,
++          [tenantId, `[${from},${to}]`],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<{ id: string; name: string; holiday_date: string }>(
++          `select id, name, holiday_date::text from public.holidays
++           where tenant_id = $1::uuid and holiday_date between $2::date and $3::date`,
++          [tenantId, from, to],
++        )
++        .then((r) => r.rows),
++    ]);
++  if (!timezone) {
++    logger.error('Tenant timezone missing', { tenantId });
++    throw internalError('Failed to resolve day-status facts');
++  }
++  const holidayMap = new Map(
++    holidays.map((h) => [h.holiday_date, { id: h.id, name: h.name }]),
++  );
++
++  // The rules hang off the covering assignment's office — dedupe the IDs.
++  const officeIds = [...new Set(assignments.map((row) => row.office_id))];
++  const [rules, records, attempts, leaveDays, overrides, corrections] =
++    await Promise.all([
++      officeIds.length === 0
++        ? (Promise.resolve([]) as Promise<RuleRow[]>)
++        : tx
++            .query<RuleRow>(
++              `select office_id, id, valid::text, start_time::text,
++                      end_time::text, late_cutoff_minutes
++               from public.attendance_office_rules
++               where office_id = any($1::uuid[]) and valid && $2::daterange`,
++              [officeIds, `[${from},${to}]`],
++            )
++            .then((r) => r.rows),
++      tx
++        .query<RecordRow>(
++          `select employee_id, work_date::text, checkin_at, checkout_at
++           from public.attendance_records
++           where tenant_id = $1::uuid and employee_id = any($2::uuid[])
++             and work_date between $3::date and $4::date`,
++          [tenantId, employeeIds, from, to],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<AttemptFactRow>(
++          `select employee_id,
++                  (attempted_at at time zone $2::text)::date::text as attempt_date,
++                  count(*)::text as n
++           from public.attendance_attempts
++           where tenant_id = $1::uuid and employee_id = any($3::uuid[])
++             and outcome = 'mocked' and acknowledged_at is null
++             and (attempted_at at time zone $2::text)::date between $4 and $5
++           group by employee_id, attempt_date`,
++          [tenantId, timezone, employeeIds, from, to],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<LeaveDayRow>(
++          `select d.employee_id, d.leave_date::text, d.state, r.part
++           from public.leave_request_days d
++           join public.leave_requests r on r.id = d.leave_request_id
++           where d.tenant_id = $1::uuid and d.employee_id = any($2::uuid[])
++             and d.leave_date between $3::date and $4::date
++             and d.state in ('pending','approved')`,
++          [tenantId, employeeIds, from, to],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<OverrideRow>(
++          `select employee_id, work_date::text, status,
++                  manual_checkin_at, manual_checkout_at
++           from public.attendance_day_overrides
++           where tenant_id = $1::uuid and employee_id = any($2::uuid[])
++             and work_date between $3::date and $4::date
++             and deleted_at is null`,
++          [tenantId, employeeIds, from, to],
++        )
++        .then((r) => r.rows),
++      tx
++        .query<CorrectionRow>(
++          `select distinct on (c.employee_id, c.work_date)
++                  c.employee_id, c.work_date::text, c.created_at, c.note,
++                  c.old_value, c.new_value, u.name as actor_name
++           from public.attendance_corrections c
++           left join public.users u on u.id = c.actor_id
++           where c.tenant_id = $1::uuid and c.employee_id = any($2::uuid[])
++             and c.work_date between $3::date and $4::date
++           order by c.employee_id, c.work_date, c.seq desc`,
++          [tenantId, employeeIds, from, to],
++        )
++        .then((r) => r.rows),
++    ]);
++
++  const attemptsKey = new Set(
++    attempts.map((r) => keyOf(r.employee_id, r.attempt_date)),
++  );
++  const recordKey = new Map(
++    records.map((r) => [keyOf(r.employee_id, r.work_date), r]),
++  );
++  const overrideKey = new Map(
++    overrides.map((r) => [keyOf(r.employee_id, r.work_date), r]),
++  );
++  const correctionKey = new Map(
++    corrections.map((r) => [keyOf(r.employee_id, r.work_date), r]),
++  );
++  const leaveKey = new Map(
++    leaveDays.map((r) => [keyOf(r.employee_id, r.leave_date), r]),
++  );
++  const rulesByOffice = new Map<string, OfficeRuleRow[]>();
++  for (const rule of rules) {
++    const list = rulesByOffice.get(rule.office_id) ?? [];
++    list.push(rule);
++    rulesByOffice.set(rule.office_id, list);
++  }
++
++  const dates = enumerateRange(from, to);
++  const grid: DayGridRow[] = [];
++  for (const employeeId of employeeIds) {
++    for (const date of dates) {
++      const assignment = assignments.find(
++        (a) => a.employee_id === employeeId && rangeCoversRow(a.valid, date),
++      );
++      // The rule depends on the covering assignment's office (16-1 shape).
++      const enrolment = enrolments.find(
++        (e) => e.employee_id === employeeId && rangeCoversRow(e.valid, date),
++      );
++      const office: OfficeJoinRow | null = assignment
++        ? {
++            office_id: assignment.office_id,
++            office_name: assignment.office_name,
++            office_lat: assignment.office_lat,
++            office_lng: assignment.office_lng,
++            radius_m: assignment.radius_m,
++          }
++        : null;
++      const facts: DayFacts = {
++        enrolmentCovers: enrolment !== undefined,
++        setupCompleted: settings?.setup_completed_at != null,
++        enabled: settings?.enabled === true,
++        enabledAt: enrolment ? new Date(enrolment.enabled_at) : null,
++        enrolmentStart: enrolment ? parseDateRange(enrolment.valid).start : null,
++        rule: assignment
++          ? pickRuleForDate(rulesByOffice.get(assignment.office_id) ?? [], date)
++          : null,
++        weeklyOffDays: pickWeeklyOffDays(
++          woOverrides.filter((o) => o.employee_id === employeeId),
++          woDefaults,
++          date,
++        ),
++        holidayId: holidayMap.get(date)?.id ?? null,
++        holidayName: holidayMap.get(date)?.name ?? null,
++      };
++      const record = recordKey.get(keyOf(employeeId, date)) ?? null;
++      const override = overrideKey.get(keyOf(employeeId, date)) ?? null;
++      const leave = leaveKey.get(keyOf(employeeId, date)) ?? null;
++      // FR-2's enable-day grace: a manual instant IS a recorded check-in.
++      const timesOnly =
++        override !== null &&
++        (override.manual_checkin_at != null ||
++          override.manual_checkout_at != null);
++      const hasCheckIn = record !== null || timesOnly;
++      const ctx = assembleDayContext(
++        tenantId,
++        employeeId,
++        date,
++        timezone,
++        facts,
++        office,
++        hasCheckIn,
++        leave ? { state: leave.state, part: leave.part } : null,
++      );
++      grid.push({
++        employeeId,
++        workDate: date,
++        today,
++        ctx,
++        record: record
++          ? {
++              employee_id: record.employee_id,
++              work_date: record.work_date,
++              checkin_at: record.checkin_at,
++              checkout_at: record.checkout_at,
++            }
++          : null,
++        override: override
++          ? {
++              employee_id: override.employee_id,
++              work_date: override.work_date,
++              status: override.status,
++              manual_checkin_at: override.manual_checkin_at,
++              manual_checkout_at: override.manual_checkout_at,
++            }
++          : null,
++        hasUnackMockedAttempt: attemptsKey.has(keyOf(employeeId, date)),
++        latestCorrection: correctionKey.get(keyOf(employeeId, date)) ?? null,
++      });
++    }
++  }
++  return grid;
++}
++
++function rangeCoversRow(valid: string, anchor: string): boolean {
++  const { start, end } = parseDateRange(valid);
++  return anchor >= start && (end === null || anchor < end);
++}
++
++/**
++ * The day-statuses service (owner + `me` routes). The technician access
++ * gate reads the AD-17 view row the way me/attendance does.
++ */
++@Injectable()
++export class DayStatusesService {
++  private readonly logger = new Logger(DayStatusesService.name);
++
++  constructor(
++    private readonly pg: PgPoolFactory,
++    private readonly supabaseClientFactory: SupabaseClientFactory,
++  ) {}
++
++  /** Owner: GET /attendance/day-statuses?employeeId=&from=&to= */
++  listForOwner(
++    owner: RequestUser,
++    employeeId: string,
++    from: string,
++    to: string,
++  ): Promise<DayStatusesResponse> {
++    const tenantId = requireTenant(owner);
++    // The span cap runs BEFORE any per-date work (the validation DoS lesson).
++    const range = validateDayStatusRange(from, to);
++    if (!range.ok) {
++      throw new HttpException(
++        { error_code: ErrorCode.ATTENDANCE_INVALID_RANGE, message: range.message },
++        HttpStatus.UNPROCESSABLE_ENTITY,
++      );
++    }
++    return this.pg.withTransaction(async (tx) => {
++      const exists = await employeeExistsInTenant(tx, tenantId, employeeId);
++      if (!exists) throw attendanceEmployeeNotFound();
++      const rows = await readDayStatusGrid(tx, tenantId, [employeeId], from, to);
++      return {
++        employeeId,
++        from,
++        to,
++        days: rows.map((row) => this.toResponseRow(row)),
++      };
++    });
++  }
++
++  /** Technician: GET /attendance/me/day-statuses?from=&to= */
++  listMine(
++    user: RequestUser,
++    from: string,
++    to: string,
++  ): Promise<MeDayStatusesResponse> {
++    const tenantId = requireTenant(user);
++    const range = validateDayStatusRange(from, to);
++    if (!range.ok) {
++      throw new HttpException(
++        { error_code: ErrorCode.ATTENDANCE_INVALID_RANGE, message: range.message },
++        HttpStatus.UNPROCESSABLE_ENTITY,
++      );
++    }
++    return this.pg.withTransaction(async (tx) => {
++      await this.requireReadAccess(user.userId);
++      const rows = await readDayStatusGrid(tx, tenantId, [user.userId], from, to);
++      return { from, to, days: rows.map((row) => this.toResponseRow(row)) };
++    });
++  }
++
++  /** The `me` access gate: none → 403; history_only stays readable (D6). */
++  private async requireReadAccess(userId: string): Promise<void> {
++    const { data, error } = await this.supabaseClientFactory
++      .createAdmin()
++      .from('attendance_access_state')
++      .select('user_id, access_state')
++      .eq('user_id', userId)
++      .maybeSingle<{
++        user_id: string;
++        access_state: AccessStateRow['access_state'];
++      }>();
++    if (error) {
++      this.logger.error('Failed to read access state:', { error });
++      throw internalError('Failed to read access state');
++    }
++    if (!data || data.access_state === 'none') {
++      throw new ForbiddenException({
++        error_code: ErrorCode.ATTENDANCE_NOT_TRACKED,
++        message: 'Attendance is not active for you yet',
++      });
++    }
++  }
++
++  /** One grid row → the wire row (the response mapper, imported math). */
++  private toResponseRow(row: DayGridRow): DayStatusRow {
++    const outcome: DayStatusOutcome = computeDayStatus({
++      ctx: row.ctx,
++      record: row.record,
++      override: row.override,
++      hasUnackMockedAttempt: row.hasUnackMockedAttempt,
++      today: row.today,
++    });
++    const { checkin, checkout } = effectiveInstants(row.record, row.override);
++    const latestCorrection: LatestCorrectionView | null = row.latestCorrection
++      ? {
++          correctedAt: new Date(row.latestCorrection.created_at).toISOString(),
++          actorName: row.latestCorrection.actor_name,
++          note: row.latestCorrection.note,
++          oldValue: validateCorrectionValue(row.latestCorrection.old_value),
++          newValue: validateCorrectionValue(row.latestCorrection.new_value),
++        }
++      : null;
++    return toDayStatusRow({
++      workDate: row.workDate,
++      isWeeklyOff: row.ctx.isWeeklyOff,
++      holidayName: row.ctx.holidayName,
++      isWorkingDay: row.ctx.isWorkingDay,
++      officeId: row.ctx.officeId,
++      officeName: row.ctx.officeName,
++      timezone: row.ctx.timezone,
++      outcome,
++      checkin,
++      checkout,
++      latestCorrection,
++    });
++  }
++}
++
++/** 404 with no existence leak (the 17-2 gate). */
++export function attendanceEmployeeNotFound(): NotFoundException {
++  return new NotFoundException({
++    error_code: ErrorCode.ATTENDANCE_EMPLOYEE_NOT_FOUND,
++    message: 'Employee not found in your company',
++  });
++}
+\ No newline at end of file
+diff --git a/src/attendance/day-statuses.controller.ts b/src/attendance/day-statuses.controller.ts
+new file mode 100644
+index 0000000..0e76163
+--- /dev/null
++++ b/src/attendance/day-statuses.controller.ts
+@@ -0,0 +1,80 @@
++import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
++import {
++  ApiBearerAuth,
++  ApiOperation,
++  ApiResponse,
++  ApiTags,
++} from '@nestjs/swagger';
++import { Roles } from '../common/decorators/roles.decorator';
++import { CurrentUser } from '../common/decorators/current-user.decorator';
++import { Role } from '../common/enums/role.enum';
++import type { RequestUser } from '../common/interfaces/request-user.interface';
++import { DayStatusesService } from './day-status.read';
++import { DayStatusesQueryDto, MeDayStatusesQueryDto } from './dto/correction.dto';
++
++/**
++ * The day-statuses reads (18-1) — the single implementation every Epic 18
++ * surface (and the Epic 19 aggregates) reads rows from. Each method
++ * carries its own @Roles (the owner route OWNER, the `me` route a
++ * method-level TECHNICIAN override — RolesGuard getAllAndOverride). Both
++ * run `validateDayStatusRange` first (from ≤ to, span ≤ 62 → 422) inside
++ * the service transaction.
++ */
++@ApiTags('Attendance')
++@ApiBearerAuth()
++@Controller('attendance')
++export class DayStatusesController {
++  constructor(private readonly dayStatusesService: DayStatusesService) {}
++
++  @Get('day-statuses')
++  @Roles(Role.OWNER)
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary:
++      'FR-10 one employee’s statuses for a range (the 12-key vocabulary + FR-11 credits + markers; from ≤ to, span ≤ 62 days)',
++  })
++  @ApiResponse({
++    status: 200,
++    description: '{ employeeId, from, to, days: DayStatusRow[] } — every date of the range, oldest first',
++  })
++  @ApiResponse({
++    status: 404,
++    description: 'ATTENDANCE_EMPLOYEE_NOT_FOUND — employee outside this tenant (no existence leak)',
++  })
++  @ApiResponse({
++    status: 422,
++    description: 'ATTENDANCE_INVALID_RANGE (from > to, or span > 62 days)',
++  })
++  list(
++    @CurrentUser() owner: RequestUser,
++    @Query() query: DayStatusesQueryDto,
++  ) {
++    return this.dayStatusesService.listForOwner(
++      owner,
++      query.employeeId,
++      query.from,
++      query.to,
++    );
++  }
++
++  @Get('me/day-statuses')
++  @Roles(Role.TECHNICIAN)
++  @HttpCode(HttpStatus.OK)
++  @ApiOperation({
++    summary: 'FR-10 my day statuses for a range (identity from the JWT; AD-17 gate: none → 403)',
++  })
++  @ApiResponse({
++    status: 200,
++    description: '{ from, to, days: DayStatusRow[] }',
++  })
++  @ApiResponse({
++    status: 403,
++    description: 'ATTENDANCE_NOT_TRACKED — attendance not active for this employee',
++  })
++  listMine(
++    @CurrentUser() user: RequestUser,
++    @Query() query: MeDayStatusesQueryDto,
++  ) {
++    return this.dayStatusesService.listMine(user, query.from, query.to);
++  }
++}
+\ No newline at end of file
+diff --git a/src/attendance/dto/correction.dto.ts b/src/attendance/dto/correction.dto.ts
+new file mode 100644
+index 0000000..79c3b21
+--- /dev/null
++++ b/src/attendance/dto/correction.dto.ts
+@@ -0,0 +1,126 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++import { Transform } from 'class-transformer';
++import {
++  IsDateString,
++  IsIn,
++  IsInt,
++  IsNotEmpty,
++  IsOptional,
++  IsString,
++  IsUUID,
++  Max,
++  Min,
++  Validate,
++} from 'class-validator';
++import { AttendanceCalendarDateConstraint } from './attendance-date.validator';
++import { STATUS_KEYS_READONLY } from '../day-status-response.model';
++
++/**
++ * Epic 18 DTOs (day-statuses reads 18-1, corrections 18-2). The wire dates
++ * are YYYY-MM-DD tenant-local strings; the from ≤ to and span ≤ 62 pairing
++ * is a service-level 422 (`validateDayStatusRange` — the DTO cannot see
++ * cross-field rules). The note is trimmed here; the control-char and
++ * length gates run in the service (D4 gate 1).
++ */
++const trimString = ({ value }: { value: unknown }): unknown =>
++  typeof value === 'string' ? value.trim() : value;
++
++const CORRECTION_STATUSES = ['present', 'half_day', 'absent'] as const;
++
++export class PutCorrectionDto {
++  @ApiProperty({
++    description:
++      'Status arm — present | half_day | absent. XOR with checkinAt/checkoutAt (mixing is a 422).',
++    enum: CORRECTION_STATUSES,
++  })
++  @IsOptional()
++  @IsIn(CORRECTION_STATUSES)
++  status?: (typeof CORRECTION_STATUSES)[number];
++
++  @ApiPropertyOptional({
++    description:
++      'Check-in instant, ISO-8601 with the tenant offset; anchors the work date exactly (gate 4). XOR with status.',
++  })
++  @IsOptional()
++  @IsDateString({ strict: true }, { message: 'checkinAt must be an ISO-8601 instant' })
++  checkinAt?: string;
++
++  @ApiPropertyOptional({
++    description:
++      'Check-out instant, ISO-8601; falls on the work date (or the next day). Optional with a corrected check-in.',
++  })
++  @IsOptional()
++  @IsDateString({ strict: true }, { message: 'checkoutAt must be an ISO-8601 instant' })
++  checkoutAt?: string;
++
++  @ApiProperty({
++    description: 'Why the value changed (required, 1-500 after trim)',
++    maxLength: 500,
++  })
++  @Transform(trimString)
++  @IsString()
++  @IsNotEmpty({ message: 'note is required' })
++  note!: string;
++}
++
++export class AcknowledgeDto {
++  @ApiProperty({ description: 'The employee whose mocked attempts are acknowledged' })
++  @IsUUID('4', { message: 'employeeId must be a UUID v4' })
++  employeeId!: string;
++
++  @ApiProperty({ description: 'The attempted_at (tenant-local) date to acknowledge' })
++  @Validate(AttendanceCalendarDateConstraint)
++  workDate!: string;
++}
++
++export class DayStatusesQueryDto {
++  @ApiProperty({ description: 'The employee to read (owner route, 404-no-leak)' })
++  @IsUUID('4', { message: 'employeeId must be a UUID v4' })
++  employeeId!: string;
++
++  @ApiProperty({ description: 'Range start, YYYY-MM-DD (tenant-local)' })
++  @Validate(AttendanceCalendarDateConstraint)
++  from!: string;
++
++  @ApiProperty({ description: 'Range end, inclusive, ≤ 62 days after from' })
++  @Validate(AttendanceCalendarDateConstraint)
++  to!: string;
++}
++
++export class MeDayStatusesQueryDto {
++  @ApiProperty({ description: 'Range start, YYYY-MM-DD (tenant-local)' })
++  @Validate(AttendanceCalendarDateConstraint)
++  from!: string;
++
++  @ApiProperty({ description: 'Range end, inclusive, ≤ 62 days after from' })
++  @Validate(AttendanceCalendarDateConstraint)
++  to!: string;
++}
++
++export class ListCorrectionsQueryDto {
++  @ApiPropertyOptional({ description: 'Filter to one work date, YYYY-MM-DD' })
++  @IsOptional()
++  @Validate(AttendanceCalendarDateConstraint)
++  workDate?: string;
++
++  @ApiPropertyOptional({ description: 'Opaque cursor from the previous page' })
++  @IsOptional()
++  @IsString()
++  cursor?: string;
++
++  @ApiPropertyOptional({
++    description: 'Page size (1-50, default 20)',
++    minimum: 1,
++    maximum: 50,
++  })
++  @IsOptional()
++  @Transform(({ value }) => (typeof value === 'string' ? Number(value) : value))
++  @IsInt()
++  @Min(1)
++  @Max(50)
++  limit?: number;
++}
++
++// The engine's full status vocabulary re-enters the swagger for the
++// latestCorrection old/new values and the day-status rows.
++export { STATUS_KEYS_READONLY as EPIC_18_STATUS_KEYS };
+\ No newline at end of file
+diff --git a/supabase/migrations/20260929000002_attendance_day_overrides_and_corrections.sql b/supabase/migrations/20260929000002_attendance_day_overrides_and_corrections.sql
+new file mode 100644
+index 0000000..57e76aa
+--- /dev/null
++++ b/supabase/migrations/20260929000002_attendance_day_overrides_and_corrections.sql
+@@ -0,0 +1,135 @@
++-- Stories 18-1 + 18-2 (Epic 18): Day-statuses & Attendance corrections —
++-- storage.
++--
++-- attendance_day_overrides: the AD-12 correction sink — one ACTIVE row per
++--   (employee_id, work_date). Either a status correction ('present' |
++--   'half_day' | 'absent', status-only short-circuit in FR-10 rule 1) or
++--   manual instants (times-only — the row substitutes the day's check-in/out
++--   instants and evaluation CONTINUES through rules 2-10), never both (the
++--   API is XOR; the DB CHECKs the content/pair rules). The ORIGINAL
++--   attendance_records row is never touched (AD-12).
++--   Removal (FR-21 "Owner can correct it again" / the recompute-live
++--   contract) is a SOFT DELETE on the row's deleted_at; the write path only
++--   ever UPSERTS (ON CONFLICT (employee_id, work_date)), so the same
++--   physical row is marked and un-marked — never a second row. A plain
++--   unique index on (employee_id, work_date) is therefore both the one
++--   guard the audit FK needs (a composite FK cannot reference a partial
++--   index) and sufficient; spec D1's partial index variant is impossible
++--   with the RESTRICT FK and is superseded here (upsert-and-undelete keeps
++--   the audit chain intact).
++--
++-- attendance_corrections: the FR-21 audit, append-only — actor (owner only),
++--   note (1-500), old/new value JSON. seq (identity) orders a per-date chain
++--   for the expandable history; the chain grows unboundedly by repeat
++--   corrections — that is the FR-21 contract, cursor-paginated on read.
++--
++-- attendance_attempts.acknowledged_at: AD-10's marker lifecycle — the
++--   fake_location_attempt marker clears when unacknowledged mocked attempts
++--   are acknowledged; attempt rows stay (the dispute view, AD-4).
++--
++-- NO new functions, triggers beyond updated_at, or RPCs (AD-3 amendment:
++-- Epics 16-19 are NestJS-first). Writes are single pg transactions in
++-- fenzit-be (src/attendance/corrections.*.ts) reusing the existing
++-- attendance_lock_employee helper; reads are batched parameterised SQL in
++-- src/attendance/day-status.read.ts.
++--
++-- Access (15-7/16-1 grants hygiene): RLS enabled with NO policies — deny by
++-- default; Supabase's default privileges would hand anon/authenticated inert
++-- table grants at creation, so REVOKE ALL clears them and only service_role
++-- is granted the privileges the backend uses.
++
++create table public.attendance_day_overrides (
++  id                 uuid primary key default gen_random_uuid(),
++  tenant_id          uuid not null references public.tenants (id) on delete cascade,
++  employee_id        uuid not null,
++  work_date          date not null,
++  -- present | half_day | absent; null = times-only correction (manual instants)
++  status             text,
++  manual_checkin_at  timestamptz,
++  manual_checkout_at timestamptz,
++  -- soft delete (the removal path): reads filter it out; audit FK untouched
++  deleted_at         timestamptz,
++  created_by         uuid not null,
++  created_at         timestamptz not null default now(),
++  updated_at         timestamptz not null default now(),
++
++  constraint attendance_day_overrides_status_check
++    check (status = any (array[
++      'present'::text, 'half_day'::text, 'absent'::text])),
++  constraint attendance_day_overrides_has_value_check
++    check (status is not null or manual_checkin_at is not null
++           or manual_checkout_at is not null),
++  constraint attendance_day_overrides_time_order_check
++    check (manual_checkout_at is null or manual_checkin_at is null
++           or manual_checkout_at > manual_checkin_at)
++);
++
++alter table public.attendance_day_overrides
++  add constraint attendance_day_overrides_empdate_uq
++  unique (employee_id, work_date);
++
++alter table public.attendance_day_overrides
++  add constraint attendance_day_overrides_employee_tenant_fkey
++  foreign key (employee_id, tenant_id)
++  references public.users (id, tenant_id) on delete restrict;
++alter table public.attendance_day_overrides
++  add constraint attendance_day_overrides_created_by_tenant_fkey
++  foreign key (created_by, tenant_id)
++  references public.users (id, tenant_id) on delete restrict;
++
++create index attendance_day_overrides_tenant_date_idx
++  on public.attendance_day_overrides (tenant_id, employee_id, work_date);
++
++create table public.attendance_corrections (
++  id          uuid primary key default gen_random_uuid(),
++  tenant_id   uuid not null references public.tenants (id) on delete cascade,
++  employee_id uuid not null,
++  work_date   date not null,
++  actor_id    uuid not null,
++  note        text not null,
++  old_value   jsonb not null,
++  new_value   jsonb not null,
++  seq         bigint generated always as identity,
++  created_at  timestamptz not null default now(),
++
++  constraint attendance_corrections_note_check
++    check (char_length(note) between 1 and 500)
++);
++
++alter table public.attendance_corrections
++  add constraint attendance_corrections_employee_tenant_fkey
++  foreign key (employee_id, tenant_id)
++  references public.users (id, tenant_id) on delete restrict;
++alter table public.attendance_corrections
++  add constraint attendance_corrections_actor_tenant_fkey
++  foreign key (actor_id, tenant_id)
++  references public.users (id, tenant_id) on delete restrict;
++-- The override a correction refers to is never hard-deleted (overrides are
++-- only upserted), so this RESTRICT chain can never fire.
++alter table public.attendance_corrections
++  add constraint attendance_corrections_override_fkey
++  foreign key (employee_id, work_date)
++  references public.attendance_day_overrides (employee_id, work_date)
++  on delete restrict;
++
++create index attendance_corrections_emp_date_seq_idx
++  on public.attendance_corrections (employee_id, work_date, seq desc);
++create index attendance_corrections_created_idx
++  on public.attendance_corrections (tenant_id, created_at desc, id desc);
++
++alter table public.attendance_attempts
++  add column acknowledged_at timestamptz;  -- null = not yet acknowledged
++
++-- updated_at maintenance (house trigger, reused verbatim)
++create trigger attendance_day_overrides_updated_at
++  before update on public.attendance_day_overrides
++  for each row execute function public.update_updated_at_column();
++alter table public.attendance_day_overrides enable row level security;
++alter table public.attendance_corrections   enable row level security;
++
++revoke all on public.attendance_day_overrides from public, anon, authenticated;
++revoke all on public.attendance_corrections   from public, anon, authenticated;
++
++grant select, insert, update          on public.attendance_day_overrides to service_role;
++grant select, insert                  on public.attendance_corrections   to service_role;
++grant select, update on public.attendance_attempts to service_role;
+\ No newline at end of file

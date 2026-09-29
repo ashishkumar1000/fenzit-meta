@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-29-2026  # BATCH 16-3+16-4 (FE) COMPLETE, uncommitted: one additive BE change ships first (me/summary +officeLatitude/Longitude/today/todayRecord — genuine gap, fix-placement in spec §1; verified unit/real-DB/probe) + the full FE Today surface; device-verified on Pixel 6; BMAD 3-lens review triaged (10 patched/2 by-design); FE 180/2007 + tsc clean; shipped; NEXT: Epic 17 FE (17-5..17-8)
+last_updated: 09-29-2026  # EPIC 18 BACKEND COMPLETE: 18-1 (day-status engine + days-worked + grid read) & 18-2 (POST?/PUT/DELETE corrections, ack, history cursor) — both done; unit 1373/1373 + real-DB e2e+integration 496/496 (24/24 suites, clean teardown, dev DB probe-free); tsc -p tsconfig.build.json clean; BMAD review 30 findings all patched (spec §9/§10 ticked); 18-5 spun out (backlog); NEXT: commit 18-1/18-2 (consent pending) → Epic 17 FE (17-5..17-8) then Epic 18 FE (18-3/18-4)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -208,11 +208,12 @@ development_status:
   17-6-frontend-leave-history-and-pending-queue: backlog
   17-7-frontend-revoke-and-cancel-sheets-with-split-outcome-preview: backlog
   17-8-frontend-check-in-leave-holiday-confirmation-dialogs: backlog
-  epic-18: backlog  # Day Status, Days Worked & Attendance Corrections — 4 stories
-  18-1-backend-day-status-and-days-worked-function: backlog
-  18-2-backend-attendance-corrections: backlog
+  epic-18: in-progress  # Day Status, Days Worked & Attendance Corrections — 4 stories
+  18-1-backend-day-status-and-days-worked-function: done  # DONE 2026-09-29: FR-10 day-status engine + days-worked + grid read (62-day cap); unit 1373/1373, real-DB e2e+integration 496/496 incl. 10-rule matrix, perf 51×31 ≤3s, clean teardown; BMAD 2 review rounds (14 group-1 + 16 group-2 findings all patched/ticked in spec §9/§10)
+  18-2-backend-attendance-corrections: done  # DONE 2026-09-29: PUT/DELETE corrections (single-transaction day_recompute, AD-5 locked recompute), acknowledge gate, history cursor; same verified totals; review findings shared with 18-1 spec §9/§10
   18-3-frontend-month-calendar-and-day-detail-sheet: backlog
   18-4-frontend-correction-sheet-ui: backlog
+  18-5-office-rule-mandatory-with-prefilled-default: backlog  # NEW 2026-09-29, user ruling from 18-1/18-2 review D2: office setup must make the attendance rule mandatory (fenzo-app office form prefills a default, e.g. 09:30-18:30 cutoff 15) + fenzit-be validator so tracking can't run against a rule-less office
   epic-19: backlog  # Reminders & Consolidated Views — 6 stories
   19-1-backend-scheduled-reminders: backlog
   19-2-backend-owner-dashboard-read-api: backlog
