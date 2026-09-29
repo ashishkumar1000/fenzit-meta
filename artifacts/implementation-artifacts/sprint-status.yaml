@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-29-2026  # EPIC 17 BE DONE (17-1..17-4 in one pass, user asleep-autonomous): leave data model (3 tables + AD-11 guard trigger — the ONE new SQL function) + apply/preview + approve/reject + revoke/cancel split + on-behalf + FR-9 check-in auto-cancel + D12 disable ripple + reads/lists; migration 20260929000001 + corrective FK apply LIVE; adversarial spec review (20 findings) + BMAD 3-lens code review triaged 20 patched / 3 deferred / 2 dismissed incl. 3-reviewer UTC current_date bug, span-cap DoS, D9 floor, missing split-array responses; 81 suites/1278 unit + 21 suites/425 real-DB e2e (26-probe journey), tsc clean; FE 17-5..17-8 next (16-3/16-4 also pending)
+last_updated: 09-29-2026  # BATCH 16-3+16-4 (FE) COMPLETE, uncommitted: one additive BE change ships first (me/summary +officeLatitude/Longitude/today/todayRecord — genuine gap, fix-placement in spec §1; verified unit/real-DB/probe) + the full FE Today surface; device-verified on Pixel 6; BMAD 3-lens review triaged (10 patched/2 by-design); FE 180/2007 + tsc clean; AWAITING CONSENT to commit (fenzit-be → deploy → production probe → fenzo-app → fenzit-meta); then Epic 17 FE (17-5..17-8)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -197,8 +197,8 @@ development_status:
   epic-16: in-progress  # Check-in & Check-out — 4 stories (BE half done 2026-09-29)
   16-1-backend-check-in-rpc-day-context-helper-and-attempt-logging: done  # DONE 2026-09-29 together with 16-2 (spec-16-1-and-16-2): attempts/records tables live, day-context TS module (D1), check-in + outcomes + rate limit + fake-location alert; journey 19 probes green
   16-2-backend-check-out-rpc: done  # DONE 2026-09-29 together with 16-1: same gates, guarded UPDATE, workedMinutes + earlyCheckout; BMAD 3-lens review (16 patched/3 deferred/3 dismissed) — see spec §10
-  16-3-frontend-attendance-only-location-capture-service: backlog
-  16-4-frontend-check-in-out-button-and-today-screen: backlog
+  16-3-frontend-attendance-only-location-capture-service: done  # DONE 2026-09-29 together with 16-4 (spec-16-3-and-16-4): main-API nitro capture (AD-20 shape, mocked/provider, closed failure union, fixAgeMs clamp + local stale pre-reject), permission module (permission-before-accuracy, preciseOff/serviceOff, prompt-then-Settings), NetInfo ^12.0.1 added
+  16-4-frontend-check-in-out-button-and-today-screen: done  # DONE 2026-09-29 with 16-3; REQUIRED a small additive BE change (genuine gap, fix-placement in spec §1): me/summary gained officeLatitude/Longitude/today/todayRecord (no migration; day-context math reused) — unit 82/1298 + real-DB 21/428 (+3 probes) + 18-step live probe; FE: Today section in the Attendance tab (56px CTA, latched weekly-off dialog, tap-time offline re-checks, countdown from Retry-After header, done card, todayRecord-on-load), device-verified on Pixel 6 vs the local BE + production DB (all ACs incl. too_far copy, rate-limit block, dialog cancel-sends-nothing, kill/relaunch state, precise-off + Settings deep-link); walkthrough-found defect fixed (offline block renders from state); BMAD 3-lens review triaged 12 unique → 10 patched / 2 resolved-by-design (ledger spec §10); FE 180 suites/2007 + tsc clean; COMMITS PENDING CONSENT (BE first, then FE, then meta docs)
   epic-17: in-progress  # Leave Management — BE half done 2026-09-29 (17-1..17-4 together, one spec/review/commit)
   17-1-backend-leave-data-model-and-apply: done  # DONE 2026-09-29 together with 17-2..17-4 (spec-17-1-to-17-4): 3 tables + guard trigger + apply/preview; adversarial spec review patched 20 findings pre-code
   17-2-backend-approve-reject-leave: done  # DONE 2026-09-29: state-guarded + seq-ordered own-retry (D7); parallel double-approve probe
