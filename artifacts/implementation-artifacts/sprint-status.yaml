@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-30-2026  # EPIC 18 COMPLETE 2026-09-30: 18-4 DONE (fenzo-app 45abaf4: stage-morph CorrectionSheet, 6-patch triage, 201/2447 green, device walkthrough PASS + DB echo; spec §8/§6). Prior: 17-8 DONE (6dad7b4, EPIC 17 COMPLETE); 18-5 DONE (6f30406); 18-3 DONE (fenzo-app 9198eb7 + fenzit-be 1ddf21d). NEXT (user-parked 2026-09-30): Epic 19 FE 19-4..19-6 — 19-4 spec DRAFTED (spec-19-4-frontend-owner-dashboard.md, unreviewed)  # HOUSEKEEPING 2026-09-29: Epic 19 BE (19-1..19-3 + 18-5 gate) implemented, review group A complete, fenzit-be a3c8aa8
+last_updated: 09-30-2026  # STORY 19-4 COMPLETE + COMMITTED 2026-09-30: fenzit-be b210aee (merge/deploy FIRST), fenzo-app a006a95 (deploy after BE); review cycle closed — all 22 patches applied + checked off, spec record amended; 2604/2604 green. NEXT: 19-5 (owner monthly view)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -218,6 +218,6 @@ development_status:
   19-1-backend-scheduled-reminders: done  # 2026-09-29 — implementation + BMAD review (group A) patches applied; unit 90/1400 + real-DB 28/535 green; 18-x tests-only-after-walkthrough rule overridden by review-driven patch tests (user "apply every patch"); fenzit-be a3c8aa8 committed+pushed
   19-2-backend-owner-dashboard-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-3-backend-monthly-and-self-view-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
-  19-4-frontend-owner-dashboard-ui: backlog
+  19-4-frontend-owner-dashboard-ui: done  # 2026-09-30 — BMAD review closed: all 22 patches applied + checked off, split ≤300, sweep 2604/2604 green, tsc clean. COMMITTED: fenzit-be b210aee (offices registry + patches + journey suite; deploy FIRST), fenzo-app a006a95 (dashboard + patches; deploy after BE). NEXT: 19-5
   19-5-frontend-owner-monthly-view-ui: backlog
   19-6-frontend-employee-self-view-ui: backlog
