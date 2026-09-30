@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 09-30-2026  # STORY 19-4 COMPLETE + COMMITTED 2026-09-30: fenzit-be b210aee (merge/deploy FIRST), fenzo-app a006a95 (deploy after BE); review cycle closed — all 22 patches applied + checked off, spec record amended; 2604/2604 green. NEXT: 19-5 (owner monthly view)
+last_updated: 09-30-2026  # STORY 19-5 COMPLETE + COMMITTED 2026-09-30: fenzit-be aa1b6c1 (today echo prereq — deployed FIRST, device-verified live), fenzo-app 19-5 (list + drill-down + flag deep-link); 3-lens review triaged: 10 patches + 1 spec fix, 4 defers, 4 dismissals; user-directed month-switch loader added; FE 219/2691 + tsc clean, BE 90/1415 + reads e2e 16/16 + real-DB journey 2/2; device walkthrough PASS (spec §6). NEXT: 19-6 (employee self view — closes Epic 19 + retires the Component lab)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -219,5 +219,5 @@ development_status:
   19-2-backend-owner-dashboard-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-3-backend-monthly-and-self-view-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-4-frontend-owner-dashboard-ui: done  # 2026-09-30 — BMAD review closed: all 22 patches applied + checked off, split ≤300, sweep 2604/2604 green, tsc clean. COMMITTED: fenzit-be b210aee (offices registry + patches + journey suite; deploy FIRST), fenzo-app a006a95 (dashboard + patches; deploy after BE). NEXT: 19-5
-  19-5-frontend-owner-monthly-view-ui: backlog
+  19-5-frontend-owner-monthly-view-ui: done  # 2026-09-30 — walkthrough PASS (UJ-4 one-flow deep-link + correction live on device); review closed (10 patches + 1 spec fix, 4 defers, 4 dismissals — spec §10); loader-on-param-load per user direction. COMMITTED: fenzit-be aa1b6c1 (today echo; deployed first), fenzo-app 19-5. NEXT: 19-6
   19-6-frontend-employee-self-view-ui: backlog
