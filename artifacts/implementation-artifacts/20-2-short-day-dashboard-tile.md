@@ -1,6 +1,6 @@
 # Story 20.2: Short-day dashboard tile
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -50,22 +50,23 @@ Then the test phase (see Testing).
 
 ## Tasks / Subtasks
 
-- [ ] Phase A (fenzit-be): `dashboard.ts` counts object gains `shortDay: 0` (+ docblock note); `dashboard-response.model.ts` `DashboardCounts` gains the field with the "reserved" docblock; api-contracts.md dashboard section notes the reserved field. AC: 1, 8
-  - [ ] Existing suites stay green: `bun run test` (unit) and the real-DB dashboard integration spec (`npm run test:e2e:real -- --testPathPatterns attendance-dashboard.integration`) — the zero-change assertion is the point: numbers byte-identical to the deployed behaviour.
-- [ ] Phase B (fenzo-app): ACs 4, 5, 6
-  - [ ] `src/services/resources/attendanceDashboard.ts`: `AttendanceDashboardCounts` gains `shortDay`; `normalizeDashboard` requires it (non-negative integer); header docblock names the four-bucket contract source.
-  - [ ] `src/features/attendance/dashboard/dashboardModel.ts`: `KpiTileSpec['key']` union gains `'shortDay'`; `kpiTiles` entries gain `['shortDay', 'Short day']` positioned after `notCheckedIn`. Compiler forces the rest via exhaustiveness.
-  - [ ] `src/features/attendance/dashboard/KpiTile.tsx`: `TILE_VISUALS` gains `shortDay` (icon `XCircle`, colours from `colors.status.cancelled`); `visualLabel` gains the case (`colors.status.cancelled.fg`).
-  - [ ] `src/features/attendance/dashboard/AttendanceDashboardScreen.tsx`: skeleton placeholder `Array.from({ length: 6 })` → 8.
-  - [ ] Existing FE suites (`dashboardModel.test.ts`, `KpiTile.test.tsx`, `AttendanceDashboardScreen.test.tsx`) updated where they pin the five-tile shape — keep `bun run test` green. (Requirement-update, not test-first: standing test-timing rule.)
-- [ ] Phase C (fenzit-be): ACs 2, 3, 8
-  - [ ] `dashboard.ts` row loop: compute `const isEngineShortDay = outcome.status === 'absent' && row.override?.status == null && outcome.workedMinutes !== null;` and route those rows `shortDay` instead of `notCheckedIn`. Rewrite the two docblocks (`CHECKED_IN_STATUSES` block + the partition comment) to the four-bucket contract.
-  - [ ] `dashboard-response.model.ts`: rewrite the reserved docblock to the live contract. Controller swagger description: four-bucket wording. api-contracts.md: same.
-- [ ] Device verification (with the user, or on the attached Pixel 6): Hero wala office reads Tracked 51 = Checked in 0 + Not checked in 49 + On leave 1 + Short day 1; tenant-wide 102 sums exactly. AC: 2
-- [ ] Test phase (AFTER the user confirms the device numbers — the standing rule): ACs 2, 3
-  - [ ] Integration spec: fix the stale "(overlaps included)… never a partition" prose (20-1 deferred item) AND pin the four-bucket partition — rule-7 sub-threshold absent on today, rule-9 absent, rule-1 absent override with instants, weekly_off, holiday, half_day_leave, filtered-by-office sums. Extend the growing attendance journey suite per the memory note.
-  - [ ] FE: normalizer malformed/absent `shortDay` fail-closed pins; kpiTiles order/labels; KpiTile visuals + a11y; screen skeleton count. QA-mindset: zero / one / many boundaries, malformed wire values.
-- [ ] `/bmad-code-review` before every commit; consent before commit/push, each repo separately (fenzit-be first — never the other way round).
+- [x] Phase A (fenzit-be): `dashboard.ts` counts object gains `shortDay: 0` (+ docblock note); `dashboard-response.model.ts` `DashboardCounts` gains the field with the "reserved" docblock; api-contracts.md dashboard section notes the reserved field. AC: 1, 8
+  - [x] Existing suites stay green: `bun run test` (unit) and the real-DB dashboard integration spec (`npm run test:e2e:real -- --testPathPatterns attendance-dashboard.integration`) — the zero-change assertion is the point: numbers byte-identical to the deployed behaviour.
+- [x] Phase B (fenzo-app): ACs 4, 5, 6
+  - [x] `src/services/resources/attendanceDashboard.ts`: `AttendanceDashboardCounts` gains `shortDay`; `normalizeDashboard` requires it (non-negative integer); header docblock names the four-bucket contract source.
+  - [x] `src/features/attendance/dashboard/dashboardModel.ts`: `KpiTileSpec['key']` union gains `'shortDay'`; `kpiTiles` entries gain `['shortDay', 'Short day']` positioned after `notCheckedIn`. Compiler forces the rest via exhaustiveness.
+  - [x] `src/features/attendance/dashboard/KpiTile.tsx`: `TILE_VISUALS` gains `shortDay` (icon `XCircle`, colours from `colors.status.cancelled`); `visualLabel` gains the case (`colors.status.cancelled.fg`).
+  - [x] `src/features/attendance/dashboard/AttendanceDashboardScreen.tsx`: skeleton placeholder count goes 6 → 7 (settled cells — six tiles + the present card; the spec's 8 was corrected by the review, see Deviation D-3).
+  - [x] Existing FE suites (`dashboardModel.test.ts`, `KpiTile.test.tsx`, `AttendanceDashboardScreen.test.tsx`) updated where they pin the five-tile shape — keep `bun run test` green. (Requirement-update, not test-first: standing test-timing rule.)
+- [x] Phase C (fenzit-be): ACs 2, 3, 8
+  - [x] `dashboard.ts` row loop: the partition branch routes rule-7 engine-graded absents (`outcome.status === 'absent' && row.override?.status == null && outcome.workedMinutes !== null`) into `shortDay` instead of `notCheckedIn`. Docblocks (`CHECKED_IN_STATUSES` block + the partition comment) rewritten to the four-bucket contract.
+  - [x] `dashboard-response.model.ts`: the reserved docblock rewritten to the live contract. Controller swagger description: four-bucket wording. api-contracts.md: same.
+- [x] Device verification (on the attached Pixel 6, with mock data; per the user's "put all 100 users in some or other catrogeory and verify" every dummy lands in a bucket): All offices 102 = 10 checkedIn + 1 notCheckedIn + 90 shortDay + 1 onLeave; Hero wala 51 = 5 + 0 + 45 + 1; Yuka 51 = 5 + 1 + 45 + 0; Yuka1 tracked-0 empty state. AC: 2
+- [x] Test phase (user re-opened it after device sign-off: "keep the mock data for today's verification, commit after review ...... write test cases"). ACs 2, 3
+  - [x] Integration spec: the tiles probe now pins the six-tile PARTITION (sum asserted) and a new real-DB leg grades a rule-7 sub-half-day pair AND shows the owner's `absent` override moving the same facts back out. The unknown-office zeroed probe pins `shortDay: 0`.
+  - [x] Reads e2e + journey legs: counts pins moved to the six-key envelope (the verification-gap reviewer's catch — they were still five-key against the shipped flip).
+  - [x] FE screen suite: fixture envelopes are six-key and partition-consistent; the counts test pins all six pairings including `Short day: 1`; a new test holds the pick's fetch to pin shimmer-under-pick.
+- [x] `/bmad-code-review` before every commit; consent before commit/push, each repo separately (fenzit-be first — never the other way round).
 
 ## Dev Notes
 
@@ -127,8 +128,51 @@ Edge — a times-only correction (override with instants, `status: null`) that s
 
 ### Agent Model Used
 
+Claude (Opus 5.5)
+
 ### Debug Log References
+
+- BE integration spec: `npm run test:e2e:real -- --testPathPatterns attendance-dashboard.integration` — 11/11 green after corrections (13.5 s).
+- BE gates at commit time: `bun run build` exit 0; `bun run test` 1421/1421 (90 suites); reads e2e `bunx jest --config ./test/jest-e2e.json test/attendance-reads.e2e-spec.ts` 16/16; journey e2e 2/2 (real DB).
+- FE gates at commit time: `bun run test` 2919/2919 (235 suites); dashboard dir suites 82/82 (9 suites).
 
 ### Completion Notes List
 
+**Implementation.** Three shipped commits + two test-phase commits:
+
+1. `fenzit-be` `a829291` (phase A): counts carry reserved `shortDay: 0` — pushed + Render-deployed.
+2. `fenzit-be` `50c366c` (phase C, the flip): the four-bucket partition goes live — pushed + Render-deployed the same day (device had the phase-B tile build running, see deviation D-1). Docs (headers, response-model docblocks, api-contracts.md) rewritten to "the FOUR buckets partition tracked; rows move, never copy; late is a qualifier of checkedIn, not a bucket".
+3. `fenzo-app` `3c0f7f2` (phase B, committed with the user's post-review approval): the Short day tile (fail-closed normalizer, model entry, KpiTile visuals — cancelled family + XCircle) + the shimmer discipline (one refcounted `runWithShimmer` wrapping both user-initiated paths: Refresh press AND office pick) + skeleton geometry 7 placeholders at KpiTile minHeight.
+4. `fenzit-be` `250e0a7` (test phase, after the user re-opened tests): integration-spec partition pins + the rule-7/override leg; six-key catch-up of the reads-e2e and journey pins; journey UUID-flake fix; docs/comments polish.
+
+**Detection predicate stays as specced** (`absent` + no override status + `workedMinutes !== null`) — auditor re-walked rules 1/7/9 and confirmed only rule 7 escapes it. The `== null` over `=== null` matters: an override object with `status: null` (note-only or instants-only override) must NOT block the engine grade.
+
+**Device verification (the user's mock-data session).** User authorised moving the Hero wala weekly off from Friday to Sunday (`attendance_weekly_off_defaults.days '{5}'→'{7}'`, row `dc1b44b7-4e58-45e2-bc18-d172a932a684`) so Short day was demonstrable today (on a weekly-off day rule 3 outranks rule 7 — Short day is IMPOSSIBLE on an off day). All 100 dummies (Loadtest H01–H50 @ Hero wala, Y01–Y50 @ Yuka) planted: 45 closed sub-half-day pairs per office → Short day, 5 open in-progress per office → Checked in; Suresh no-punch → Not checked in; Arya on leave → On leave. Verified per office on device — sums exact everywhere (Hero wala 51 = 5+0+45+1; Yuka 51 = 5+1+45+0; Yuka1 empty state; tenant 102 = 10+1+90+1, Late 10 as a rider inside Checked in).
+
+**Shimmer verification (the user's reported issue).** Refresh press → card shimmer → settle correct; office pick → field updates instantly, previous office's numbers never shown under the picked name; pull-to-refresh → spinner only; focus/AppState refetches silent. Verified across Yuka / All offices / Hero wala / Yuka1 legs. uiautomator dump never idles during shimmer — verified via `adb exec-out screencap`.
+
+**/bmad-code-review record (4 agents, all findings actioned or triaged).** Blind-hunter's 17 findings: 15 dismissed with reasons below; stale five-bucket module docs (fixed before the flip's test commit) and the skeleton 6→8-vs-7-cell mismatch (fixed to 7) were the two real ones. Acceptance-auditor: code conformant to all rulings; stale-doc finds. Edge-case-hunter: confirmed the skeleton fix, dismissed the tracked-0/empty-scope shape and the `== null` style. Verification-gap (4 findings): (a) five-key pins red against the shipped flip — the mocked reads-e2e gate (`Object.keys(counts)` pinned to five) was genuinely red-since-flip; both e2e specs re-pinned six-key; (b) rule-7 branch never observed above 0 — covered by the new integration leg; (c) office-pick shimmer untested — covered by the new held-fetch screen test; (d) screen fixture envelopes invalid (five-key, and 3+2+1 ≠ tracked 5) — fixed partition-consistent six-key with a `Short day: 1` pairing pin.
+
+**Dismissed review findings (recorded so they don't come back):** fail-closed FE vs old-BE normalizer (deliberate phased ship — the docblock's older-deployed-BE tolerance is namespaced to `offices`; the counts demand is load-bearing by design); shimmerRefs on unmount (harmless no-op; fresh refs per mount); picker stats staying tracked/checkedIn (ruling 9); empty-scope pick shimmer (no previous numbers to hide — accepted minor posture); `workedMinutes === 0` routing (rule 7 grades it absent → Short day is engine-correct: 0 worked minutes is a short day, the punch is the point); `== null` vs `=== null` mixing (TypeScript guarantees the narrowing).
+
+**Deviations from the spec as written:**
+
+- **D-1 — ship order was A → C → B-committed, not A → B → C.** The user resequenced to device-first ("test on device", then committed the FE only after review approval). During the window where the flip WAS rendered by the old FE, the owner's single device already ran the phase-B build (tile installed, numbers honest) before we let the flip verify on-device; no other binary exists pre-launch. The invisible-person risk AC 7 guards holds only for binaries, not for the one device — recorded openly as the price of the resequencing.
+- **D-2 — the user-mock session kept today's data.** All 100 dummy punch rows + today's `attendance_attempts` stay in the DB, and the Hero wala weekly off stays Sunday, until the user says otherwise (their "Keep it for now"). Removal recipe when approved: delete `attendance_attempts`/`attendance_records` for today where `employee_id in (select id from users where name like 'Loadtest%')`, restore `attendance_weekly_off_defaults.days = '{5}'` on `dc1b44b7-4e58-45e2-bc18-d172a932a684`. NOTE: flipping the weekly off BACK to Friday re-grades today's 90 short days to `worked_on_holiday` (grading computes on read — rule 3 outranks rule 7): the tiles re-read Checked in 100, Not checked in 1, Short day 0. Nobody is lost.
+- **D-3 — skeleton 8 → 7 placeholders** (AC 5 said 8/4-rows × 2). The settled grid is 7 cells: six tiles + the present card, in ragged 2/2/2/1 rows. The review's edge-case-hunter caught the placeholder shaping a grid one row richer than what replaces it; fixed and commented at the constant.
+- **D-4 — the user-directed rider:** shimmer-on-pick (scope change must never show the old office's numbers under the new office's name) was not in the story's ACs; added as the spec's D9/D10 postures generalized, then device-verified and test-pinned.
+- **AC 3 "even when the override carries instants"** is unachievable as written — the DB pair-check (`attendance_day_overrides_pair_check`) forbids manual instants beside a non-null status. The test leg therefore exercises the achievable edge: a status-only `absent` override riding the SAME punch facts — and the test is stronger for it (same facts flip bucket on pure owner's-word). (Correcting the TEST against an impossible DB state — the test alone changed, the requirement's intent unchanged.)
+
+**Deferred (recorded, not blocking):** `useDashboardData` has no hook-level shimmer unit test beyond the screen-level pins (the two user-visible paths now both have held-fetch screen tests); no new-FE/old-BE posture simulation (the phasing story stands on the deploy ordering instead); the reminder RPC's `notCheckedInCount` divergence stays documented in `dashboard.ts` (20-1 deferred item 2, untouched per AC 9); `test/integration/attendance-leave.integration.spec.ts` has a pre-existing helper flake (`Invalid time value` in its own `addDays`) — unrelated surface, not this story's scope.
+
 ### File List
+
+- fenzit-be — `a829291`, `50c366c`, `250e0a7`: `src/attendance/dashboard.ts`, `src/attendance/dashboard-response.model.ts`, `src/attendance/dashboard.controller.ts` (swagger), `docs/api-contracts.md`, `test/integration/attendance-dashboard.integration.spec.ts`, `test/attendance-reads.e2e-spec.ts`, `test/attendance-journey.e2e-spec.ts`
+- fenzo-app — `3c0f7f2`: `src/services/resources/attendanceDashboard.ts` (+ test), `src/features/attendance/dashboard/dashboardModel.ts` (+ test), `src/features/attendance/dashboard/KpiTile.tsx` (+ test), `src/features/attendance/dashboard/useDashboardData.ts`, `src/features/attendance/dashboard/AttendanceDashboardScreen.tsx` (+ test)
+- meta — this story file, `sprint-status.yaml`
+
+### Change Log
+
+- 2026-10-01 · Phases A + C deployed to fenzit-be (shortDay reserved, then live) with device verification per office.
+- 2026-10-02 · Phase B committed to fenzo-app after the review; shimmer-under-refresh verified on device first; mock data planted and every dummy bucketed.
+- 2026-10-02 · Test phase committed to fenzit-be (`250e0a7`) — six-key e2e pins, the rule-7/override integration leg, the journey flake fix; story marked done.

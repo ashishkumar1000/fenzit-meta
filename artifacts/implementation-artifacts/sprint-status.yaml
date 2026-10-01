@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-01-2026  # Story 20-2 created (ready-for-dev): "Short day" tile — user rulings locked; 3-step ship plan (BE additive → FE tile → BE partition flip) so no binary ever miscounts. 20-1: BE partition fix DEPLOYED + device-verified (fenzit-be 14052e7); FE two-press dialog fix reviewed and green, commit pending consent.
+last_updated: 10-02-2026  # Story 20-2 DONE: "Short day" tile shipped — fenzit-be a829291 (reserve) + 50c366c (partition flip) deployed first, then fenzo-app 3c0f7f2 committed after /bmad-code-review (device-verified per office with mock data; weekly off moved Fri→Sun for the demo, test phase committed as fenzit-be 250e0a7: six-key e2e pins + rule-7/override integration leg).
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -249,4 +249,4 @@ development_status:
   # every moment. No engine change, no new SQL/RPC; per-office stats and the
   # reminder RPC untouched. Story file:
   # artifacts/implementation-artifacts/20-2-short-day-dashboard-tile.md
-  20-2-short-day-dashboard-tile: ready-for-dev
+  20-2-short-day-dashboard-tile: done
