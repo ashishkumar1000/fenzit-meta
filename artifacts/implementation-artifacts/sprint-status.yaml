@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-02-2026  # Story 20-2 DONE: "Short day" tile shipped — fenzit-be a829291 (reserve) + 50c366c (partition flip) deployed first, then fenzo-app 3c0f7f2 committed after /bmad-code-review (device-verified per office with mock data; weekly off moved Fri→Sun for the demo, test phase committed as fenzit-be 250e0a7: six-key e2e pins + rule-7/override integration leg).
+last_updated: 10-02-2026  # Story 20-2 DONE + PUSHED to all three remotes — fenzit-be a829291 (reserve) + 50c366c (partition flip, Render-deployed) + 250e0a7 (test phase, tests/docs only), fenzo-app 3c0f7f2 (tile + shimmer), meta 5aa6aeb. /bmad-code-review complete; device-verified per office with mock data (keep decision: mock rows + Fri→Sun weekly off stay until user says otherwise).
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
