@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-01-2026  # 19-6 DONE (fenzo-app add0b49 + fenzit-be 8f791a1 deployed first) — EPIC 19 COMPLETE; attendance module exhaustive scale test (100 dummy employees) follows in this session
+last_updated: 10-01-2026  # Story 20-2 created (ready-for-dev): "Short day" tile — user rulings locked; 3-step ship plan (BE additive → FE tile → BE partition flip) so no binary ever miscounts. 20-1: BE partition fix DEPLOYED + device-verified (fenzit-be 14052e7); FE two-press dialog fix reviewed and green, commit pending consent.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -223,3 +223,30 @@ development_status:
   19-5a-frontend-home-attendance-entry-tile: done  # direct user request, no story file (2026-09-30); fix placement: BE owner /users/me branch embeds the attendance mirror (view's tenant-level attendance_enabled computes for owner rows; production-verified) → FE gates a Home Tile on profile.attendance.attendanceEnabled (fail-hidden absent mirror; hub's wizard gate covers staleness); FE mirror type aligned to the wire's nested shape (the 15-7 flat-field seed was a silent no-op — now functional); More row stays deliberately UNGATED (sole funnel into the 15-8 wizard) but its subtitle aligned to the hub framing; 3-lens review + step-03 triage: 2 patches (More subtitle, established-dashboard test pin), 3 dismissals w/ rationale (ungated More row is load-bearing; fail-loud = AD-17 policy; maybeSingle latent note); BE 38 unit + 5 e2e + build green, FE 221/2696 + tsc clean; device-verified on Pixel 6 vs production (tile → hub, walkthrough crash = RN dev-inspector noise, unrelated); COMMITTED: fenzit-be d49ca24 (19-5 journey leg, was uncommitted) + 6d2f0fa (owner mirror, deployed first), fenzo-app 2f93ae8
   19-6-frontend-employee-self-view: done  # (2026-10-01) EPIC 19 CLOSED — FR-26/UJ-5: My month section on the technician Attendance tab (me-scoped RealMonthPane + read-only DayDetailSheet + 'Days worked: N so far' + owner-identical chips + meta line + ACTIVE-only holidays); history_only = dated ended note (new BE attendanceEndedOn via view column attendance_ended_on, CASE-gated history_only, migration MCP-applied + fenzit-be 8f791a1 deployed FIRST) + past-only posture (no Today/Apply, bound at ended month, leave history re-hosted); spec-phase review caught the P1 (plain-range current-month me/monthly fetch 422s ~29/30 days → useMyMonthly echo-gated on the pane's clock); 3-lens review + step-03: 0P1/4P2/13P3 → 4 patches (check-in bridge todaySignal, silent-refresh error-clear, data-aware stale-note posture, FLIP pin mount-scoped) + focus min-gap; walkthrough (Pixel 6, prod) ALL PASS w/ DB parity at every step + DEVICE-FOUND R9 burn (history_only bootstrap opened October on fresh login — mirror carries posture not date) → FIXED (date-transition re-opens the one shot while un-navigated; pinned + live-verified: October+spinner → September, '0 worked · 2 absent'); Component lab RETIRED (screen/route/tile/test-case/tripwire + docblock sweep); FE 223 suites/2767 + tsc clean (post-fix), BE 90/1421 + e2e 71/71; enrolment flip fixtures honestly restored (Suresh active again, view-verified); COMMITTED: fenzit-be 8f791a1, fenzo-app add0b49
   19-6-frontend-employee-self-view-ui: backlog
+
+  # Epic 20: Leave day-sheet actions & owner attention — direct user request
+  # 2026-10-01 (post-19-6). Scope: day sheet stops offering "Apply leave" on
+  # leave days; "Cancel request" (pending + approved) and "Convert to full
+  # day" (cancel + re-file, approved halves, future dates only); the owner
+  # Home "Today & needs attention" strip for pending leave requests; scroll-
+  # to-refresh across the attendance flow (user ask, 2026-10-01). BE prereqs
+  # inside the story are additive-only and deploy FIRST (CLAUDE.md ordering):
+  # day rows carry leaveRequestId; owner /users/me mirror gains
+  # attendance.pendingLeaveRequests. No migration, no RPC, no new endpoint.
+  # Story file: artifacts/implementation-artifacts/20-1-frontend-leave-day-sheet-actions-and-owner-attention.md
+  epic-20: in-progress
+  20-1-frontend-leave-day-sheet-actions-and-owner-attention: in-progress
+
+  # Story 20.2: "Short day" tile on the owner dashboard — user request
+  # 2026-10-01 after the deployed tiles-partition fix (they consider parking
+  # engine-graded sub-half-day punch-in/out rows under "Not checked in"
+  # misleading). Rulings: tile = "Short day"; ENGINE-graded only (rule-7
+  # absent — rule-1 owner adjudicated `absent` and rule-9 past-no-checkin
+  # stay in Not checked in); four buckets still sum (shortDay rows MOVE out
+  # of notCheckedIn, no overlay). Shapes ship in the 3-step order (CLAUDE.md):
+  # A) fenzit-be additive `shortDay: 0`, B) fenzo-app tile + normalizer,
+  # C) fenzit-be partition flip + docs — every binary self-consistent at
+  # every moment. No engine change, no new SQL/RPC; per-office stats and the
+  # reminder RPC untouched. Story file:
+  # artifacts/implementation-artifacts/20-2-short-day-dashboard-tile.md
+  20-2-short-day-dashboard-tile: ready-for-dev
