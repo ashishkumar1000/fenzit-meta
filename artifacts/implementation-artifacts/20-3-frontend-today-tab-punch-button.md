@@ -163,3 +163,16 @@ The user pressed CHECK IN from their desk (~1.36 km away) and got the dim fallba
 **Residue restore (second pass):** office pin re-restored to original (verified); the SEEDED record + attempt deleted; the user's own test presses' attempt rows deleted (6); the morning leave-day `cancelled` residue unchanged.
 
 **Review-defer test phase CLOSED (fenzo-app 72c0988):** the geofence rungs + 120 s boundary + clock-back fail-open + prescreen precedence, the frozen card copy per posture, formatMetresGrouped, the numeric officeRadius wire pass-through, and the TodayScreen hosting gate (active-only) — full suite 2949/2949, tsc clean. The remaining open defer is only the Today-tab access-fetch shimmer (new-scope UX).
+### Round 3 — live hardening + release build (2026-10-02, ~15:00–17:45)
+
+The user tested manually and drove four more fixes, all shipped and device-verified:
+- **Indoor capture strategy** (fenzo-app `0b5e76f` + `2d76d67`, research-backed): the capture now LEADS with the indoor-capable fix — balanced priority, 15 s staleness allowance, 10 s window — and falls back to the strict high-accuracy capture only on a timeout. Permission/services-off keep failing fast. (The old always-high-first shape timed out at every desk.)
+- **Maps-style live stream** (fenzo-app `9779cc4`): a bounded location WATCH runs while the Today tab is focused AND the app is foregrounded (stops on blur/background/unmount — never a background watcher; NFR-11 survives); the 30 s one-shot cadence stays as fallback. Fence posture now appears in seconds.
+- **Business time copy** (same commit): formatWorkedMinutes renders "30 min" / "1 hr 20 min" / "2 hrs"; pills read "Checked in late by 1 hr 1 min" / "Checked out early by 6 hrs 13 min". Grammar fix over the concurrent-session commit 7c10d84 (doubled "min", 5 red tests).
+- **Worked-minutes rounding** (fenzit-be `b6404ca`, deployed): workedMinutesBetween rounds to the NEAREST minute with a 1-minute floor for any non-zero span — a 3:34→3:35 punch recorded "0 h 00 m" under the old truncation. 30 s → 1 minute pinned.
+
+**Device environment findings (the "location always fails" root causes, in order):** the phone had been up 7 days with a wedged location stack (reboot fixed); system Wi-Fi/cell scanning toggles were OFF (enabled via adb — Play Services could not resolve indoor positions at any priority); the device clock was a DAY AHEAD with auto_time off (elapsed showed "24 hrs 2 min" — enabled sync, clock snapped correct). The capture itself was the last mile, not the whole problem.
+
+**Full round-trip verified on device (production):** READY (stream) → CHECK IN 5:06 PM → SHIFT ACTIVE blue card (elapsed true after clock fix) → CHECK OUT → done tiles "12 min Total logged" + "Checked in late by 7 hrs 51 min". ALL FOUR mockup states + the row-5 fallback have now rendered live. H01's test data cleaned after.
+
+**Release:** signed release APK built from 9779cc4 (arm64, all fixes) — installed on the Pixel 6 (debug app uninstalled; login via the pre-release master OTP 816001, see the auth note in memory). The office pin was left AT THE DESK at the user's request for continued manual testing — REVERT TO 12.9831410139702, 77.7491378970444 when real-office testing resumes.
