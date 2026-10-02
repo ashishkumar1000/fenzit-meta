@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-02-2026  # Story 20-2 DONE + PUSHED to all three remotes — fenzit-be a829291 (reserve) + 50c366c (partition flip, Render-deployed) + 250e0a7 (test phase, tests/docs only), fenzo-app 3c0f7f2 (tile + shimmer), meta 5aa6aeb. /bmad-code-review complete; device-verified per office with mock data (keep decision: mock rows + Fri→Sun weekly off stay until user says otherwise).
+last_updated: 10-02-2026  # Story 20-3 DONE — punch moved to the Today tab. fenzit-be d39addd (officeRadius, DEPLOYED + production-probed), fenzo-app 21f2efb (punch UI) + e884a79 (user-found gap: rejected press now renders LOCKED) + 72c0988 (test phase, 2949/2949), meta docs this commit. BMAD 2-lens review (8 patches/4 defers/1 rejected); device-verified on Pixel 6 vs local Phase-A BE: all mockup states except SHIFT ACTIVE's blue card (copy byte-pinned in tests; GPS-lottery at the desk).
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -250,3 +250,16 @@ development_status:
   # reminder RPC untouched. Story file:
   # artifacts/implementation-artifacts/20-2-short-day-dashboard-tile.md
   20-2-short-day-dashboard-tile: done
+
+  # Story 20.3: Today-tab punch button — direct user request, 2026-10-02
+  # (with approved mockups). The check-in/out control leaves the Attendance
+  # tab and lives on the technician TODAY tab above the job list: circular
+  # gradient PunchButton + PunchStatusCard rendering four mockup states
+  # (ready-in / shift-active / locked-in geofence / locked-out geofence)
+  # verbatim, plus offline/permission/rate-limit/resolving/done postures.
+  # Geofence lock is a client PRESCREEN on a fresh fix (<= 2 min); server
+  # stays authoritative. Phases: A) fenzit-be additive `officeRadius` on the
+  # me/summary wire (radius_m already gates punches server-side — TS only,
+  # no migration), B) fenzo-app move + restyle. Story file:
+  # artifacts/implementation-artifacts/20-3-frontend-today-tab-punch-button.md
+  20-3-frontend-today-tab-punch-button: done  # 2026-10-02 — punch on the Today tab; all 4 mockup states + row-5 fallbacks verified on device (SHIFT ACTIVE blue card = copy-pinned, GPS-lottery); user-found gap (rejected press hid the LOCKED state) fixed in e884a79; test phase closed in 72c0988; Phase A deployed + production-probed
