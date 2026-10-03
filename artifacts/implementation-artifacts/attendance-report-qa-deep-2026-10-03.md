@@ -331,3 +331,11 @@ a force-stop + relaunch, not reproduced after). Generated the 27 Sep–
 Every fix from rounds 1–4 is now verified on the actual device against
 production data from the owner's own account. The 8:12 PM report row was
 left in history as the reference artifact.
+
+## Polish (2026-10-03, 20:2x IST)
+
+The clipped 1-day week now labels itself plainly — "27 Sep", not
+"27 Sep – 27 Sep" (BE b8ea2ed; spec pins both the Sunday-start 7-day
+production case → ['27 Sep', '28 Sep – 3 Oct'] and a 1-day range).
+Deployed and probed: a 1-day Sunday report renders ready on the new code
+(probe row deleted). 95 suites / 1,502 tests, tsc clean.
