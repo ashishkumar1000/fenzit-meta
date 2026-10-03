@@ -133,3 +133,50 @@ returns); the stub filter escapes rows without `employee_id` (office rules,
 weekly-off defaults); job-report specs never route through
 `resolveTechnicianIds`; the DTO 422 copy matches the pipe's configured
 `errorHttpStatusCode`.
+
+## Ship + device QA round on the release build (2026-10-03 afternoon)
+
+Fixes shipped (fenzit-be eaae57d, Render-deployed, prod-probed live: all
+three malformed-id probes now 400 with the new copy, sane create still
+queues), release APK re-confirmed and installed on the Pixel 6 (the phone
+still had the debug build — uninstall + fresh install of the signed
+release, so one re-login was needed).
+
+Device QA round (release build, production API, all PASS):
+
+| Check | Result |
+| --- | --- |
+| Fresh-install onboarding → Skip → login | clean; master OTP 816001 auto-submits |
+| Transient network failure on Send OTP | clean inline error "Could not reach the server…", button recovers, retry succeeds |
+| Report type dropdown | both types; form + copy switch correctly (Offices/Employees vs Technicians) |
+| Happy path 27 Sep–3 Oct, all scope | "Report queued" banner → Queued row → Ready in ~40 s → tap → presigned R2 PDF opens (10 pages, real data) |
+| >92-day boundary (1 Jul → 3 Oct = 95 d) | Generate disabled + red "Range exceeds 92 days" |
+| Exactly 92 days (4 Jul → 3 Oct) | gate releases, button enabled |
+| Empty state (Jhaji's Home filter, 20–26 Sep) | 1-page PDF, header "0 tracked", boxed "No attendance data for these dates" — this is the D2-fixed path rendering honestly |
+| 429 in-flight cap from the device | red inline "You have a report generating. Wait for it to finish before creating another.", no row created |
+| "Generating"/"Queued"/"Ready" chips | all three observed live in history |
+| Tab sweep (Home/Jobs/Customers/Account) | all load, no crash |
+
+Findings from the round (no code changed — both need the owner's call):
+
+1. **Decision-needed — "(no office)" bucket counts untracked days.**
+   The 27 Sep–3 Oct all-scope PDF shows an offices row "(no office) · 103
+   employees · all zeros" next to Hero wala (51) / Yuka (51) — the same
+   103 people double-listed. SQL confirms every enrolled employee HAS an
+   assignment overlapping the window; the bucket is per-day gaps where the
+   assignment starts mid-window (enrolment precedes assignment), which are
+   untracked days with no office snapshot. Math is honest; the label reads
+   like broken data. Recommendation: drop null-office buckets whose rows
+   are all untracked (or count `employees` from tracked rows only) —
+   needs the owner's call since it changes displayed data and the spec's
+   "one row per distinct snapshot office" wording.
+2. **Copy nit — Account → Reports row still says "Job reports (PDF)"**
+   although the screen now offers two report types (FE copy only).
+3. **Observation — the Reports form resets to defaults after a successful
+   submit** (dates back to the 7-day default, scopes cleared). Possibly a
+   remount; harmless but worth a deliberate look if owners chain reports.
+
+Cleanup: the 6 curl-created 1-day rows from the 429 probe deleted; the two
+reports queued from the device UI (2:52 happy-path, 2:59 empty-state) are
+left in history — they are indistinguishable from real usage. App left on
+the Home tab.
