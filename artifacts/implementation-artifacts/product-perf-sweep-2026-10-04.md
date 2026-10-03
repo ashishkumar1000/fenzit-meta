@@ -29,10 +29,13 @@ BATCHED already (dashboard.ts + grid-reader.ts audited: 13–15 queries in 3 par
 waves, zero per-row loops) — they pay the RTT tax ~19 times. A code fix per screen
 cannot beat the floor; the root is infra.
 
-**Highest-leverage fix (owner decision): co-locate the Render service with Supabase
-(ap-south-1/Mumbai)** — Render supports the region. At in-region RTT (~2–5ms) every
-endpoint above drops to ~100–400ms with ZERO code change. Verify current region in the
-Render dashboard (service → Settings → Region); memory says "Render starter".
+**Highest-leverage fix (owner decision): move the Render service from GCP us-west1
+(Oregon, USA — proven via DNS: `fenzit-be.onrender.com` →
+`gcp-us-west1-1.origin.onrender.com`) to Render's SINGAPORE region.** Render has no
+Mumbai region; Singapore is the closest to Supabase's Mumbai (ap-south-1), cutting the
+per-query RTT from ~240ms (Oregon↔Mumbai, ≈12,000km) to ~50ms — a ~5× improvement on
+every endpoint with ZERO code change (dashboard ~8s → ~1.5–2s). Render dashboard →
+fenzit-be service → Settings → Region (brief redeploy downtime; public URL unchanged).
 
 ## Similar-issue list (each verified, none speculative)
 
