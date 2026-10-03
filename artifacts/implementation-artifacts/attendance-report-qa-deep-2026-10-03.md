@@ -231,3 +231,47 @@ Reports screen has no tab bar (pushed screen — back navigation only).
 UNCOMMITTED — awaiting the owner's ship consent** (production currently
 renders the clipped 10-page PDF for big tenants; tenants ≤ ~35 employees
 are unaffected).
+
+## Round 3 — owner-persona audit + external research (2026-10-03 night)
+
+Method: internet research on attendance/payroll report best practices
+(payroll linkage, late-mark grace conventions, regularization, the classic
+UTC/date-boundary and text-overflow bug classes), then a raw-data audit —
+hand-computing the PDF's numbers from attendance_records / rules /
+corrections for the exact employees whose rows looked odd on device
+(Arya, Ravi, Suresh, Loadtest H01).
+
+**Audit verdict: NO arithmetic bugs.** Every oddity traced exactly to a
+rule: H01's "617 min late" = 19:32 punch vs 09:00+15 cutoff (exact);
+Ravi's all-zero row = 20:38 check-in with no check-out (late yes, no
+credit, correctly not absent); Suresh's 02:30 IST punch landed on the
+correct IST work_date (the timezone boundary class is clean); Arya's
+5.1 h = owner-added 08:57→14:00 checkout (corrections integrate
+correctly), graded half-day against Hero wala's 4 h threshold.
+
+**Fixed (uncommitted, with the kept() fix):** the footer said
+"Private — contains customer details" on the attendance report — it
+contains EMPLOYEE data. pageFooter() now takes the privacy note; the job
+report keeps the customer wording (true there), attendance passes
+"Private — contains employee details". Spec added. 95 suites / 1,498
+tests, tsc clean.
+
+**Findings for the owner (decisions / improvements, no code changed):**
+1. **"Avg hrs/day" can exceed "Worked hours"** (Arya: 5.1 h total, 10.2 h
+   avg) — the average divides by day CREDIT (half-day = 0.5), which is
+   why a half-day reads double. Options: divide by days-with-hours, or
+   relabel "avg per credited day".
+2. **Punched-in days grade as ABSENT** when the span is under the office
+   half-day threshold (H01: punched 19:32–19:33 → 'A' in the register
+   plus "617 min late"). Defensible (1 minute ≠ work) but owners WILL
+   dispute it — consider a distinct code or note.
+3. **No "Payable days" column** — the #1 figure owners compute from
+   attendance reports (worked + paid leave − LOP). All ingredients exist;
+   adding the derived column is a policy decision.
+4. **Weekly trend weeks start on the range's first weekday** (a 27 Sep
+   start = Sunday-start weeks); Indian business expectation is Mon-start.
+5. **Alarm fatigue**: 43 "absent streak" alarms for load-test employees
+   who have never punched once. Consider suppressing the streak alarm
+   for employees with zero attendance history ever.
+6. Carried from round 1: the "(no office) · 103 employees · all zeros"
+   bucket; Account → "Job reports (PDF)" copy; form resets after submit.
