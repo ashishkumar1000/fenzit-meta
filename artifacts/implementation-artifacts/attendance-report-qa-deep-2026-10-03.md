@@ -305,3 +305,29 @@ tests, FE 235 suites / 2,971 tests, tsc clean both.
 Probe row + its notification deleted after verification. Release APK
 rebuilt with the FE copy; on-device visual pass of the new render pending
 the owner's return (phone left with them).
+
+## Final device pass (2026-10-03, 20:07–20:15 IST)
+
+Updated release APK installed in place (`adb install -r`, same signature —
+login survived; one transient post-update spinner on Account cleared with
+a force-stop + relaunch, not reproduced after). Generated the 27 Sep–
+3 Oct all-scope report from the device and page-turned the result:
+
+- **1 / 17 pages**, footer "Private — contains **employee** details".
+- Offices table: Hero wala / Jhaji's Home / Yuka — the all-untracked
+  "(no office) · 103" and Yuka1 buckets gone (Yuka1's single employee
+  has zero tracked days → dropped by the new rule).
+- Employees — attendance + discipline tables fully rendered mid-document
+  (discipline tail: Ravi 1 late / 653 min / missed check-out / avg "—";
+  Suresh's 11-second punch reads "0 h" — both match the raw-data audit).
+- Overall card: "86.7 h — 1 h/day avg" (sane; was 57.8 h/day avg under
+  the credit divisor).
+- Weekly trend: "27 Sep – 27 Sep" + "28 Sep – 3 Oct" — Monday-start
+  chunks live. (Polish note: a 1-day clipped week could render as just
+  "27 Sep" someday; recorded, not fixed.)
+- Register codes, legend, leave summary, rejected punches (fake-location
+  cells in red) all render through 17/17.
+
+Every fix from rounds 1–4 is now verified on the actual device against
+production data from the owner's own account. The 8:12 PM report row was
+left in history as the reference artifact.
