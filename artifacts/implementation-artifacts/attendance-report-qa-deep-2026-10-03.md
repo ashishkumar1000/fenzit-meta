@@ -180,3 +180,54 @@ Cleanup: the 6 curl-created 1-day rows from the 429 probe deleted; the two
 reports queued from the device UI (2:52 happy-path, 2:59 empty-state) are
 left in history — they are indistinguishable from real usage. App left on
 the Home tab.
+
+## Round 2 — deeper scenarios (2026-10-03 evening): P1 rendering defect found & fixed
+
+**P1 — both employee tables silently missing from the production PDF.**
+The full page-by-page visual pass of the 10-page 103-employee report (on
+device) found: page 3 completely blank, NO "Employees — attendance" /
+"Employees — discipline & hours" tables anywhere. Root cause:
+attendance.template.ts's `kept()` helper wrapped section titles + ENTIRE
+tables in `{ unbreakable: true }` — pdfmake silently clips an unbreakable
+block taller than one page. The job-report template (which invented
+kept()) documents the rule "never wrap a table" and obeys it; the
+attendance template violated it for six tables. 2-employee test fixtures
+could never see it. Also latent: offices table (≤51 rows at the cap) and
+leave/rejections tables.
+
+**Fix (BE, uncommitted):** all six tables pushed as SIBLINGS of their
+titles (dataTable repeats its header row across page breaks by design);
+kept() survives only for the Overall card row and the ≤6-item flag list —
+the job report's documented pattern. Trade-off (deferred, cosmetic): a
+section title can now strand at a page bottom; accepted in exchange for
+never losing rows, matching the job report's existing behavior.
+
+**Proof:** mutation-first regression spec failed on the pre-fix code
+([104,104,104] unbreakable violations = attendance/discipline/leave
+tables); post-fix the same report renders **17 pages (was 10)** and the
+device shows both employee tables complete (Loadtest Y41–Y50, Ravi,
+Suresh rows; discipline table with late minutes/early outs/attendance %).
+Verified end-to-end via a local-BE render before deploy.
+
+**BMAD 2-lens review of the fix — 3 patches applied, 1 deferral:**
+1. Guard blind spot (patched): the first guard fixture only grew the
+   employee axis — a half-revert shipped green (proven by mutation in
+   /tmp). New spec case grows offices=8, weeks=8, rejections=8,
+   exceptions=8 so the >6 filter bites on every unwrapped site.
+2. Job template unprotected (patched): same guard mirrored into
+   technician-job-activity.template.spec.ts with a 12-job / 8-flag
+   fixture (a reintroduced kept() around jobsTable had shipped green).
+3. Fixture nit (patched): `employeesInScope: 103` was a dead property
+   (lives at scope.employeesInScope; silent TS2353) — scope now
+   overridden properly.
+4. Deferred (cosmetic): possible title-stranded-at-page-bottom after the
+   unwrap — consistent with the job report's existing behavior.
+
+Also verified this round: report_ready notifications land in the owner's
+feed (the "you'll be notified" promise); "Generating" chip renders live;
+Reports screen has no tab bar (pushed screen — back navigation only).
+
+**State: tsc clean, 95 suites / 1,497 tests green (+2 guards). The fix is
+UNCOMMITTED — awaiting the owner's ship consent** (production currently
+renders the clipped 10-page PDF for big tenants; tenants ≤ ~35 employees
+are unaffected).
