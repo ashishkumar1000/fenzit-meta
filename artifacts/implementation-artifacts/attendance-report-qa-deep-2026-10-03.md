@@ -275,3 +275,33 @@ tests, tsc clean.
    for employees with zero attendance history ever.
 6. Carried from round 1: the "(no office) · 103 employees · all zeros"
    bucket; Account → "Job reports (PDF)" copy; form resets after submit.
+
+## Round 4 — decisions implemented & SHIPPED (2026-10-03, evening)
+
+Owner delegated the calls ("take your best decision"). Implemented and
+shipped (BE 624580e, FE c742a0b — Render deployed, production-verified):
+1. avgHoursPerDay over days-with-hours (same-instant 0-minute punches
+   excluded from the divisor per review) — spec pinned incl. the null arm.
+2. Weekly trend chunks Monday-start — labels pinned ('1 Sep – 6 Sep' for
+   a Tue-start range).
+3. Offices table drops all-untracked buckets; headcount counts tracked
+   rows only — both pinned.
+4. Footer call site pinned: the built doc's footer callback must carry
+   'Private — contains employee details'.
+5. FE: Account row now "Job & attendance reports (PDF)".
+DEFERRED with reasons: payable-days column (needs the tenant's payroll
+policy — LOP/leave-paid rules are the owner's call), punched-but-absent
+grading (follows the owner's own office thresholds; changing it changes
+payroll meaning), absent-streak alarm noise (logic correct; the noise is
+43 load-test employees in the tenant — data hygiene).
+
+BMAD 2-lens review of this round: 6 findings, ALL patched (span>0 guard;
+tracked-only headcount; bare-table unbreakable escape in both walkers;
+attendance footer call-site pin; avg null-arm pin; axis coverage was
+already in). Production probe on the deploy: the same 27 Sep–3 Oct report
+renders 17 pages (~153 KB) — was 10 clipped pages. BE 95 suites / 1,501
+tests, FE 235 suites / 2,971 tests, tsc clean both.
+
+Probe row + its notification deleted after verification. Release APK
+rebuilt with the FE copy; on-device visual pass of the new render pending
+the owner's return (phone left with them).
