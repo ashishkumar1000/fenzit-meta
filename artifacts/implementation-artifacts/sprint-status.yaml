@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-02-2026  # Story 20-3 DONE — punch moved to the Today tab. fenzit-be d39addd (officeRadius, DEPLOYED + production-probed), fenzo-app 21f2efb (punch UI) + e884a79 (user-found gap: rejected press now renders LOCKED) + 72c0988 (test phase, 2949/2949), meta docs this commit. BMAD 2-lens review (8 patches/4 defers/1 rejected); device-verified on Pixel 6 vs local Phase-A BE: all mockup states except SHIFT ACTIVE's blue card (copy byte-pinned in tests; GPS-lottery at the desk).
+last_updated: 10-15-2026  # Epic 10 DONE — real OTP delivery via MSG91 shipped end-to-end + DEPLOYED: fenzit-be 64597a7 (flow endpoint, registry, 502 contract, 4-digit OTP, master 1039, dev echo removed; prod-verified) + fenzo-app 76bc597 (4-box input, FR-FE1-3) + device pass on the Pixel 6. BMAD thorough review (13/5/0). Remaining = ops only: confirm code-1295 SMS receipt, then cutover flip in Render dashboard.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -99,18 +99,24 @@ development_status:
   epic-9: done  # closed 2026-09-18 — story 9-1 done (frontend-only, no BE change)
   9-1-frontend-full-screen-attachment-viewer: done
 
-  # Epic 10: Real OTP delivery via MSG91 SMS (DLT) — replaces the mock OTP
-  # flow (closes deferred-work W1: verify accepts any 6-digit code + plaintext
-  # OTP in the send response). Planning complete; stories NOT yet created —
-  # next step is BMAD epics-and-stories breakdown from the PRD.
-  # PRD: artifacts/planning-artifacts/prd-otp-sms-msg91-2026-09-18.md (final,
-  # validated 2026-09-18 — BMAD rubric + adversarial, grade Fair, fixes applied).
-  # Ops side (user-run, parallel to dev): DLT registration per
-  # artifacts/planning-artifacts/ops-dlt-sms-template-registration-2026-09-18.md
-  # — payment due 17/10/2026; MSG91_OTP_TEMPLATE_ID arrives from that run.
-  # Execution order = backend first (fenzit-be), then FE cleanup (fenzo-app),
-  # per CLAUDE.md cross-repo ordering rule.
-  epic-10: backlog
+  # Epic 10: Real OTP delivery via MSG91 SMS (DLT) — DONE 2026-10-15, shipped
+  # end-to-end and DEPLOYED. DLT/MSG91 ops all resolved earlier (template
+  # OTP_V1 approved: MSG91 panel ID 6abbb9d03a3773ee7209dd94 = code constant,
+  # sender FENZIT, DLT ID 1277179042535914512). Shipped: BE 64597a7 (v5 flow
+  # endpoint — the /otp endpoint silently dies in DLT scrubbing for a
+  ##number## template; provider registry; 502 OTP_SEND_FAILED semantics;
+  # 4-digit CSPRNG OTP; master re-keyed 816001->1039; dev-echo REMOVED) —
+  # pushed, Render autoDeploy, prod-verified (no echo in response, master
+  # 1039 verifies). FE 76bc597 (OTP_LENGTH 4, FR-FE1/2/3: echo field + dev
+  # banner removed, OTP_SEND_FAILED copy, Retry-After countdown) — release
+  # APK built + installed on the Pixel 6, fresh-login device pass clean,
+  # session persists. BMAD thorough review round: 13 patches / 5 rejected /
+  # 0 defer (findings in the PRD's ## Code Review section). Day record:
+  # artifacts/implementation-artifacts/otp-sms-delivery-2026-10-15.md.
+  # REMAINING (ops only, user-run): confirm the code-1295 test SMS arrived,
+  # then cutover in the Render dashboard (set MSG91_AUTH_KEY +
+  # SMS_DELIVERY_PROVIDER=msg91, unset OTP_DEV_ECHO — kills the master gate).
+  epic-10: done
 
   # Epic 11: Product feedback items (2026-09-20) — numbered by the user's
   # feedback list. 11-4 (Account section) and 11-6 (time-based colouring)

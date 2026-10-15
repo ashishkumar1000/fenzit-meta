@@ -665,3 +665,30 @@ Nothing else — that is the contract this section locks in.
   MessagingGateway hexagonal reference (`ProviderRegistry`, zero-core-change
   provider addition):
   [ARCHITECTURE.md](https://github.com/vgpastor/MessagingGateway/blob/main/ARCHITECTURE.md).
+## Code Review
+
+### 2026-10-15
+
+**Code review complete.** 0 `decision-needed`, 13 `patch`, 0 `defer`, 5 `rejected` — thorough BMAD run (blind-hunter + edge-case-hunter + verification-gap + intent-alignment), all patches applied same day. BE after the round: unit 1,557/1,557 green; e2e 20 suites green (only the 26 known real-DB baseline failures remain, untouched by this change).
+
+- [x] [Review][Patch] api-contracts.md said "v5 OTP endpoint" while the code deliberately uses the v5 flow endpoint — doc corrected, flow-vs-otp rationale documented, 4-digit OTP length documented, stale send/verify body specs fixed (send: countryCode+phoneNumber; verify: otpSessionId+otpCode) [docs/api-contracts.md]
+- [x] [Review][Patch] Controller swagger: verify endpoint still documented "6-digit" with a 6-digit example; 429 response now documents the Retry-After header [src/auth/auth.controller.ts]
+- [x] [Review][Patch] architecture.md AR-19 named the deleted OtpDeliveryProvider/MockOtpDeliveryProvider and "Phase 2 swaps to a WhatsApp BSP"; also the stale "verifyOtp accepts any 6-digit code / W1 blocker" line right above it (pre-existing rot, closed 2026-10-02) [docs/architecture.md]
+- [x] [Review][Patch] deliverOtp's "one structured line per attempt" was false on the crash path — non-SmsDeliveryError now logs an otp_delivery event with outcome 'crash' before rethrowing as-is (stays a 500, not folded into the 502 contract) [src/auth/auth.service.ts]
+- [x] [Review][Patch] A failing otpSessionStore.delete during a definitive delivery failure would mask the 502 with a 500 — delete guarded and logged (otp_session_delete_failed), 502 always reaches the client [src/auth/auth.service.ts]
+- [x] [Review][Patch] A timeout during the MSG91 response BODY read was misclassified as a definitive error (session deleted though the SMS likely dispatched) — now classified 'timeout' like the fetch phase [src/auth/msg91-sms-delivery.provider.ts]
+- [x] [Review][Patch] Stale "pre-DLT" wording in the master-OTP comments after the pre-SMS-cutover rename sweep [src/auth/auth.service.ts]
+- [x] [Review][Patch] Mock provider picked the code positionally (Object.values[0]) against the named-variables port contract — named ##number## slot wins, first value as fallback [src/auth/mock-sms-delivery.provider.ts]
+- [x] [Review][Patch] NEW mock-sms-delivery.provider.spec.ts — the mock's log line is the only delivery channel wherever the mock is active (pre-cutover prod included); its "Code:" contract was verified nowhere [src/auth/mock-sms-delivery.provider.spec.ts]
+- [x] [Review][Patch] msg91 spec gaps: generic AbortError branch, body-read timeout branch, missing MSG91_AUTH_KEY propagating as a non-SmsDeliveryError config error [src/auth/msg91-sms-delivery.provider.spec.ts]
+- [x] [Review][Patch] NEW e2e 502 contract: full app with a failing gateway — definitive failure → 502 envelope + session gone (verify answers OTP_EXPIRED); timeout → 502 + session kept (master code verifies) [test/auth.integration.spec.ts]
+- [x] [Review][Patch] Rate-limit test comment off-by-one (cap is 5, so the 5th send fails and the 6th hits the 429, not 6th/7th) [src/auth/auth.service.spec.ts]
+- [x] [Review][Patch] render.yaml missing trailing newline (cosmetic; the GOOGLE_PLACES_API_KEY sync:false addition itself is a legitimate blueprint-validity fix) [render.yaml]
+- [x] [Review][Patch] fenzo-app OTP cleanup (FR-FE1/FR-FE2/FR-FE3 + OTP_LENGTH 6→4): SHIPPED same day (plus the user 2026-10-15 calls: master re-keyed to 1039, dev-echo flow removed entirely). Intent-alignment confirmed the app's 6-box input cannot submit the new 4-digit code — backend and client digit surfaces must land together [workspace/core/frontend/fenzo-app]
+
+Rejected:
+- `false` — "diff artifact malformed for two new files (no @@ hunks)": the malformed hunks were an artifact of how the review harness generated the temp diff for untracked files, not a property of the change; `git diff HEAD` plus the files' real content is well-formed.
+- `false` — DTO message "must be 4 digits" vs pattern accepting 4|6: intentional copy — the message states the user-facing requirement; the 6-digit arm exists only for the flag-gated master code and is deliberately not advertised (documented in the DTO comment, dies at cutover).
+- `false` — factory reading NODE_ENV from process.env vs ConfigService: ConfigModule.forRoot uses no envFilePath, so process.env IS the single source — no reachable divergence.
+- `false` — "production without NODE_ENV serves the mock": render.yaml pins NODE_ENV=production AND SMS_DELIVERY_PROVIDER=mock explicitly; the fallback default is unreachable through the blueprint.
+- rejected per rule (fix edits the plan): PRD says "6-digit" in §0/§1 — superseded by the user's 4-digit product call (2026-10-15); digit references here are stale on that point and this note is the correction of record.
