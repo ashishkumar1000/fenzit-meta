@@ -35,3 +35,17 @@ Notes:
 
 Technician job-detail rendering (details lead the maps row) and the owner job-detail customer-card line are pinned by unit tests (`TechJobDetailContent.test.tsx`); not driven on-device — needs a job for the test customer.
 
+## Design-v2 pass — sectioned Add Customer (third install, FE 7eaa342 + BE 992ab68)
+
+| What | Evidence | Result |
+|---|---|---|
+| Sectioned layout per the mock: two FormSectionCards, icon chips, subtitles, red "Required *" on the location card; preview box with "Set location >" pill; Flat/House + Street/Landmark + City/Area-Pincode fields; "Save customer" CTA | `16-design-v2-empty.png` | ✅ matches the mock |
+| Required gate enforced: name + phone filled but NO location → Save stays disabled | `17-v2-gate-name-phone-only.png` | ✅ (gate asserted in unit tests; visually button dimmed) |
+| Pin → preview box fills with the resolved line, button flips to "Change >", City auto-fills, Street stays EMPTY (resolved line no longer copied into free text — design-v2 semantics), Save enables | `18-v2-picked.png` | ✅ |
+| Detail + street filled | `19-v2-filled.png` | ✅ "Shop 5, Gate 1" / "Near the big water tank" |
+| Save → list row shows city · street text (v2 semantics: free text = user's street) | `20-v2-list.png` | ✅ |
+| Profile round-trip: location row shows the RESOLVED line (formattedAddress preferred), details row shows "Shop 5, Gate 1" | `21-v2-profile.png` | ✅ both from the live API |
+
+Note: an incoming call interrupted one typing pass — waited it out, no call was answered/declined.
+Observation for later: list rows read `city · address` where address is now the user's street text — a pin-only customer's list row shows just the city. If that feels thin, `customerLocation` can prefer `formattedAddress` (the list API already returns it); deliberately not changed without a call.
+
