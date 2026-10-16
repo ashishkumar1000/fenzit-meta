@@ -21,7 +21,7 @@ const reviews: RepoReview[] = [
 		fetchFailed: true,
 	},
 	{
-		id: "fenzo-app",
+		id: "fenzit-app",
 		path: "fake/app",
 		absolutePath: "/fake/app",
 		state: "ahead",

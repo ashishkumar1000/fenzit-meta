@@ -59,7 +59,7 @@ In a terminal, repos with a real choice to make are reviewed interactively
 before anything is pushed. Pass --no-interactive to skip that screen.
 
   --dry-run          Show what would be pushed, push nothing
-  --only <id>        Restrict to one repo id (e.g. fenzit-be, fenzo-app, fenzit-meta)
+  --only <id>        Restrict to one repo id (e.g. fenzit-be, fenzit-app, fenzit-meta)
   --except <id>      Exclude one repo id
   --no-interactive   Plain output, no review screen
   --help             Show this help

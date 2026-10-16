@@ -2,7 +2,7 @@
 
 Control-plane meta-repo. Two child repos, each with its own git history and remote:
 
-- `workspace/core/frontend/fenzo-app` → https://github.com/ashishkumar1000/fenzo-app.git
+- `workspace/core/frontend/fenzit-app` → https://github.com/ashishkumar1000/fenzit-app.git
 - `workspace/core/backend/fenzit-be` → https://github.com/ashishkumar1000/fenzit-be.git
 
 ## Key working rules
@@ -13,18 +13,18 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 - Test timing — implement feature → user confirms it works → write tests → review (never write tests upfront).
 - Test-writing mindset — when writing test cases, think as a tester/QA engineer, not as a developer. Test the requirement's behaviour, not the code's happy path: hunt boundaries (empty / zero / one / many), malformed and adversarial input, failure and error paths, race and ordering, permissions and tenant isolation. A test that merely restates the current implementation proves nothing — if the implementation changed but the requirement did not, the test must still pass.
 - When a test and the code disagree, fix the code — never weaken the assertion to match the implementation. Only change the test if the test itself is wrong about the requirement, and say so explicitly.
-- Fix where the fix belongs — for every bug or gap, analyse whether the right fix is FE (`fenzo-app`), BE (`fenzit-be`), or DB (migration/view/RPC) before writing any code. We own all three layers; never default to patching the layer where the symptom appeared. Decide by root cause and long-term contract: which layer should own the semantics so the invariant holds for every future consumer, which change keeps `GET`/write responses self-consistent, and which avoids re-planting the same trap in the other layers. State the chosen layer and why (one line) before implementing; if the symptom spans layers, fix the owning layer and adapt the other only at its boundary.
+- Fix where the fix belongs — for every bug or gap, analyse whether the right fix is FE (`fenzit-app`), BE (`fenzit-be`), or DB (migration/view/RPC) before writing any code. We own all three layers; never default to patching the layer where the symptom appeared. Decide by root cause and long-term contract: which layer should own the semantics so the invariant holds for every future consumer, which change keeps `GET`/write responses self-consistent, and which avoids re-planting the same trap in the other layers. State the chosen layer and why (one line) before implementing; if the symptom spans layers, fix the owning layer and adapt the other only at its boundary.
 - Compact after each task — run `/compact` between story tasks.
 
 ## Project context
 
 - Fenzit pre-launch — app/backend not live; any DB/schema/shape changes allowed.
 - Single sprint — one source of truth: `artifacts/implementation-artifacts/sprint-status.yaml`.
-- Cross-repo structure — fenzo-app and fenzit-be deploy independently; backend changes deploy first.
+- Cross-repo structure — fenzit-app and fenzit-be deploy independently; backend changes deploy first.
 
 ## Commit in the repo the change belongs to — never here
 
-- Files under `workspace/core/frontend/fenzo-app/` → run git with that directory as cwd (or `git -C workspace/core/frontend/fenzo-app ...`), push to its own remote. Same for `workspace/core/backend/fenzit-be/`.
+- Files under `workspace/core/frontend/fenzit-app/` → run git with that directory as cwd (or `git -C workspace/core/frontend/fenzit-app ...`), push to its own remote. Same for `workspace/core/backend/fenzit-be/`.
 - Files under `docs/`, `artifacts/`, `_bmad/custom/`, or other meta-repo-only paths → commit here in `fenzit-meta`.
 - Never `git add -A && git commit` from the meta-repo root — `workspace/core/*` is gitignored here on purpose. A change spanning both repos = two commits in two repos (optionally noted together under `docs/initiatives/`).
 <!-- Why: each child repo has its own .git, so a root-level add/commit can never capture their changes. -->
@@ -32,7 +32,7 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 
 ## Bun only
 
-This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. `fenzit-be` has no lockfile — never commit `bun.lock` there. On `fenzo-app`, run tests via `bun run test` — bare `bun test` breaks on RN Flow types.
+This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. `fenzit-be` has no lockfile — never commit `bun.lock` there. On `fenzit-app`, run tests via `bun run test` — bare `bun test` breaks on RN Flow types.
 
 ## Tech constraints
 
@@ -41,17 +41,17 @@ This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforce
 
 ## Cross-repo change ordering
 
-`fenzo-app` and `fenzit-be` deploy independently — a story touching both is one BMAD session but never one atomic release.
+`fenzit-app` and `fenzit-be` deploy independently — a story touching both is one BMAD session but never one atomic release.
 
-- Additive backend change (new field/endpoint, existing behavior untouched) → merge/deploy `fenzit-be` first, then `fenzo-app`.
-- Breaking backend change (rename/remove a field, changed response shape) → three steps: (1) `fenzit-be` adds the new shape alongside the old, (2) `fenzo-app` switches to it, (3) only once nothing depends on the old shape, `fenzit-be` removes it in a separate change.
+- Additive backend change (new field/endpoint, existing behavior untouched) → merge/deploy `fenzit-be` first, then `fenzit-app`.
+- Breaking backend change (rename/remove a field, changed response shape) → three steps: (1) `fenzit-be` adds the new shape alongside the old, (2) `fenzit-app` switches to it, (3) only once nothing depends on the old shape, `fenzit-be` removes it in a separate change.
 - Never treat "edited both repos in one session" as "these ship together" — always state which repo merges/deploys first when handing off.
 
 ## Coding Guidelines for Backend vs Frontend
 
 When writing backend code (database schema, RLS policies, API endpoints, business logic in `fenzit-be`), think **as a backend engineer**, not as a frontend engineer responding to frontend prompts. Frontend requirements can lead to client-side assumptions that break security, data integrity, concurrency safety, and multi-tenant isolation. Never trust the client.Ensure fenzit-be backend quality by maintaining strict foreign key and check constraints, enforcing explicit deny-by-default RLS security, preventing race conditions via idempotency headers and atomic operations, establishing consistent API contracts and error logging without leaking secrets, and briefing AI agents with backend-first constraints, API definitions, and post-implementation code review checklists. Strictly No Service Role Keys in Frontend.
 
-When writing frontend code (screens, components, hooks, state management in `fenzo-app`), think **as a frontend/UX/React Native engineer**, not as a backend engineer trying to mirror API responses. Backend capabilities don't translate directly to frontend performance, UX, or accessibility. Drive fenzo-app frontend development with a UX-first mindset by strictly enforcing design system tokens and atomic components, applying tiered state management, optimizing performance and resilience with list virtualization, client-side validation, and explicit loading/error/empty states, adhering to accessibility standards and briefing AI dev agents using design-focused prompts, comprehensive checklists, and pre-merge code reviews. Always generate explicit loading skeletons and handle network timeout/offline boundaries gracefully rather than letting the screen freeze or crash.
+When writing frontend code (screens, components, hooks, state management in `fenzit-app`), think **as a frontend/UX/React Native engineer**, not as a backend engineer trying to mirror API responses. Backend capabilities don't translate directly to frontend performance, UX, or accessibility. Drive fenzit-app frontend development with a UX-first mindset by strictly enforcing design system tokens and atomic components, applying tiered state management, optimizing performance and resilience with list virtualization, client-side validation, and explicit loading/error/empty states, adhering to accessibility standards and briefing AI dev agents using design-focused prompts, comprehensive checklists, and pre-merge code reviews. Always generate explicit loading skeletons and handle network timeout/offline boundaries gracefully rather than letting the screen freeze or crash.
 Do not make any changes until you 95% confidence in what you need to build. Ask me follow-up questions until you reach that confidence.
 
 ## Agent/skill guidance

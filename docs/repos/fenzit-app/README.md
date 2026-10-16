@@ -1,7 +1,7 @@
-# fenzo-app (frontend)
+# fenzit-app (frontend)
 
-- Remote: https://github.com/ashishkumar1000/fenzo-app.git
-- Local path: `workspace/core/frontend/fenzo-app`
+- Remote: https://github.com/ashishkumar1000/fenzit-app.git
+- Local path: `workspace/core/frontend/fenzit-app`
 - Role: frontend
 - Default branch: main
 

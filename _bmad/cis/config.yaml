@@ -7,7 +7,7 @@ visual_tools: intermediate
 
 # Core Configuration Values
 user_name: Ashish.kumar
-project_name: Fenzo
+project_name: Fenzit
 communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"

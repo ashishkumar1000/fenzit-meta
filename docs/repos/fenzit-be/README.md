@@ -5,14 +5,14 @@
 - Role: backend
 - Default branch: main
 
-Durable notes about this repo (architecture, conventions, how `fenzo-app` depends on it) go here. Repo-local operational docs (setup, scripts, etc.) stay inside the repo itself.
+Durable notes about this repo (architecture, conventions, how `fenzit-app` depends on it) go here. Repo-local operational docs (setup, scripts, etc.) stay inside the repo itself.
 
-## Interface Contract (what `fenzo-app` depends on from this repo)
+## Interface Contract (what `fenzit-app` depends on from this repo)
 
 Keep this current whenever a cross-repo change lands — this is what lets an agent catch "this backend change breaks the frontend" *before* making the change, not after.
 
-- API surface exposed to `fenzo-app` (endpoints, or link to OpenAPI spec):
-- Response shapes / DTOs that are load-bearing for the frontend (breaking these breaks `fenzo-app`):
+- API surface exposed to `fenzit-app` (endpoints, or link to OpenAPI spec):
+- Response shapes / DTOs that are load-bearing for the frontend (breaking these breaks `fenzit-app`):
 - Auth mechanism issued to consumers:
 - Breaking-change policy (versioned routes? deprecation window?):
 

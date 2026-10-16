@@ -1,6 +1,6 @@
 # Fenzit Meta
 
-Fenzit Meta is the control-plane repo for AI-assisted work across the Fenzo product: the `fenzo-app` frontend and the `fenzit-be` backend.
+Fenzit Meta is the control-plane repo for AI-assisted work across the Fenzit product: the `fenzit-app` frontend and the `fenzit-be` backend.
 
 This repo is not an application. It is the durable layer that gives an AI agent (via BMAD) shared context and filesystem access to both child repos at once, so it can plan and make changes across both in a single session.
 
@@ -31,7 +31,7 @@ This repo is not an application. It is the durable layer that gives an AI agent 
    This repo uses **bun only** (enforced by a `preinstall` check) — don't use `npm`/`yarn`/`pnpm`.
 
    This clones:
-   - `fenzo-app` → `workspace/core/frontend/fenzo-app`
+   - `fenzit-app` → `workspace/core/frontend/fenzit-app`
    - `fenzit-be` → `workspace/core/backend/fenzit-be`
 
 2. BMAD is already installed at this repo's root (`_bmad/`, modules core+bmm+tea+cis, Claude Code tool integration). This is what gives the agent one shared skill/config layer that can see and edit both repos. To add more modules or update later:
@@ -46,13 +46,13 @@ This repo is not an application. It is the durable layer that gives an AI agent 
    git checkout -b <feature-name>
    ```
 
-4. Before implementation starts, create matching feature branches inside `workspace/core/frontend/fenzo-app` and `workspace/core/backend/fenzit-be` — those are independent git working trees with their own history and remotes.
+4. Before implementation starts, create matching feature branches inside `workspace/core/frontend/fenzit-app` and `workspace/core/backend/fenzit-be` — those are independent git working trees with their own history and remotes.
 
-5. Point BMAD/the agent at this meta repo root. It can now read, edit, and commit in both `workspace/core/frontend/fenzo-app` and `workspace/core/backend/fenzit-be` in the same session.
+5. Point BMAD/the agent at this meta repo root. It can now read, edit, and commit in both `workspace/core/frontend/fenzit-app` and `workspace/core/backend/fenzit-be` in the same session.
 
 ## Day-to-Day Workflow
 
-- **Changing the frontend or backend?** Work inside `workspace/core/frontend/fenzo-app` or `workspace/core/backend/fenzit-be` directly — each is its own git repo with its own remote and commits. This meta repo's git status does not reflect their status.
+- **Changing the frontend or backend?** Work inside `workspace/core/frontend/fenzit-app` or `workspace/core/backend/fenzit-be` directly — each is its own git repo with its own remote and commits. This meta repo's git status does not reflect their status.
 - **Changing something that spans both repos?** Note it under `docs/initiatives/` — repo map, shared acceptance criteria, rollout notes — so the context survives across sessions.
 - **Changing routing/catalog metadata?** Edit `docs/repo-catalog.yaml` — e.g. to register a new repo or change a default branch.
 
@@ -78,7 +78,7 @@ before anything is pushed:
 
 ```
 ❯ fenzit-be    [main: ahead 2, 1 untracked]    →  push
-  fenzo-app   [main: ahead 1, 3 uncommitted]  →  skip
+  fenzit-app   [main: ahead 1, 3 uncommitted]  →  skip
   fenzit-meta [main: ahead 1 / behind 2 (diverged), 1 uncommitted]  →  skip
 ```
 

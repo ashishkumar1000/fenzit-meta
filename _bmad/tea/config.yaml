@@ -18,7 +18,7 @@ test_design_output: _bmad-output/test-artifacts/test-design
 test_review_output: _bmad-output/test-artifacts/test-reviews
 trace_output: _bmad-output/test-artifacts/traceability
 user_name: Ashish.kumar
-project_name: Fenzo
+project_name: Fenzit
 communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"
