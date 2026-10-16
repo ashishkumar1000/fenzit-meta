@@ -19,3 +19,19 @@ Notes:
 - CAP-2 (search-inside-map with placeId) not driven here — Places search inside the picker was not exercised on-device; it is pinned by unit tests (`MapPinPickerScreen.customerPin.test.tsx`). Manual-entry fallback likewise unit-pinned only.
 - Test data left behind: customer "Pin Test Customer" (+91 9900112233) with a Whitefield pin.
 - Map preview row ("Pinned near:") intentionally stays a 2-line summary on the map screen; the full address lives on the form.
+
+## CAP-5 pass — address details (second install, BE 9479c26 live)
+
+**Build:** release arm64, FE `6d35173`. Backend `9479c26` pushed → Render auto-deploy; migration `20261016000002_add_customer_address_details.sql` applied via Supabase MCP **before** the app could send the field (BE strips unknown keys silently, so a stale backend would look like a successful save with the detail lost — the profile read-back is the proof).
+
+| What | Evidence | Result |
+|---|---|---|
+| Baymard reveal under the multiline address field | `10-form-with-reveal.png` | ✅ "+ Add flat / building details" caption link; field hidden by default |
+| Pin confirm → full address wraps, City auto-fills, reveal link intact | `11-after-pin.png` | ✅ |
+| Reveal → "Flat / building / floor" optional input with example placeholder | `12-details-revealed.png` | ✅ |
+| Detail typed, form complete | `13-details-filled.png` | ✅ "Shop 4, Gate 2" |
+| Save → customer created, list row present | `14-customers-list.png` | ✅ top of the list |
+| **Round-trip: detail read back from the live API on the profile** | `15-customer-detail-roundtrip.png` | ✅ own row under the location line — proves live BE has the column + contract, not a stripped field |
+
+Technician job-detail rendering (details lead the maps row) and the owner job-detail customer-card line are pinned by unit tests (`TechJobDetailContent.test.tsx`); not driven on-device — needs a job for the test customer.
+
