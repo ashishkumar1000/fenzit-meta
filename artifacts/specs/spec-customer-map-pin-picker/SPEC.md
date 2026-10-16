@@ -42,6 +42,8 @@ A pain to solve. When adding an office, the owner pins the exact spot on a map; 
 - Picker returns follow the repo's navigate-back-with-params idiom: pop to the `returnTo` target with a picked payload, caller reads once in an effect, then clears.
 - `gpsVerified` stays office-only; customer picks never set it.
 - The radius stepper and geofence circle render only in office mode — never in customer mode.
+- The Add Customer form is the design-v2 sectioned layout (user-provided mock): the resolved address renders in a read-only preview box with a Change/Set-location button that opens the picker; the user's own text is captured in always-visible fields mapping 1:1 to columns — Flat/House no. → `addressDetails`, Street/Landmark/Locality → free-text `address`, Area/Pincode → `area`. The resolved line is never copied into the free text; surfaces that show a street line prefer `formattedAddress` and fall back to the free text (manual-entry customers prefill Street).
+- Save on Add Customer requires a location signal (a picked location, or Street/City/Area filled) in addition to name + phone — the card's "Required *" badge is enforced.
 
 ## Non-goals
 
