@@ -26,7 +26,7 @@ A pain to solve. Customers are create-only today — a typo in a name, a moved s
   - **success:** After editing every editable customer field, all job-side rows referencing that customer (jobs incl. `service_location`, workflow stamp, `activity_logs`, `attachments`, notifications) are byte-identical before vs after; completed job detail still renders its original service location, steps, photos, and signatures.
 - **CAP-4** — Owner-only, tenant-safe update API
   - **intent:** A PATCH endpoint updates a customer only for the caller's own tenant and only for owners, following house conventions.
-  - **success:** Technician JWT → 403 `FORBIDDEN`; cross-tenant id → 404 `RESOURCE_NOT_FOUND` (never 403); a payload with no updatable field after validation → 422 `VALIDATION_ERROR`; phone/country-code keys are not in the update DTO, so if a client sends them the global ValidationPipe strips them silently (house `whitelist` semantics — never a rejection) and the stored phone never changes; success returns the full updated customer in the existing response shape.
+  - **success:** Technician JWT → 403 `FORBIDDEN`; cross-tenant id → 404 `RESOURCE_NOT_FOUND` (never 403); a payload with no updatable field after validation → 400 `VALIDATION_ERROR` "Nothing to update" (service-level validation follows the offices precedent; DTO-level failures are 422); phone/country-code keys are not in the update DTO, so if a client sends them the global ValidationPipe strips them silently (house `whitelist` semantics — never a rejection) and the stored phone never changes; success returns the full updated customer in the existing response shape.
 
 ## Constraints
 
