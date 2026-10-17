@@ -39,11 +39,11 @@ A pain to solve. Customers are create-only today — a typo in a name, a moved s
 
 ## Non-goals
 
-- No phone editing, re-verification, or phone-change merge flows in v1.
+- No phone editing, re-verification, or phone-change merge flows in v1 (revisit when an owner needs to correct a customer's changed number — enabling it is a one-field DTO change on top of the existing duplicate check).
 - No customer delete, archive, or deactivate.
 - No technician-side edit or any customers surface for technicians.
 - No per-job customer snapshot — past jobs display current customer contact info by decision; freezing history would be its own spec.
-- No audit trail or change-history UI for customer edits.
+- No audit trail or change-history UI in this slice. Minimal customer edit history (who/when/old→new per changed field) is a **named follow-up backlog item**, not a silent gap — industry evidence: `artifacts/planning-artifacts/research/technical-industry-customer-record-edit-practices-2026-10-17/research.md` (HubSpot ships property history on all plans by default; Salesforce as opt-in).
 - No duplicate-merge/dedup tooling (a phone collision stays a create-time 409, not a merge).
 - No changes to the office add/edit flows that share `MapPinPicker`/`AddressPickerSheet`.
 
