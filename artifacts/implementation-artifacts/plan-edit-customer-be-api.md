@@ -98,6 +98,14 @@ context:
 
 ## Review Triage Log
 
+- Review pass 2 (quick, 2026-10-17 — deferred PATCH test pass, 5 findings): verdicts — high 0, medium 1, low 4. Rows:
+  - [Q1] low → patch: AC5's "body with only stripped keys" leg unpinned; plan matrix row 9's "200" contradicts AC5 for its exact lone-phone input (code correctly 400s) — added the phone-only 400 e2e test + erratum note in Implementation Notes; both halves of row 9 now pinned.
+  - [Q2] medium → patch: matrix row 3 "Manual-entry clear" unpinned; mutation-proven dead pins on the pincode/city/formattedAddress/longitude null branches — added the verbatim row-3 e2e body + a service-spec independent-clears test.
+  - [Q3] low → patch: company-setup exact wording pinned nowhere on PATCH — added message assertions (e2e matrix-7 + service spec).
+  - [Q4] low → defer: AC-1 updated_at trigger untestable through mocks; verified live only — deferred-work entry filed (same root cause as the CI-has-no-DB AR-20 family).
+  - [Q5] low → patch: e2e AC4/AC5/AC6 labels mis-mapped to the plan's 6-AC list (401/no-tenant aren't plan ACs) — relabeled to plan AC numbers + matrix rows; guard-order test de-numbered.
+  Reviewer ran positive-control mutations (tenant-filter drop, @Roles removal caught; null-clear branches survived → Q2 evidence).
+
 - Review pass 1 (thorough): verdicts — high 0, medium 2, low 5, false 8, defer 1 group. Rows:
   - [BH1=EC6] low → patch(docs): 400 line omits "malformed id"/UUID 400-vs-404 distinction — verified vs controller ParseUUIDPipe.
   - [BH2] low → patch(docs): PATCH responses omit the 401 line every sibling endpoint documents.
@@ -121,6 +129,7 @@ context:
 - **Why PartialType(StructuredAddressDto) + name, not PartialType(CreateCustomerDto):** `PickType`-style exclusion of phone via `OmitType(PartialType(CreateCustomerDto))` would carry the phone validators into the DTO and rely on stripping; extending the address base keeps phone out of the schema entirely. The `update-job.dto.ts:9-11` comment documents the same mutable-subset philosophy.
 - **Null-clearing:** nullable optional fields accept explicit `null` (class-validator `@IsOptional()` treats null as absent for validators but the key passes through) — the service must distinguish "key present with null" (clear the column) from "key absent" (leave it) by checking `'latitude' in dto` style presence, building the patch only from present keys. `addressDetails` can only be nulled explicitly (CAP-5: a re-pin never clears it).
 - **Validation-mirror:** keep `assertValidCoordinates` on the merged outcome? No — create validates the DTO pair; update validates only when the pair is being touched, using the values present in the DTO (offices precedent: patch-level validation).
+- **Test-pass erratum (2026-10-17, quick review of the deferred tests):** matrix row 9's expected "200 with phone unchanged" holds only when a mutable key rides along. The row's exact input `{phoneNumber: '9999999999'}` whitelists down to an empty DTO and lands in the 400 "Nothing to update" path — which is what AC5, api-contracts.md, and the shipped code all say. The frozen matrix row is left as-is; the e2e suite pins both halves (lone-phone → 400; phone-alongside-name → 200).
 
 ## Verification
 

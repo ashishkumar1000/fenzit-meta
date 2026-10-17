@@ -741,3 +741,7 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - source_plan: `artifacts/implementation-artifacts/plan-edit-customer-be-api.md`
   summary: Tests for PATCH /api/v1/customers/:id (e2e describe + updateCustomer service spec) — written immediately after the user confirms the endpoint works, per the repo's implement→confirm→test rule.
   evidence: Deliberate this-session exclusion (repo test-timing rule; plan Verification "Manual checks"). Verification-gap lens pre-verified the unpinned surface: tenant-filter drop, inverted null/absent patch semantics, removed @Roles, or mutable phone would all regress silently; the updateOffice spec (offices.service.spec.ts:552) and customers.e2e-spec.ts harness are the in-repo templates.
+
+- source_plan: `artifacts/implementation-artifacts/plan-edit-customer-be-api.md`
+  summary: Plan AC-1 (updated_at advances when a customer row is updated — the customers_updated_at trigger) is verified only by the one-off live check recorded in the plan; no lasting automated test can fire a Postgres trigger through the mocked Supabase client, so the AC stays permanently unpinned.
+  evidence: Surfaced by the 2026-10-17 quick code review of the deferred PATCH test pass — every test resolves canned rows at the Supabase client layer, so the trigger never runs inside jest. Same root cause as the repo-wide CI-has-no-DB gap (real-DB integration tests always skipped, AR-20 family above); a real-DB integration spec for customers (or CI DB enablement) is what settles it.
