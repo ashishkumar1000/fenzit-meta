@@ -94,6 +94,9 @@ Repo root: `workspace/core/frontend/fenzit-app` (React Native, no react-query; f
 - Repo rule: no new tests this session — edit-mode coverage is deferred to immediately after the user confirms the flow on device (same pattern as the BE plan; log in deferred-work.md at present time).
 
 ## Plan Change Log
+## Plan Change Log
+
+- 2026-10-17 (post-build, test-pass review F2 — no loopback, recorded for coherence): review triage row BH2 patched the edit save to SKIP `upsertCustomer` (the PATCH response carries no jobCount/lastJobDate; upserting zeroed the row's stats and reordered the list). The frozen AC's tail ("the app surfaces the edit on the next reads (store upsert + detail refetch)") names the superseded mechanism — the functional outcome (edit visible on next reads) is unchanged and is delivered by `loadCustomers({ force: true })` (list) + CustomerDetail's on-focus refetch (detail), now pinned by the edit-mode tests. Known-bad state avoided: reverting to the frozen mechanism would corrupt list rows. KEEP: the skip-upsert edit branch and both refetch paths must survive any re-derivation.
 
 ## Review Triage Log
 
@@ -113,6 +116,8 @@ Repo root: `workspace/core/frontend/fenzit-app` (React Native, no react-query; f
   - [ECH9-param] **low → reject**: `customerId: ''` classifying as add mode — no caller or deep link can produce an empty-string param; fix adds a guard for an impossible state.
   - [BH3/BH4/VG1-4/IA-test-surface] **out of scope → reject**: zero edit-mode tests is the frozen Never (tests after on-device confirmation); the defer is already logged in deferred-work.md.
   - [BH12] **low → reject**: hook naming / duplicated error-map skeleton — rename churn across import sites is more than a direct correction; taste.
+  - Review pass 2 (quick, 2026-10-17 — the deferred edit-mode test pass, 5 findings, all patch): [T1] the "phone keys structurally absent" service test inspected a runtime literal (types erased) and pinned nothing — deleted; header corrected (phone immutability is compile-time + screen-pinned). [T2] frozen AC's "store upsert" mechanism superseded by the BH2 skip-upsert patch — Plan Change Log entry records the deviation. [T3] BH7 short-phone carve-out unpinned — test added. [T4] ECH3 403-seed grouping + the error-copy map (403/422/400/fallback) + spinner view unpinned — tests added. [T5] focus-refetch return path unpinned — customer-detail test captures useFocusEffect and pins the second fetch.
+  Test pass: 44 new tests across 4 files; suite 3077/3077; typecheck clean. (fenzit-app 098aa55)
 
 ## Design Notes
 
