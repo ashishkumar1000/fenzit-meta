@@ -4,7 +4,7 @@ type: 'feature'
 ticket: ''
 created: '2026-10-17'
 baseline_revision: '49ef61f20790221ccb438ef600698a3f22d62d31'
-status: 'built'
+status: 'done'
 route: 'full'
 route_source: 'pinned'
 review: 'thorough'
@@ -87,6 +87,9 @@ Repo root: `workspace/core/frontend/fenzit-app` (React Native, no react-query; f
 - Given the add flow (no `customerId`), when the existing suite runs, every add-flow test passes unchanged.
 
 ## Implementation Notes
+
+- FEATURE COMPLETE (2026-10-17, user-confirmed): device pass done (seed, read-only phone, untouched-save no-op, rename round-trip + revert, discard copy, add-flow unchanged); CAP-3 live e2e on the production stack — throwaway customer + real job driven through the full 6-step workflow (incl. a real photo via presign/confirm), MD5 of the entire `jobs` row byte-identical across the customer edit (updated_at untouched), only the live-joined customer fields + the by-design fresh presigned URL differed; phone showed the completed job's original service location with the edited customer card; throwaway rows deleted and verified zero. fenzit-app `63e6ce1`, fenzit-be `7b7eefb` (endpoint) + `ee986ce` (tests).
+- The edit-mode test pass remains the one open follow-up, tracked in deferred-work.md.
 
 - Repo rule: no new tests this session — edit-mode coverage is deferred to immediately after the user confirms the flow on device (same pattern as the BE plan; log in deferred-work.md at present time).
 

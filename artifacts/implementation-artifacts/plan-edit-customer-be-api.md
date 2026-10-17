@@ -3,7 +3,7 @@ title: 'Edit Customer — BE update API (PATCH /customers/:id + updated_at migra
 type: 'feature'
 ticket: ''
 created: '2026-10-17'
-status: 'built'
+status: 'done'
 baseline_revision: '0acfff9'  # fenzit-be HEAD at plan time
 route: 'full'
 route_source: 'auto'
