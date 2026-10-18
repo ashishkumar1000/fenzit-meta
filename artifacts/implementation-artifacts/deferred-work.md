@@ -749,3 +749,10 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - source_plan: `artifacts/implementation-artifacts/plan-edit-customer-fe-screen.md`
   summary: RESOLVED (2026-10-17, fenzit-app 098aa55) — Edit-mode tests for the shared AddCustomerScreen (seed mapping from `getById`, diff PATCH via `buildCustomerUpdatePatch`, re-pin block-replacement with explicit nulls, manual-entry clear over a pinned customer, CAP-5 `addressDetails` clear, phone read-only/immutability, empty-diff no-request save, and the CustomerDetail header Edit affordance) — written immediately after the user confirms the flow on device, per the repo's implement→confirm→test rule.
   evidence: Deliberate this-session exclusion (repo test-timing rule; plan Implementation Notes and its "Manual checks" Verification section). The ~25 existing add-flow cases in AddCustomerScreen.test.tsx were left untouched and pin the unchanged add path; the unpinned edit surface (the seed/diff mapping in requestMapping.ts, the edit error-copy map in useCreateCustomer.ts, the load/404 views) is what the follow-up pass covers, mirroring the BE plan's deferred PATCH test entry above.
+
+- source_spec: `plan-picker-screen-redesign.md`
+  summary: Infinite ripple animation on the services-off puck ignores the OS reduce-motion setting (PickerMapArea).
+  evidence: Edge-case hunter; confirmed in source — loop starts on servicesOff with no AccessibilityInfo.isReduceMotionEnabled check.
+- source_spec: `plan-picker-screen-redesign.md`
+  summary: `servicesOff` is derived from `errorKind === 'servicesOff'`, so a later non-services locate error could replace it while services are still off.
+  evidence: MapPinPickerScreen.tsx derivation dates from baseline 49c2f08; surfaced by the edge-case hunter, not caused by the redesign.
