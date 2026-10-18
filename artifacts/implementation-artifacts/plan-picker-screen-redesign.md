@@ -105,6 +105,10 @@ context: ['artifacts/planning-artifacts/ux-designs/ux-map-pin-picker-2026-10-18/
 
 **Rejected (examples):** stale address beside spinner (momentary), "LOCATION SET" overclaim and red-vs-amber (design/user decisions), onEnableServices undefined (screen always passes it), a11y role "search" (valid RN role), speculative deviceLocation test gaps, magic-number sizes (icon-chip dimensions, not DS scale values), Change-link no-op when map unavailable (low).
 
+**Later UI iteration (2026-10-18, user-directed on device screenshots):** removed the Nearby-area "Change" link, the "ACTION NEEDED" badge, the "LOCATION SET" chip and "Move map to adjust" text; address allows 3 lines; the blue teardrop pin is gone — the pulsing dot is the only pin in every state; chip is "Drag map to set pin" in both states (green dot healthy, amber dot services-off, one-shot slow bounce, reduce-motion respected); locate pill renamed "Use current location"; new amber `LocationOffBanner` with a [Turn on] pill inside the address-search sheet — Turn on keeps the sheet open, the fix is captured quietly and the pin moves only when the sheet closes, and a picked/typed address always wins (epoch guard). `MapPinPickerScreen` split into `usePickerLocate`, `useReverseAddress`, `buildCustomerPick` (464 -> 315 lines).
+
+**Small BMAD review of that iteration:** 4 patched (reduce-motion promise rejection, empty-address `||` in the customer payload, banner truncation, race tests + `buildCustomerPick` unit tests); deferred: late fix overriding a manual drag after the sheet closed, no in-sheet feedback when the quiet locate fails, double-tap on Turn on, chip bounce replaying on every drag settle; ~25 dismissed. Full suite 251 suites / 3191 tests, tsc clean. Pixel 6 check of this iteration still pending.
+
 ## Design Notes
 
 Pin-style swap and chip copy are state-driven from ONE prop (`servicesOff`) already flowing into the bottom card — lift it to the screen level and pass to both surfaces so map and sheet can never disagree.

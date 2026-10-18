@@ -751,8 +751,11 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
   evidence: Deliberate this-session exclusion (repo test-timing rule; plan Implementation Notes and its "Manual checks" Verification section). The ~25 existing add-flow cases in AddCustomerScreen.test.tsx were left untouched and pin the unchanged add path; the unpinned edit surface (the seed/diff mapping in requestMapping.ts, the edit error-copy map in useCreateCustomer.ts, the load/404 views) is what the follow-up pass covers, mirroring the BE plan's deferred PATCH test entry above.
 
 - source_spec: `plan-picker-screen-redesign.md`
-  summary: Infinite ripple animation on the services-off puck ignores the OS reduce-motion setting (PickerMapArea).
-  evidence: Edge-case hunter; confirmed in source — loop starts on servicesOff with no AccessibilityInfo.isReduceMotionEnabled check.
+  summary: RESOLVED (2026-10-18) — the pulsing-dot ripple and chip bounce now respect OS reduce-motion (PickerCentrePin).
+  evidence: Handled at mount via AccessibilityInfo.isReduceMotionEnabled; a live toggle while the picker is open is not tracked (minor).
 - source_spec: `plan-picker-screen-redesign.md`
   summary: `servicesOff` is derived from `errorKind === 'servicesOff'`, so a later non-services locate error could replace it while services are still off.
   evidence: MapPinPickerScreen.tsx derivation dates from baseline 49c2f08; surfaced by the edge-case hunter, not caused by the redesign.
+- source_spec: `plan-picker-screen-redesign.md`
+  summary: Picker iteration 2026-10-18 deferrals — (a) a quiet locate that lands after the search sheet closed can override a manual drag made meanwhile; (b) a failed quiet locate after Turn on shows its error only behind the sheet; (c) double-tap on the banner's Turn on is unguarded; (d) the chip bounce replays on every drag settle.
+  evidence: Small BMAD review of the uncommitted iteration; all narrow windows, none block the flow.
