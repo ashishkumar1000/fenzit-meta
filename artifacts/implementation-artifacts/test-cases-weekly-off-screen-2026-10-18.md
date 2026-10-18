@@ -968,7 +968,7 @@ Logged from the 2026-10-18 device and API run. Expected results above were **not
 
 | ID | Case(s) | Status | Summary | Owner layer | Evidence |
 |---|---|---|---|---|---|
-| R-12 | WO-D06 (copy, section 4) | Fixed (FE `c2d8773`), offline Save not yet re-checked on device | When the phone has no network, Save shows `Could not reach the server. Check your connection and try again.` The approved copy list (section 4) says `Couldn't save. Try again.`. The case allows "or the server message", so the behaviour passes, but the copy is not the approved text. | FE (use the approved copy for save failures, not the network message) | Screen after offline Save, run 3 |
+| R-12 | WO-D06 (copy, section 4) | Fixed, verified on device 2026-10-19 (FE `c2d8773`): offline Save shows `Couldn't save. Try again.` | When the phone has no network, Save shows `Could not reach the server. Check your connection and try again.` The approved copy list (section 4) says `Couldn't save. Try again.`. The case allows "or the server message", so the behaviour passes, but the copy is not the approved text. | FE (use the approved copy for save failures, not the network message) | Screen after offline Save, run 3 |
 
 ### R-13 (found by WO-C04b setup, screen refresh)
 
@@ -992,11 +992,13 @@ A `DELETE` on an override with `Content-Type: application/json` and no body retu
 
 ### R-16 (low, DB hygiene)
 
+**Status: Fixed, verified live 2026-10-19** (migration `20261019000002`, applied; BE commit pending). `btree_gist` now sits in `extensions`; the advisor warning is gone and writes to the exclusion-constrained tables still succeed.
+
 Extension `btree_gist` sits in the `public` schema (Supabase advisor WARN `extension_in_public`). It is needed by the exclusion constraints; move it to an `extensions` schema. Owner: DB.
 
 ### R-17 (found by WO-K01, 200% font, layout)
 
-**Status: Fixed (FE `c2d8773`), partly verified.** Pills and date field checked on device; the upcoming-changes badge at 200% still needs a device check.
+**Status: Fixed, verified on device 2026-10-19** (FE `c2d8773`). At 200% the pills, the date field and the upcoming-changes badge no longer clip (badge drops to its own line). Side finding: changing the font size crashed the app (react-native-screens fragment restore); fixed in FE `d3856f2`. The Home screen still clips some labels at 200% (`Prese…`, `Custome…`) — outside this screen.
 
 At 200% system font the Weekly off screen clips text. The day pills wrap `Work` to `Wor` / `k` and cut off `Off` on Sunday. `Starts from the beginni…` is truncated in the starting-date field. The `2 changes coming up` badge runs past the right edge. Owner: FE (let pill labels shrink or stack, wrap the date hint, and let the badge wrap or drop to its own line). Evidence: `shots/K01-font200-weeklyoff.png`.
 
