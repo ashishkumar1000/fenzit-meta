@@ -269,3 +269,9 @@ development_status:
   # no migration), B) fenzo-app move + restyle. Story file:
   # artifacts/implementation-artifacts/20-3-frontend-today-tab-punch-button.md
   20-3-frontend-today-tab-punch-button: done  # 2026-10-02 — punch on the Today tab; all 4 mockup states + row-5 fallbacks verified on device (SHIFT ACTIVE blue card = copy-pinned, GPS-lottery); user-found gap (rejected press hid the LOCKED state) fixed in e884a79; test phase closed in 72c0988; Phase A deployed + production-probed
+
+  # Story 20.4: Office setup UX pass + pin address — direct user request,
+  # 2026-10-18 (device walkthrough on a Pixel 6, report:
+  # artifacts/implementation-artifacts/ux-report-office-setup-2026-10-18.md).
+  # BE first (additive): attendance_offices.formatted_address column + API.
+  20-4-frontend-office-setup-ux-pass-and-pin-address: done  # 2026-10-18 — 30 findings handled (27 and 29 skipped, dark theme skipped and "enable all" dropped by the user); BE additive formatted_address SHIPPED FIRST (fenzit-be 958ad30; CHECK 1-500, no RPC change, 1605 tests, real-DB check); FE: address saved from the picker and shown on the Offices card (soft map chip), wizard folded to 4 steps, wheel time picker, Attendance hub + Home Pulse card, Holidays redesign, a11y fixes; BMAD review 3 passes on the app diff + 1 pass on the address diff (4 patched); FE 226 suites / 3012 tests + tsc clean; device-verified on Pixel 6 (address round trip vs deployed BE); COMMITTED: fenzit-be 958ad30, fenzit-app 9d28e20; open: wizard step-1 card shows no address, product-owner decisions listed in the report
