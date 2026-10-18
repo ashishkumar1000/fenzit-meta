@@ -759,3 +759,13 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - source_spec: `plan-picker-screen-redesign.md`
   summary: Picker iteration 2026-10-18 deferrals — (a) a quiet locate that lands after the search sheet closed can override a manual drag made meanwhile; (b) a failed quiet locate after Turn on shows its error only behind the sheet; (c) double-tap on the banner's Turn on is unguarded; (d) the chip bounce replays on every drag settle.
   evidence: Small BMAD review of the uncommitted iteration; all narrow windows, none block the flow.
+
+## Deferred from: code review (2026-10-18) — Weekly off screen redesign (no spec)
+- Day pills are ~39dp wide on a 360dp phone (below 44dp floor); documented exception in `WeeklyOffDayPicker`, height 56 compensates. Revisit with a two-row layout if testers struggle.
+- `WeeklyOffEveryoneBackdrop` uses a fixed `BADGE_END` and window width, not the card/badge measured size; may touch the badge at large font scale, tablets or split-screen. Same applies to the footer `marginRight` in `WeeklyOffCardBackdrop` usage.
+- `DatePickerField` announces "Date: …" because the weekly-off field passes no `label`; give it an accessibility-only label prop.
+- Edit buttons on override rows all read "Edit" to screen readers (`Button` has no `accessibilityLabel` prop).
+- Upcoming panel says "Till then: No day off" when the tenant never configured a default (UI shows Sunday off by default).
+- Hard-coded sizes (`PILL_SIZE 56`, avatar 44, clock tile 40) bypass tokens; no spacing/size token exists for them yet.
+- iOS has no `accessibilityLiveRegion`; day-count chip updates are not announced on VoiceOver.
+- Two near-duplicate formatters (`describeDays` for the wizard, `describeDaysOff` here); consolidate when the wizard is redesigned.
