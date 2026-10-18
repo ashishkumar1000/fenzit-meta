@@ -769,3 +769,13 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - Hard-coded sizes (`PILL_SIZE 56`, avatar 44, clock tile 40) bypass tokens; no spacing/size token exists for them yet.
 - iOS has no `accessibilityLiveRegion`; day-count chip updates are not announced on VoiceOver.
 - Two near-duplicate formatters (`describeDays` for the wizard, `describeDaysOff` here); consolidate when the wizard is redesigned.
+
+## Deferred from: code review of weekly-off BE fixes R-04 / R-02 (2026-10-18)
+
+- No tests yet for R-04 (service maps hint `ATTENDANCE_EMPLOYEE_NOT_ACTIVE` to 422; real-DB journey step: invited → 422 and no row written; other-tenant id still 404) and R-02 (filter body has no `stack` under `NODE_ENV` development/unset; remove the `k !== 'stack'` filter and stale "dev-only stack" comment in `global-exception.filter.spec.ts`; restore env in `finally`). Write after the user confirms the fixes (CLAUDE.md test timing).
+- Overrides already saved for employees who are (or were) invited are not cleaned up; they apply once the person becomes active. Decide whether a backfill/audit is wanted.
+- Handled 5xx `HttpException`s are not stack-logged server-side (only unhandled ones are). Pre-existing; the stack used to appear only in the dev body.
+- `attendance_set_weekly_off_override` uses `set search_path = public` (no `pg_temp`), same as every other RPC in the repo; harden all RPCs together if wanted.
+- Set RPC does two `users` lookups (exists, then active); could be one `select status`. Race-safe under the tenant lock; cosmetic.
+- Message "Employee is not active" is generic; the FE may show clearer copy. FE should map 422 `ATTENDANCE_EMPLOYEE_NOT_ACTIVE` (picker already hides invited people).
+- R-03 (414 on 200-char id) and R-15 (bodiless DELETE returns 400 before the role check) are untouched by this change.

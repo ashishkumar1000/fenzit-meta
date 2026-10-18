@@ -66,6 +66,7 @@ Do not make any changes until you 95% confidence in what you need to build. Ask 
 
 - iOS simulator — no backspace key; use `ui_describe_all` for coordinates.
 - Render dashboard — NODE_ENV overrides Dockerfile env (currently set to development).
+- Android device UI testing — use uiautomator2 (https://github.com/openatx/uiautomator2), not raw adb + uiautomator dump scripts. It is about 9x faster per screen read. Installed: `python3 -m pip install --user uiautomator2` (v3.7.0), then `python3 -m uiautomator2 init` once per device. Connect with `u2.connect('<serial>')`. `deviceInfo` RPC fails on the Pixel 6 build (ApplicationSharedMemory); dump, click and `app_current` work. Check the sheet or screen name before any save in a UI test.
 
 ## Where things live
 
