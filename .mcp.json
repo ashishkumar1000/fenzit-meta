@@ -22,6 +22,12 @@
         "Accept": "application/json",
         "X-Goog-Api-Key": "<GOOGLE_STITCH_API_KEY>"
       }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }
