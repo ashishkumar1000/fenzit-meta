@@ -792,3 +792,24 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 - `LABEL_FONT_CAP = 1.3` is repeated in `TodayPulseCard`, `TabBar` and the weekly-off pills; make it one theme token. Font caps by design show text at most 1.3x; the pulse dot offset is a fixed px so it sits slightly high at 200%.
 - No FE tests for `TodayPulseCard`/`TabBar` layout, `saveFailureMessage` (offline copy), or the holiday footer banner text; `home-screen.test.tsx` only stubs the pulse.
 - Other `ProfileTechnician` consumers (display, avatar initials) still read `.name` unguarded; the source of a null name (BE/DB) is not identified.
+
+## Deferred from: code review of weekly-off test-writing round (2026-10-19)
+
+- Real-DB suites silently skip when env is missing (same pattern as the journey suite); nothing in CI runs `test:e2e:real`. Add a `REQUIRE_REAL_DB` fail-when-skipped switch and a CI job against a throwaway project.
+- No non-IST tenant test (e.g. Pacific/Kiritimati) where tenant "today" differs from the UTC date; `createCrew` already takes a `tz`.
+- Shared scaffolding (setup, `save`/`ok`/`rows`, beforeEach) is copied across the weekly-off RPC specs; extract a `describeWithCrews` helper. Same for the app tests' `texts`/`find` helpers.
+- Override GET/PUT routes have no route-level tests (only DELETE).
+- RLS deny-by-default for the weekly-off tables/RPCs (anon/authenticated cannot call) is not asserted.
+- TodayPulseCard: checkedIn > tracked (percentage over 100%) and negative counts — needs a product decision on clamping. TabBar: `defaultPrevented`, empty routes, stale index.
+- Tests cite defect IDs (R-11, R-20 ...) in titles; restate in plain words or link the spec.
+- `useWeeklyOffDefaultForm` still infers never-configured when the server omits `configured` (compat path; remove when sure BE is deployed everywhere).
+- Jest "did not exit one second after the test run" in every e2e spec that boots `AppModule` (including the older `attendance-journey` suite); the process lingers ~60 s after the tests finish (17 s of tests, 77 s wall). `--detectOpenHandles` reports nothing and the app already closes its pools/timers in `onModuleDestroy`, so it is probably an idle keep-alive socket. Specs that do not boot the app exit cleanly. Pre-existing and harmless; trace with a handle dump if the slow exit starts to hurt CI.
+- Employee search (`filterTechnicians`): a query like `EMP-1` also matches phone numbers by its digits. Confirmed intended by the owner (2026-10-19); keep.
+
+## Deferred from: second code review of weekly-off test-writing round (2026-10-19)
+
+- Patched: post-save re-seed from `fresh.next` now has tests (past date dropped, today-or-later kept).
+- Dismissed: NULL or out-of-range elements in `p_days` — the table check `days <@ ARRAY[1..7]` already rejects them (23514); only a NULL array needed the new guard.
+- Deferred: Avatar with a whitespace-only name shows blank initials (no crash, same as null name).
+- Deferred: stale past `nextView` still seeds days (not date) after a clock rollover; the server only returns future edits in `next`.
+- Deferred: `IS_REAL_DB` has no non-production URL guard beyond the protected tenant id; no CI wiring (already listed above).
