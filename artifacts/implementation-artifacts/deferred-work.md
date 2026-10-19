@@ -813,3 +813,13 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 - Dismissed: Avatar with a whitespace-only name already shows "?" (initials empty falls back to "?").
 - Patched: a stale past `nextView` no longer seeds the days (current rule used), in the load seed and the post-save re-seed.
 - Deferred: `IS_REAL_DB` has no non-production URL guard beyond the protected tenant id; no CI wiring (already listed above).
+
+## Deferred from: code review of fenzit-web scripts chunk (2026-10-19)
+
+- Design-system drift check is local only. A hand edit followed by a re-sync to match passes the check. CI cannot see fenzit-app, so this is a known limit. Stated in the standard's open items; revisit if a shared package is added.
+- Sync is not atomic on a mid-copy I/O failure (for example a read-only theme folder). The source pre-check covers missing or folder sources only. Fix: copy to temp names, then rename.
+- Hashes use raw bytes, so a checkout with CRLF line endings (core.autocrlf) reports changes that were never made. No Windows contributors yet.
+- Directory listing order is not sorted, and symlink cycles or broken links in component folders are not handled. Neither occurs in this repo today.
+- If a theme file fails at import time in check-design-system.ts, the friendly "missing" messages never print. The entry point is not tested.
+- Lock hashes written in uppercase hex are reported as changed. Hand-edited locks only.
+- build-tokens.ts and the sync script use cwd-relative paths. They are run through `bun run` from the repo root only.
