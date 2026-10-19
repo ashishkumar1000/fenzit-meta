@@ -29,6 +29,7 @@ Versions are exact pins (no `^`). A new dependency must be at least two weeks ol
 | Hosting / deploy | Cloudflare Workers with static assets | wrangler 4.147.0 | `wrangler.jsonc`, SPA fallback. |
 | Server data | React Router loaders and actions | built into react-router 8.4.0 | No TanStack Query (the user does not want it). Data loads in route loaders (§6). Local UI state uses `useState` or `useReducer`. |
 | Styles | CSS Modules | built into Vite | Strict. Every component has a paired `.module.css` (§5). |
+| Country flags | `country-flag-icons` | 1.6.20 (published 2026-07-01, MIT) | React SVG components from `country-flag-icons/react/3x2`, no global CSS. Adds about 60 KB gzip because all 272 flags are imported. Shown beside the country-code select on the early-access form. |
 | Forms (next) | React Hook Form + zod | not yet added (RHF 7.90.0, zod 4.6.7) | **Decide** before the first form. |
 | Lint | ESLint 10 flat config + typescript-eslint 8.71.0 + react-hooks 7.1.1 + react-refresh 0.5.7 | eslint 10.12.0, @eslint/js 10.0.1, globals 17.13.0 | Type-free rules only (§2a). Import direction enforced by `no-restricted-imports` (§4). |
 | Format | Prettier | 3.9.9 | `.prettierrc.json`: double quotes, trailing commas, printWidth 100. Verbatim ports are ignored (§4). |
