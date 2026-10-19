@@ -779,3 +779,16 @@ fenzit-be epics 1–4), NOT to this sprint's epic numbering.
 - Set RPC does two `users` lookups (exists, then active); could be one `select status`. Race-safe under the tenant lock; cosmetic.
 - Message "Employee is not active" is generic; the FE may show clearer copy. FE should map 422 `ATTENDANCE_EMPLOYEE_NOT_ACTIVE` (picker already hides invited people).
 - R-03 (414 on 200-char id) and R-15 (bodiless DELETE returns 400 before the role check) are untouched by this change.
+
+## Deferred from: code review of weekly-off defect fixes round 3 (2026-10-19)
+
+Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, technician null-name guard, Home test mock) + BE `d5789d5` (chunked bodiless DELETE parser, shared router options, employee-wise queued-change move) + `d868aa5` (everyone-rule queued-change move). Spec: `test-cases-weekly-off-screen-2026-10-18.md`.
+
+- No real-DB test runs either save RPC (`attendance_set_weekly_off_default` / `_override`): the R-20 move logic, the employee-wise `'{}'` case, a move across two employees, and "no earlier rule" are verified only by hand and API. Suggested: extend the real-DB journey suite (seed `[today,d1){A} [d1,){B}`, save B from d2 > d1, assert `[today,d2){A} [d2,){B}`; repeat with `'{}'`; check a second employee is untouched). Tests deferred by owner decision.
+- No test boots `AppModule`/`main.ts` to prove a technician's bodiless DELETE gets 403 through the real guards (checked live by hand after deploy). Also untested: whitespace-only DELETE body (still 400, rare), oversized body on DELETE, DELETE with a non-JSON content type.
+- `allowBodilessDelete` leans on Fastify internals (`initialConfig`, `getDefaultJsonParser`) and on running in `onReady` after Nest registers its parser. A Nest/Fastify upgrade could break it silently; the new e2e spec would catch that.
+- The queued-move logic is duplicated in two migrations (everyone rule and employee-wise). A future fix must be made twice.
+- `HolidayFormSheetFooter` imports `saveFailureMessage` from `weeklyOffModel`; move it to a neutral attendance module if a third caller appears.
+- `LABEL_FONT_CAP = 1.3` is repeated in `TodayPulseCard`, `TabBar` and the weekly-off pills; make it one theme token. Font caps by design show text at most 1.3x; the pulse dot offset is a fixed px so it sits slightly high at 200%.
+- No FE tests for `TodayPulseCard`/`TabBar` layout, `saveFailureMessage` (offline copy), or the holiday footer banner text; `home-screen.test.tsx` only stubs the pulse.
+- Other `ProfileTechnician` consumers (display, avatar initials) still read `.name` unguarded; the source of a null name (BE/DB) is not identified.

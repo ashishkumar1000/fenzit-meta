@@ -938,7 +938,7 @@ Logged from the 2026-10-18 device and API run. Expected results above were **not
 |---|---|---|---|---|---|
 | R-01 | WO-B02 (also SD-11, WO-A02) | **Fixed, verified on device 2026-10-19** (FE `6f4921b`) (was: Open) | On a never-configured company, tapping Sunday on then Saturday on/off returns the pills to Sunday-only, but **Save stays enabled** with no hint. Expected Save disabled. | FE (form baseline for a never-configured company should be "nothing saved", same as the Sunday suggestion rule) | `…/scratchpad/shots/WO-B02.png` |
 | R-02 | WO-I10, WO-I03, WO-G18, WO-H10, WO-I13 | **Fixed, verified live 2026-10-19** (BE, c8c5968) (was: Open) | Every error body carries a `stack` field with server paths (`/app/dist/src/…`, line numbers), e.g. on 422 `ATTENDANCE_NO_WORKING_DAYS`, 403 `FORBIDDEN`, 404 `ATTENDANCE_EMPLOYEE_NOT_FOUND`, 400 `VALIDATION_ERROR`. | BE (one global exception filter: return only `error_code` and `message` outside dev) | API bodies in `test-results` run 2 |
-| R-03 | WO-I13 | Fixed, verified live 2026-10-19 (BE `d9a938e`) | A 200-character employee id returns **414** (URI too long) instead of **400**. The case expects 400. | BE (validate the id length in the route/pipe) or edge config; decide which layer returns 414 | curl `PUT …/overrides/aaaa…(200)` → 414 |
+| R-03 | WO-I13 | Fixed, verified live 2026-10-19 (BE `d9a938e`; shared router options and places e2e in BE `d5789d5` — a 256-char places id now gets the id-format 422, not 414) | A 200-character employee id returns **414** (URI too long) instead of **400**. The case expects 400. | BE (validate the id length in the route/pipe) or edge config; decide which layer returns 414 | curl `PUT …/overrides/aaaa…(200)` → 414 |
 | R-04 | WO-G02 (API half), WO-Q07 | **Fixed, verified live 2026-10-19** (BE+DB, c8c5968; 422 `ATTENDANCE_EMPLOYEE_NOT_ACTIVE`) (was: Open) | `PUT overrides/<invited employee>` returns **200**. The app picker hides the invited employee, but the API accepts the write. | BE (the override service must require an active employee; the picker is only a UI guard) | Dev (`613690b6-…`, status `invited`) → 200 with `current.days=[5]` |
 | R-05 | WO-I07 | Accepted 2026-10-19 (owner decision): the WAF HTML 403 for SQL-looking input is fine; nothing is stored. Clients should show a generic error for any non-JSON reply | A SQL-looking `effectiveFrom` and a SQL-looking id return a **Cloudflare WAF HTML 403 page**, not the API's JSON error shape. Nothing is stored (pass for "4xx, tables intact"), but clients get a non-JSON body. | Edge config (decide whether the WAF page is acceptable for API clients) | `<!DOCTYPE html>…` body on both calls |
 | R-06 | WO-G05 | Resolved 2026-10-19: test expectation corrected (Sunday = working, `false`); product behaviour is right | The G05 expectation says Asha on a **Sunday** is `true` (off) while her employee rule covers that date. Section 2.2 says an employee rule **replaces** the everyone rule, so Sunday should be `false`. The expectation needs an owner decision; it was not changed. | Test case (not product) | DB5 output in run-2 log |
@@ -986,7 +986,7 @@ Error bodies for 400, 401, 403, 404, 422 include a `stack` field with file paths
 
 ### R-15 (low, API ordering)
 
-**Status: Fixed, verified live 2026-10-19** (BE `d9a938e`). Technician bodiless DELETE with a JSON header now gets 403.
+**Status: Fixed, verified live 2026-10-19** (BE `d9a938e`; chunked-encoding gap closed in BE `d5789d5`). Technician bodiless DELETE with a JSON header, plain or chunked, gets 403; POST/PUT with an empty or malformed JSON body still gets 400.
 
 A `DELETE` on an override with `Content-Type: application/json` and no body returns `400 VALIDATION_ERROR` ("Body cannot be empty") before the role check. A technician therefore gets 400, not 403. Owner: BE (the body parser should not fail a bodiless DELETE; the guard should run first).
 
@@ -998,7 +998,7 @@ Extension `btree_gist` sits in the `public` schema (Supabase advisor WARN `exten
 
 ### R-17 (found by WO-K01, 200% font, layout)
 
-**Status: Fixed, verified on device 2026-10-19** (FE `c2d8773`). At 200% the pills, the date field and the upcoming-changes badge no longer clip (badge drops to its own line). Side finding: changing the font size crashed the app (react-native-screens fragment restore); fixed in FE `d3856f2`. The Home screen still clips some labels at 200% (`Prese…`, `Custome…`) — outside this screen.
+**Status: Fixed, verified on device 2026-10-19** (FE `c2d8773`; Home screen and tab bar labels at 200% fixed in the next app commit). At 200% the pills, the date field and the upcoming-changes badge no longer clip (badge drops to its own line). Side finding: changing the font size crashed the app (react-native-screens fragment restore); fixed in FE `d3856f2`. The Home screen still clips some labels at 200% (`Prese…`, `Custome…`) — outside this screen.
 
 At 200% system font the Weekly off screen clips text. The day pills wrap `Work` to `Wor` / `k` and cut off `Off` on Sunday. `Starts from the beginni…` is truncated in the starting-date field. The `2 changes coming up` badge runs past the right edge. Owner: FE (let pill labels shrink or stack, wrap the date hint, and let the badge wrap or drop to its own line). Evidence: `shots/K01-font200-weeklyoff.png`.
 
@@ -1016,7 +1016,7 @@ In the Set weekly off sheet, the day pills are reset when an employee is applied
 
 ### R-20 (found by WO-C04b, SD-4 confirmed)
 
-**Status: Fixed, verified live 2026-10-19** (migration `20261019000003`). Owner decision: saving the same days from a LATER date than a queued change moves that change; the rule before it stretches to the new date. Checked via API: `[19,25){5} [25,){6}` + save `{6}` from 28 gives `[19,28){5} [28,){6}`; from an earlier date (23) still works; with no earlier rule, moving gives a single rule from the new date. The employee-wise (override) save keeps the old behaviour — not asked for, not changed.
+**Status: Fixed, verified live 2026-10-19** (migration `20261019000003`). Owner decision: saving the same days from a LATER date than a queued change moves that change; the rule before it stretches to the new date. Checked via API: `[19,25){5} [25,){6}` + save `{6}` from 28 gives `[19,28){5} [28,){6}`; from an earlier date (23) still works; with no earlier rule, moving gives a single rule from the new date. The employee-wise (override) save follows the same rule (migration `20261019000004`, BE `d5789d5`), including its empty-days marker. A queued "no day off" moves too (migration `20261019000005`, code-review patch).
 
 Changing only the starting date of a queued change, with the days unchanged, does not move the queued rule. The save clips the queued rule at the new date and starts a new rule from there. Run result: `[18,25) {7}`, `[25,28) {6}` (queued rule clipped at 28 Oct, not moved), `[28,) {7}`. Whether this is the right behaviour is a product decision, so the expectation is not yet settled. Owner: FE + BE (decide what a date-only change means, then make the form and the save follow it). Evidence: results file, WO-C04b.
 
