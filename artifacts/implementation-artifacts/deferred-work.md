@@ -810,6 +810,6 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 
 - Patched: post-save re-seed from `fresh.next` now has tests (past date dropped, today-or-later kept).
 - Dismissed: NULL or out-of-range elements in `p_days` — the table check `days <@ ARRAY[1..7]` already rejects them (23514); only a NULL array needed the new guard.
-- Deferred: Avatar with a whitespace-only name shows blank initials (no crash, same as null name).
-- Deferred: stale past `nextView` still seeds days (not date) after a clock rollover; the server only returns future edits in `next`.
+- Dismissed: Avatar with a whitespace-only name already shows "?" (initials empty falls back to "?").
+- Patched: a stale past `nextView` no longer seeds the days (current rule used), in the load seed and the post-save re-seed.
 - Deferred: `IS_REAL_DB` has no non-production URL guard beyond the protected tenant id; no CI wiring (already listed above).
