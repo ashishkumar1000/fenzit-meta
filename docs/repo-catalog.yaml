@@ -22,3 +22,11 @@ repos:
     default_branch: main
     status: active
     docs_dir: docs/repos/fenzit-be
+
+  - id: fenzit-web
+    path: workspace/core/frontend/fenzit-web
+    remote: https://github.com/ashishkumar1000/fenzit-web.git
+    role: frontend
+    default_branch: main
+    status: active
+    docs_dir: docs/repos/fenzit-web
