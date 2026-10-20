@@ -25,3 +25,6 @@ _bmad/config.user.toml
 .idea/
 .vscode/
 *.iml
+
+# Supabase CLI local state (project link, CLI version)
+supabase/.temp/
