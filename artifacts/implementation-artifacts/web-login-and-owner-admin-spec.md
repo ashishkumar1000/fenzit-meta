@@ -1,6 +1,6 @@
 # Spec: Website login (email or phone) and company admin page
 
-Status: draft, awaiting approval
+Status: approved by the product owner (2026-10-21). UX pass: `web-login-and-owner-admin-ux.md`.
 Repos: `fenzit-be` (backend first), `fenzit-web` (website)
 Date: 2026-10-20
 Depends on: `roles-and-access-spec.md` (roles, memberships, token and guard rules). This spec follows its decisions and does not repeat them.
@@ -69,6 +69,15 @@ Ships after the backend is deployed.
 ## Open items to confirm during implementation
 
 - None. `GET /users/me` exists (`src/users/users.controller.ts`), so no new endpoint is needed.
+
+## Decisions from the review (2026-10-21)
+
+- **Re-linking:** an account that already has an email cannot change it through `POST /auth/email/link` (409). Setting the same email again is a no-op (200). An admin changes an email by hand until a change flow exists.
+- **Enumeration:** the 409 for an address that belongs to another account is limited. After 5 such answers in 10 minutes for one user, the endpoint answers 429. A user with many accounts can still probe, so per-IP limiting belongs at the edge before go-live.
+- **Go-live gate, not built yet:** an email must be proven before it is linked (a code sent to that address). Email sending is out of scope until the email provider is chosen, so the link works without proof for now. Email login is dev-only until then.
+- **Logout:** the web app clears its own sign-in only. The token stays valid until it expires on the server. A server-side revoke is a later decision.
+- **Direct visits:** `/login` and `/admin` have their own static shell, so a direct visit answers 200 and the router draws the page.
+- **Phone sign-in:** India only, 10-digit mobile numbers. Other countries are not supported on this page yet.
 
 ## Order of work
 
