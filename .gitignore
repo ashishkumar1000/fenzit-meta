@@ -28,3 +28,6 @@ _bmad/config.user.toml
 
 # Supabase CLI local state (project link, CLI version)
 supabase/.temp/
+
+# Browser check screenshots and logs from the Playwright MCP tool
+.playwright-mcp/
