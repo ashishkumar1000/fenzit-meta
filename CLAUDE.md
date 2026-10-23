@@ -61,6 +61,18 @@ Do not make any changes until you 95% confidence in what you need to build. Ask 
 - Verify BMAD skill first — read `SKILL.md` before recommending a skill.
 - Indian English — plain English, no Hindi words mixed in.
 - Small modular code — ~300 line limit per file, docs updated in the same change.
+- Ponytail — lazy-senior-dev style; see "Ponytail × BMAD" below for how it fits with BMAD.
+
+## Ponytail × BMAD
+
+Ponytail (`/ponytail`; six skills under `.agents/skills/ponytail*`, installed via the skills CLI, tracked in `skills-lock.json`) governs HOW code is written — the smallest complete change, reuse what exists, no speculative abstraction. It never changes WHAT the work is.
+
+- BMAD owns scope, ponytail owns style — a spec/plan/CAP and the sprint docs are the requirements contract. Ponytail minimises the implementation inside each approved task; it never shrinks the approved scope, skips plan-mandated tests or review lenses, or bypasses the BMAD phases (spec → plan → build → review).
+- Test timing wins — ponytail's "leave one small test with new logic" yields to our test-timing rule (implement → user confirms → tests). During BMAD stories, name the intended test in one line instead of writing it early.
+- Deferred work is the shared ledger — when ponytail would cut something nobody asked for, either say so in one line or record it in `artifacts/implementation-artifacts/deferred-work.md` (the BMAD twin of ponytail's `shortcut:` comment form). `/ponytail-debt` reads the same ledger.
+- Subagents don't inherit session skills — BMAD's build/review subagents see only their dispatch and the plan. For minimal style there, say "ponytail style" in the dispatch or rely on the plan's constraints; review lenses still run at full depth.
+- Reviews compose — `/ponytail-review` is a quick diff pass; it never replaces `/bmad-code-review`, which stays mandatory before every commit.
+- Activation — say "ponytail" or "be lazy" on a task, or `/ponytail [lite|full|ultra|off]`; active until "stop ponytail". Ponytail never cuts validation, error handling, security, accessibility, or anything the plan or the user asked for.
 
 ## Platform tips
 
