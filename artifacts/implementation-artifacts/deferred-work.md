@@ -827,3 +827,40 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 - source_plan: `artifacts/implementation-artifacts/plan-owner-footer-attendance-nav.md`
   summary: Wizard completion always lands on the setup-only attendance hub; an owner who enters via the new tab banner finishes setup on a page with only setup tiles and must tap back to reach the daily tab.
   evidence: Review finding B6 (blind-hunter). Pre-existing wizard behavior — SetupWizardScreen replaces back to AttendanceHome on completion (out of scope per the plan's non-goal "no wizard changes"); the banner path merely exposes it. A fix would retarget the wizard's completion route (e.g. return to the caller) — a wizard-flow change needing its own decision.
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: The CAP-4 Review routing (`navigate('Attendance', { tab: 'leave' })` from HomeScreen) is asserted by no test until the post-device-confirmation test pass.
+  evidence: Verification-gap lens pass 1 (pre-verified) — HomeScreen.test fixtures carry no pendingLeaveRequests so the banner never renders there; the section/banner suites stop at the injected callback. Deferred by the house test-timing rule; named in the plan's Named tests.
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: The tab page's `{ tab }` param seed + consume-then-clear is untested until the post-device-confirmation test pass.
+  evidence: Verification-gap lens pass 1 (pre-verified) — the page suite always renders `route={{}}`; deleting the consume effect passes everything. Deferred by the house test-timing rule; named in the plan's Named tests.
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: The Leave segment badge (gate, count, focus refresh) is untested until the post-device-confirmation test pass.
+  evidence: Verification-gap lens pass 1 (pre-verified) — profile pinned null in the page suite and the segments() helper cannot see a badge; no SegmentedControl badge coverage exists. Deferred by the house test-timing rule; named in the plan's Named tests.
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: The three leaf screens' `embedded` chrome-drop (header absent, SafeArea edges `[]`) is untested until the post-device-confirmation test pass.
+  evidence: Verification-gap lens pass 1 (pre-verified) — page suite stubs the leaves; leaf suites render pushed-mode only; inverting an embedded branch passes every suite. Deferred by the house test-timing rule; added to the plan's Named tests by review pass 1.
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: CLOSED (2026-10-23) — the four test gaps deferred from review pass 1 (Review routing, tab-param seed/consume, badge, leaf embedded chrome) were written in the post-device-confirmation pass after the owner-directed device check; 18 tests across HomeScreen.test, AttendanceTabHomeScreen.test and the three leaf suites; full suite 292/292 green.
+  evidence: Plan Implementation Notes (post-device test pass); the device pass itself surfaced a fifth gap (first-run Home banner) which was patched and covered in the same pass.
+
+## Deferred from: code review of plan-attendance-tabs-home-leave-banner (2026-10-23)
+
+- SegmentedControl's `icon` field (added by the attendance-tabs story) renders its glyph with no observer anywhere — deleting `{option.icon}` passes every suite. Decorative with no functional contract; pin it (a segment renders its icon child) when SegmentedControl gets its own suite.
+- LeaveReviewBanner's Review button announces a bare "Review" — the deleted 20-1 strip's press target carried `accessibilityLabel` bundling role + count ("Leave requests to review, N request(s)"). Restoring the bundle needs `accessibilityLabel` forwarding on the DS Button (today it forwards only `accessibilityState`/`testID`) — a public-surface DS extension needing its own decision. Meanwhile the count and subtitle texts sit adjacent and focusable.
+
+## Deferred from: code review of the pulse/strip/setup-pending round (2026-10-23)
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: MonthChipStrip's "an extension must not yank the viewport" (the scrolledFor guard on the auto-scroll effect) is unpinnable in react-test-renderer — no scroll observability; verified manually on device (extending past Dec 2027 leaves the viewport put). Pin it if the strip ever gets a scroll-observant harness.
+  evidence: Verification-gap lens (Other findings) — removing the guard passes every suite; the requirement is word-of-mouth plus the device pass.
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: TodaysJobsSection's established-dashboard branch pins banner PRESENCE only; the above-title ORDER is pinned solely in HomeScreen's first-run branch. One order assertion in TodaysJobsSection.leave.test closes it.
+  evidence: Verification-gap lens (Other findings, pre-verified).
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: LiveTeamPulse renders "Full day" for an on_leave row whose leavePart is absent/unknown — unreachable from the current BE (readApprovedLeaveParts always sets a part); revisit if the leave taxonomy grows a part the FE whitelist doesn't know.
+  evidence: Edge-case lens finding, triaged low — display fallback for a BE-impossible state; the normalizer now validates leavePart's shape.
