@@ -823,3 +823,7 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 - If a theme file fails at import time in check-design-system.ts, the friendly "missing" messages never print. The entry point is not tested.
 - Lock hashes written in uppercase hex are reported as changed. Hand-edited locks only.
 - build-tokens.ts and the sync script use cwd-relative paths. They are run through `bun run` from the repo root only.
+
+- source_plan: `artifacts/implementation-artifacts/plan-owner-footer-attendance-nav.md`
+  summary: Wizard completion always lands on the setup-only attendance hub; an owner who enters via the new tab banner finishes setup on a page with only setup tiles and must tap back to reach the daily tab.
+  evidence: Review finding B6 (blind-hunter). Pre-existing wizard behavior — SetupWizardScreen replaces back to AttendanceHome on completion (out of scope per the plan's non-goal "no wizard changes"); the banner path merely exposes it. A fix would retarget the wizard's completion route (e.g. return to the caller) — a wizard-flow change needing its own decision.
