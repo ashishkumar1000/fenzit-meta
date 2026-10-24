@@ -1,0 +1,17 @@
+activity: com.fenzitapp/.MainActivity
+
+text='Technicians'  TextView  [115,183][516,273]
+text='Add'  TextView  [921,202][988,253]
+text='ET'  TextView  [121,444][179,509]
+text='Employee Two'  TextView  [244,407][775,486]
+text='Offline'  TextView  [870,417][965,460]
+text='9999940002'  TextView  [244,491][775,547]
+id=status_bar_launch_animation_container  FrameLayout  [0,0][1080,128]
+id=container  FrameLayout  [0,0][1080,128]
+id=clock  text='8:45'  desc='8:45 pm'  TextView  [50,35][151,93]
+desc='Pixel Weather notification: '  ImageView  [151,1][209,128]
+desc='Android System notification: '  ImageView  [209,1][267,128]
+id=cutout_space_view  View  [474,1][592,128]
+id=mobile_signal  ImageView  [805,48][850,80]
+id=wifi_signal  desc='Wi-Fi signal full.'  ImageView  [866,48][909,80]
+desc='Battery charging, 90 percent.'  View  [925,47][988,81]

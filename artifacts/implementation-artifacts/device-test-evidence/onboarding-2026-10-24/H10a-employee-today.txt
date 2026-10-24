@@ -1,0 +1,18 @@
+activity: com.fenzitapp/.MainActivity
+
+id=status_bar_launch_animation_container  FrameLayout  [0,0][1080,128]
+id=container  FrameLayout  [0,0][1080,128]
+id=clock  text='9:00'  desc='9:00 pm'  TextView  [50,35][155,93]
+desc='Pixel Weather notification: '  ImageView  [155,1][213,128]
+desc='Android System notification: '  ImageView  [213,1][271,128]
+id=cutout_space_view  View  [474,1][592,128]
+id=mobile_signal  ImageView  [805,48][850,80]
+id=wifi_signal  desc='Wi-Fi signal full.'  ImageView  [866,48][909,80]
+desc='Battery charging, 95 percent.'  View  [925,47][988,81]
+text='Good evening, Employee'  TextView  [42,161][738,251]
+text='No job assigned yet'  TextView  [283,1153][796,1243]
+text='Your owner hasn't assigned you any jobs for today. Check back soon.'  TextView  [146,1264][933,1390]
+text='Tap to refresh'  TextView  [443,1496][705,1553]
+text='Today'  TextView  [140,2277][219,2316]
+text='History'  TextView  [493,2277][587,2316]
+text='Profile'  TextView  [857,2277][942,2316]
