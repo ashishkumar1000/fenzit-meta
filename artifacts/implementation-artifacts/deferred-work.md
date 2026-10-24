@@ -864,3 +864,9 @@ Scope: app uncommitted (Home pulse/tab bar font caps, holiday save message, tech
 - source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
   summary: LiveTeamPulse renders "Full day" for an on_leave row whose leavePart is absent/unknown — unreachable from the current BE (readApprovedLeaveParts always sets a part); revisit if the leave taxonomy grows a part the FE whitelist doesn't know.
   evidence: Edge-case lens finding, triaged low — display fallback for a BE-impossible state; the normalizer now validates leavePart's shape.
+
+## Deferred from: ponytail-review of fenzit-app de8a11b (2026-10-24)
+
+- source_plan: `artifacts/implementation-artifacts/plan-attendance-tabs-home-leave-banner.md`
+  summary: Intermittent jest-worker flake — a native-driver Animated timer leaked by an earlier suite in the shared worker crashes whichever animation-rendering suite runs next (`getNativeTagFromPublicInstance is not a function` + "worker process has failed to exit gracefully"). Seen on __tests__/notifications-screen.test.tsx ("tapping a card navigates…") and earlier on AttendanceHomeScreen's resume-path test; both pass standalone; ~2 of 8 full runs today. The attendance suites are clean (SetupPending's confetti loop is mocked in its own suite).
+  evidence: Two full-run failures today, neither reproducible standalone nor in re-runs; the signature ties to TimingAnimation on the native driver. To settle: run `bunx jest --detectOpenHandles __tests__` to name the leaker (suspect: a root __tests__ suite rendering a real Animated splash — App's AnimatedBootSplash warns about act() in the same runs), then disable the native driver or mock the animation there.
