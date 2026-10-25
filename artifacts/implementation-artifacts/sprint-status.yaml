@@ -302,3 +302,10 @@ development_status:
   # speculation rules cover every public route (build guard). Story file:
   # artifacts/implementation-artifacts/web-use-case-pages-2026-10-25.md
   web-use-case-pages-2026-10-25: done  # 2026-10-25 — confirmed on local preview; tests + review fixes applied; COMMITTED: fenzit-web 8494780
+
+  # Story: fenzit-web SEO page expansion — direct user request, 2026-10-25 ("similarly add 15
+  # more pages... each page by a separate agent"). Ten trade pages + five product-keyword pages
+  # from per-page agents under the shipped-features manifest; new use-case registry generates
+  # routes + sibling links; PUBLIC_PAGES drives prerender + sitemap (23 URLs). Story file:
+  # artifacts/implementation-artifacts/web-seo-page-expansion-2026-10-25.md
+  web-seo-page-expansion-2026-10-25: done  # 2026-10-25 — confirmed on local preview; BMAD review (6 findings, all patched, none deferred); COMMITTED: fenzit-web f8a2b9c
