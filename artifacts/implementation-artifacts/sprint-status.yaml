@@ -275,3 +275,15 @@ development_status:
   # artifacts/implementation-artifacts/ux-report-office-setup-2026-10-18.md).
   # BE first (additive): attendance_offices.formatted_address column + API.
   20-4-frontend-office-setup-ux-pass-and-pin-address: done  # 2026-10-18 — 30 findings handled (27 and 29 skipped, dark theme skipped and "enable all" dropped by the user); BE additive formatted_address SHIPPED FIRST (fenzit-be 958ad30; CHECK 1-500, no RPC change, 1605 tests, real-DB check); FE: address saved from the picker and shown on the Offices card (soft map chip), wizard folded to 4 steps, wheel time picker, Attendance hub + Home Pulse card, Holidays redesign, a11y fixes; BMAD review 3 passes on the app diff + 1 pass on the address diff (4 patched); FE 226 suites / 3012 tests + tsc clean; device-verified on Pixel 6 (address round trip vs deployed BE); COMMITTED: fenzit-be 958ad30, fenzit-app 9d28e20; open: wizard step-1 card shows no address, product-owner decisions listed in the report
+
+  # Story: fenzit-web SEO fundamentals — direct user request, 2026-10-25
+  # (three research agents: project audit, 2026 best-practice research, live-site probe).
+  # Per-route heads baked by the prerender script (/features had shipped the home canonical —
+  # a self-declared duplicate of /), noindex shells for login/admin/404, sitemap.xml generated
+  # at build + Sitemap line in robots.txt, real public/og-image.png (1200×630) + stable
+  # public/logo.png (favicon + JSON-LD), site.webmanifest, dead meta keywords removed,
+  # drop-trailing-slash canonical form, hero mockup h2s out of the outline. Home title's
+  # "| Coming Soon" suffix removed after the user confirmed the site is live (2026-10-25);
+  # "Launching 2026." kept in the description tags pending a wording call. Story file:
+  # artifacts/implementation-artifacts/web-seo-fundamentals-2026-10-25.md
+  web-seo-fundamentals-2026-10-25: implemented  # 2026-10-25 — checks green (typecheck/lint/format/styles/design-system/384 tests/build), wrangler dev probed (307 slash canonicalisation, real 404s, assets 200); /bmad-code-review run (edge-case-hunter + verification-gap): 6 patches applied (exactly-once head swaps, HTML-safety guard, per-page prerender table, not-found-route guard in renderPage, surgical title strip, CLIENT_ONLY_TITLES adopted by the three client-only pages), 3 defers to the post-confirmation test pass, 0 rejected — full re-verify green; commit: see fenzit-web push

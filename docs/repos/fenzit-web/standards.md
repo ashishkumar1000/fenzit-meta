@@ -64,7 +64,7 @@ Because lint runs without type information, the ESLint config uses the untyped `
 
 ## 3. Why this architecture
 
-- **SPA, not SSR.** The site is mostly signed-in app screens behind a login. SEO matters only for the landing page. Workers static assets serve the built files. A `single-page-application` fallback returns `index.html` for unknown paths, so React Router handles routing.
+- **Prerendered pages, not a runtime server.** The site is mostly signed-in app screens behind a login, so only the public marketing pages (`/`, `/features`) need to be crawlable. `bun run build` prerenders both to static HTML and rewrites each page's head for its own URL (title, description, canonical, Open Graph, Twitter — `scripts/prerender.ts` + `src/app/pageMeta.ts`). `/login`, `/admin` and the 404 shell ship `noindex`; the build also writes `dist/sitemap.xml`. Workers static assets serve the files, `html_handling: "drop-trailing-slash"` keeps the no-slash form canonical, and `not_found_handling: "404-page"` returns a real 404 for unknown paths.
 - **React Router library mode.** Cloudflare's React Router guide says: for an SPA, "start with the React template and use React Router as a library." Framework mode adds a server runtime we do not need.
 - **Plain Vite, no Cloudflare Vite plugin.** Cloudflare says SPA mode is not supported with its Vite plugin. We use `vite build` into `dist/`, and `wrangler.jsonc` points at it.
 - **Direct API calls to `fenzit-be`.** The browser calls `VITE_API_BASE_URL` directly. This needs CORS on the BE (§12). The alternative is a same-origin proxy through the fenzit.com Worker. **Decide** (§12).
@@ -290,7 +290,7 @@ Status as of 2026-10-19. Items 1, 2 (accepted), 3, 4, and 5 are done.
 5. **Done: folder layout.** `src/lib/api.ts` moved to `src/services/api.ts`. Landing components moved to `src/features/landing/components/`. The router moved to `src/app/`.
 6. **Open: auth token storage.** Pick option (a), (b), or (c) from §6 before the first signed-in screen.
 7. **Open: performance budget numbers** (§8). Current bundle: 325.8 KB raw, 103.5 KB gzip, after removing TanStack Query.
-8. **Open: missing `og-image.png`.** The page's OG tags point to a file that returns 404.
+8. **Done: `og-image.png` shipped** (2026-10-25). A 1200×630 card generated from the brand glyph, with `public/logo.png` as the stable favicon and JSON-LD logo, per-route heads, noindex shells, robots.txt + sitemap (story: `artifacts/implementation-artifacts/web-seo-fundamentals-2026-10-25.md`). Still open on the infra side: `www.fenzit.com` has no DNS record — add it with a redirect to the apex in the Cloudflare dashboard; and submit the sitemap in Google Search Console / Bing Webmaster Tools.
 9. **Open: `workers.dev` is disabled** for `fenzit-web` (Wrangler warning). Decide whether to re-enable it for staging.
 10. **Done: `src/services/api.ts`.** The 15 s timeout, network-failure mapping, `errorCode`, correlation and session IDs, and the empty-response rule are in place, with tests. `X-Idempotency-Key` is still open, for the first write screen (§6).
 11. **Done: TanStack Query removed**, at the user's request on 2026-10-19. Server data loads through React Router loaders (§6).
