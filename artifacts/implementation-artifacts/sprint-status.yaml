@@ -287,3 +287,18 @@ development_status:
   # "Launching 2026." kept in the description tags pending a wording call. Story file:
   # artifacts/implementation-artifacts/web-seo-fundamentals-2026-10-25.md
   web-seo-fundamentals-2026-10-25: implemented  # 2026-10-25 — checks green (typecheck/lint/format/styles/design-system/384 tests/build), wrangler dev probed (307 slash canonicalisation, real 404s, assets 200); /bmad-code-review run (edge-case-hunter + verification-gap): 6 patches applied (exactly-once head swaps, HTML-safety guard, per-page prerender table, not-found-route guard in renderPage, surgical title strip, CLIENT_ONLY_TITLES adopted by the three client-only pages), 3 defers to the post-confirmation test pass, 0 rejected — full re-verify green; commit: see fenzit-web push
+
+  # Story: fenzit-web attendance page — direct user request, 2026-10-25 (SEO follow-up:
+  # a ranking page for attendance/leave searches). Prerendered like / and /features with its
+  # own head; hand-drawn single-ink SVG (office in a dashed geofence, check-in phone, leave
+  # calendar); honest FAQ from shipped features. Story file:
+  # artifacts/implementation-artifacts/web-attendance-page-2026-10-25.md
+  web-attendance-page-2026-10-25: done  # 2026-10-25 — confirmed on local preview; tests (router title+heading), BMAD review fixes applied; COMMITTED: fenzit-web 8494780
+
+  # Story: fenzit-web field-tracking use-case pages — direct user request, 2026-10-25 ("field
+  # tracking is my USP — five pages, multiple agents"). Five copy agents drafted briefs under a
+  # shipped-features manifest (no live-map/route-optimization/offline claims); shared
+  # UseCasePage template + five content modules + five hand-drawn scenes; sitemap now 8 URLs;
+  # speculation rules cover every public route (build guard). Story file:
+  # artifacts/implementation-artifacts/web-use-case-pages-2026-10-25.md
+  web-use-case-pages-2026-10-25: done  # 2026-10-25 — confirmed on local preview; tests + review fixes applied; COMMITTED: fenzit-web 8494780
