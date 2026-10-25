@@ -309,3 +309,9 @@ development_status:
   # routes + sibling links; PUBLIC_PAGES drives prerender + sitemap (23 URLs). Story file:
   # artifacts/implementation-artifacts/web-seo-page-expansion-2026-10-25.md
   web-seo-page-expansion-2026-10-25: done  # 2026-10-25 — confirmed on local preview; BMAD review (6 findings, all patched, none deferred); COMMITTED: fenzit-web f8a2b9c
+
+  # Story: fenzit-web navigation and copy round — direct user requests, 2026-10-25 (scroll-to-top
+  # on navigation, logo links home + back links removed, region-neutral copy with regression
+  # guards). Story file:
+  # artifacts/implementation-artifacts/web-nav-and-copy-round-2026-10-25.md
+  web-nav-and-copy-round-2026-10-25: done  # 2026-10-25 — confirmed on local preview; BMAD review (3 patched, 1 noted as product scope); COMMITTED: fenzit-web 5b4f181,406c267
