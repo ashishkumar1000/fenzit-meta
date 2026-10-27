@@ -368,3 +368,18 @@ development_status:
   # backup gap, jsonb restore round-trip, whois section drop. 30 no-DB bun tests + typecheck:super
   # gated on pre-push. Overnight campaign: fixtures purged, DB reconciled to baseline.
   super-cli-whois-v3-dossier-2026-10-27: done  # BMAD spec artifacts/specs/spec-whois-v3-dossier (12 caps) — 16-section data-complete dossier (invites graph, leave timeline, attempt forensics, authored moderations, payload summaries), role-aware ordering, headless twin; shipped in f47c02d
+
+  # Web admin console (rewritten admin-user-management-spec.md): role-aware /admin —
+  # staff Inspect (whois dossier) + Account flags, owner Company section, employee Me
+  # section. NO DB changes — two new user.manage endpoints (read-only lookup, guarded
+  # flag UPDATE) + existing endpoints everywhere else. Bespoke SVG glyphs, motion
+  # gated on prefers-reduced-motion. Implemented + BMAD-reviewed (4 lenses, both repos)
+  # + ponytail pass; 11 findings patched (Me-profile 403 fix, deep-link shells, router
+  # Form, uuid-case self-guard, 57014 soften, 400-state, confirm reset, AdminArt removal).
+  # BE verified live (200/400/404/409/403, no data changed). Shipped with owner consent:
+  # fenzit-be 4f584bd deployed first and smoke-tested on production (all five signatures),
+  # then fenzit-web 012f1f4 + 2175dbd (deep-link shells) deployed to fenzit.com. Owner asked
+  # for pending-API loaders mid-flight: slim header progress bar, search skeletons, flag
+  # pulse — all reduced-motion gated. Browser-verified all three personas against prod API.
+  # Intended tests (spec) still pending the owner's confirm-the-flow round.
+  web-admin-console-2026-10-26: done  # 2026-10-27 — fenzit-be 4f584bd ships before fenzit-web 012f1f4/2175dbd
