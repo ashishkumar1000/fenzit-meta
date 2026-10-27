@@ -914,3 +914,21 @@ Patched during triage: `index.html` still said "technicians" in the meta descrip
 ## Deferred from: fenzit-app weekly-off wizard gate fix QA round (2026-10-26, device QA on the chained-schedule flow)
 
 - **Editing a mid-chain weekly-off hop silently supersedes every later hop — CLOSED SAME DAY (2026-10-26, user approved the guard)** — the save RPC owns everything from its effective date onward, so a mid-chain edit dropped later queued rules without a word. Fixed in the same uncommitted set as the gate fix: `useWeeklyOffDefaultForm` exposes `supersededHops` (queued rows strictly after the working effective date), and Save raises `WeeklyOffReplaceConfirm` — the house ConfirmDialog in plain English ("Remove upcoming changes?", each date + days listed, "Save anyway" / "Go back") — only when that list is non-empty; an edit with nothing queued behind it saves straight through. Device-verified both ways: Go back leaves the DB untouched; Save anyway supersedes with explicit consent. [Source: fenzit-app/src/features/attendance/settings/useWeeklyOffDefaultForm.ts, WeeklyOffReplaceConfirm.tsx, WeeklyOffScreen.tsx]
+
+## Deferred from: admin user management spec (2026-10-26, analysis + confirmed decisions)
+
+- **The production staff console (web admin page + staff API) is parked, not dropped** — the spec `admin-user-management-spec.md` holds four product-owner decisions (owners+technicians searchable, exact phone match, soft+hard delete, owner hard-delete wipes the company with audit rows left intact) and a verified DB-impact analysis (drop 3 audit_log FKs, two SECURITY DEFINER functions, no schema otherwise). The immediate need — QA cleanup of self-created test users — ships instead as the owner-only super CLI (`fenzit-be/scripts/super.tsx`), which deliberately bypasses the API layer and is never shipped. Revive the spec when fenzit staff (not the owner) need user management in production.
+
+## Deferred from: code review (2026-10-26) — super CLI interactive UI redesign + purge plan tests
+
+- Behavioral surface of the super CLI is untested — the plan tests pin structural invariants (delete order, snapshot hygiene), but role scoping (owner vs technician vs standalone), the staff-refusal rails, dry-run/`--apply` gating, and the backup/restore lifecycle have no tests. They need DB-backed test infrastructure (the same gap as the AR-20 RLS suite); per the repo test-timing rule they follow the user's confirmation that the tool works. [fenzit-be scripts/super/]
+- Headless vs interactive command logic is duplicated — `FlagView` re-implements `runFlag`'s resolve/already-set/last-staff/apply sequence and `resolveTarget` duplicates `preparePurge`'s staff refusal, so behavior changes must land in two places. Post-commit refactor candidate once the tool is proven. [fenzit-be scripts/super.tsx, scripts/super/interactive.tsx]
+
+## Deferred from: BMAD code review round 3 (2026-10-27) — whois v3 dossier
+
+- REPEATABLE READ snapshot wrapping backup + delete — concurrent writes during the confirm window would be deleted but unbacked; single-operator tool, architectural fix deferred.
+- Flag-flip TOCTOU — `SELECT ... FOR UPDATE` before flag flips; single-operator, low risk.
+- Workflow template step labels in the jobs table — current_step shows the raw key; the `workflow_templates` join (label + requires_photo/signature) is future work.
+- listBackups parses every backup JSON in full per render — fine at current volumes; move row counts into meta if backups grow.
+- Test files sit outside the strict typecheck (`bun:test` types would need @types/bun); they run under `test:super` on pre-push.
+- Stamped dates show MM-DD HH:MM (year dropped) — columns tuned for 80 cols; revisit if multi-year history matters.

@@ -340,3 +340,31 @@ development_status:
   # guards). Story file:
   # artifacts/implementation-artifacts/web-nav-and-copy-round-2026-10-25.md
   web-nav-and-copy-round-2026-10-25: done  # 2026-10-25 — confirmed on local preview; BMAD review (3 patched, 1 noted as product scope); COMMITTED: fenzit-web 5b4f181,406c267
+
+  # Story: admin user management (staff-only) — direct user request, 2026-10-26 ("admin page,
+  # left panel user management, search owner/technician by phone, delete with cascade; check
+  # existing API first"). Verdict: new staff API needed (phone lookup, staff roster view,
+  # soft remove + hard purge); reuses permission guard, disabled/removed states, audit
+  # interceptor. Product decisions confirmed 2026-10-26: owners+technicians searchable, exact
+  # phone match, two delete actions (soft + hard), owner hard delete wipes the whole company
+  # incl. audit rows. Spans fenzit-be (ships first) + fenzit-web. Story file:
+  # artifacts/implementation-artifacts/admin-user-management-spec.md
+  admin-user-management-2026-10-26: backlog  # parked 2026-10-26 — day-to-day need covered by the owner-only super CLI (fenzit-be/scripts/super.tsx); revive when fenzit staff need search/purge in production
+
+  # Story: owner-only super CLI — direct user request, 2026-10-26 ("script for dirty and
+  # dangerous tasks only I will run"). bun-run interactive CLI at fenzit-be/scripts/super.tsx
+  # + scripts/super/{core,purge,accounts,db,restore}.ts: whois, list, stats, role-aware purge
+  # (technician = person only; owner = whole company incl. customers + audit rows via
+  # transactionally-suspended append-only trigger), promote/demote staff, disable/enable,
+  # app-token mint, restore (re-inserts a purge backup parents-first, conflicts skipped).
+  # Safety: dry-run default, --apply, JSON backup before every purge, FK-graph drift guard
+  # (roots + intra-plan edges), staff accounts untouchable. node-postgres only — a Bun SQL
+  # driver (db-bun) was built, benchmarked and removed 2026-10-27: latency-bound, not helpful.
+  # Story file: artifacts/implementation-artifacts/admin-user-management-spec.md (the parked spec it borrows from)
+  super-cli-owner-tooling-2026-10-26: done  # 2026-10-27 — real purge executed+verified on the owner's QA company (9717331820/Happy Hoye, 52 rows, 0 orphans, backup kept); restore dry-run proven; Sally UX review applied
+  # f47c02d (fenzit-be, 2026-10-27) — shipped after overnight test campaign + 3 review rounds
+  # (ponytail; BMAD ×2, 4 lenses each). 11 real bugs found & fixed incl. inverted disable/enable,
+  # person/company purge aborts (created-for-others leave, cross-tenant history), cascade-victim
+  # backup gap, jsonb restore round-trip, whois section drop. 30 no-DB bun tests + typecheck:super
+  # gated on pre-push. Overnight campaign: fixtures purged, DB reconciled to baseline.
+  super-cli-whois-v3-dossier-2026-10-27: done  # BMAD spec artifacts/specs/spec-whois-v3-dossier (12 caps) — 16-section data-complete dossier (invites graph, leave timeline, attempt forensics, authored moderations, payload summaries), role-aware ordering, headless twin; shipped in f47c02d
