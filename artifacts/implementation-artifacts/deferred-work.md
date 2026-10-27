@@ -932,3 +932,20 @@ Patched during triage: `index.html` still said "technicians" in the meta descrip
 - listBackups parses every backup JSON in full per render — fine at current volumes; move row counts into meta if backups grow.
 - Test files sit outside the strict typecheck (`bun:test` types would need @types/bun); they run under `test:super` on pre-push.
 - Stamped dates show MM-DD HH:MM (year dropped) — columns tuned for 80 cols; revisit if multi-year history matters.
+
+## Deferred from: web-admin-console BMAD review (2026-10-26) — both repos
+
+- Two-admin demote race — two platform admins demoting each other concurrently can leave zero staff; recovery exists via the super CLI's promote. Single-operator; revisit if staff count grows. [fenzit-be src/admin/admin.service.ts]
+- Caller-authority TOCTOU — a demoted admin whose JWT was read before the demotion can still flip one flag; same class as the super-CLI finding. [fenzit-be src/admin]
+- Looked-up phone numbers land in request logs — GET lookup carries the phone in the URL and the logging interceptor records the full URL (Grafana). Pre-launch staff-only; fix later via log redaction for this route or a POST-based lookup. [fenzit-be logging.interceptor.ts, fenzit-web SearchForm]
+- Dossier logic now exists twice — super-CLI whois (scripts/super/core.ts) and the API port (src/admin/admin-dossier.ts) share queries/parsePhone by copy, not import; they can drift (e.g. phone formats). Merge after both are proven. [fenzit-be]
+- Grouped count queries degrade as a group — one drifted table zeroes sibling totals in webCounts/attCounts (CLI-parity); split per-table only if drift ever happens. [fenzit-be src/admin/admin-dossier.ts]
+- Company section hidden from staff who also own a company — consoleRole resolves dual-role to staff only; inspect covers their company via the dossier. Intended per spec decision 7; revisit on request.
+- Me-page attendance copy says "may not be enabled for you yet" for any failure incl. network — copy nicety only. [fenzit-web AdminMePage]
+
+## Deferred from: web-admin-console round 2 (2026-10-27)
+
+- Staff dossier drill-downs — audit/notifications/activity/jobs sections stay capped at 5–8 rows; full lists need cursor support in (or alongside) the lookup endpoint. Same summary→view-all pattern as the owner pages. [fenzit-be lookup, fenzit-web DossierSections]
+- Jobs drill-down shows the first 25 of each timeline (merged four scopes client-side) — a dedicated owner "all jobs" cursor endpoint replaces the merge when job counts grow. [fenzit-be jobs list, fenzit-web AdminJobsPage]
+- Employees/holidays lists are unpaginated (bounded today) — revisit if teams pass ~100.
+- Country-code selector loads the public country-codes list per search page load — fine now; cache in the loader data or sessionStorage if it feels slow.

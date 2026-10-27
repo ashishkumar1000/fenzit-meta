@@ -383,3 +383,14 @@ development_status:
   # pulse — all reduced-motion gated. Browser-verified all three personas against prod API.
   # Intended tests (spec) still pending the owner's confirm-the-flow round.
   web-admin-console-2026-10-26: done  # 2026-10-27 — fenzit-be 4f584bd ships before fenzit-web 012f1f4/2175dbd
+
+  # Round 2 (same story, owner direction): sidebar console with brand link + role chip;
+  # owner overview art link-cards (one SVG artist agent per artwork) → full-list pages
+  # (customers + jobs cursor/timeline lists, employees, holidays, month attendance — all
+  # existing endpoints, zero BE routes); generic phone search (+<code> via country_codes,
+  # dial-code selector, bigger button); employees auto-land on Me with office details,
+  # month summary, upcoming holidays; dossier humanised (m/km distances, dateranges,
+  # leave-timeline card); public header Log out when signed in. Two parser bugs caught
+  # live on production (eaten '+', plus-prefix mismatch) and fixed same-hour (d288ba1).
+  # Deployed: fenzit-be 73e0a3e + 47e182d + d288ba1 → fenzit-web f90d637 + 4b1ef14.
+  web-admin-console-r2-2026-10-27: done  # BE ships first; shells verified on fenzit.com
