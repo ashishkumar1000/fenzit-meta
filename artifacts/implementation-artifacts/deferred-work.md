@@ -949,3 +949,28 @@ Patched during triage: `index.html` still said "technicians" in the meta descrip
 - Jobs drill-down shows the first 25 of each timeline (merged four scopes client-side) — a dedicated owner "all jobs" cursor endpoint replaces the merge when job counts grow. [fenzit-be jobs list, fenzit-web AdminJobsPage]
 - Employees/holidays lists are unpaginated (bounded today) — revisit if teams pass ~100.
 - Country-code selector loads the public country-codes list per search page load — fine now; cache in the loader data or sessionStorage if it feels slow.
+
+## Deferred from: code review (2026-10-28) — fenzit-web DialCodeSelect compact + SearchForm one-line layout
+
+Done in this change: the wrong "full number" copy and sample numbers (placeholders now "Numbers only"; login placeholder "Email or phone number"); the busy state with no reason (status line says why); the Search button stacking on phones (grid stretch below 600px, beside the inputs from 600px); the compact labels that could not tell shared dial codes apart ("US +1" with a full-name tooltip); the inaccurate tooltip and header comments; the India-only sign-in sentence reworded in plain English; tests added (DialCodeSelect both modes; SearchForm idle/busy/status/placeholder); docs added to `docs/repos/fenzit-web/standards.md`.
+
+Still open:
+- Browser check at 360px and 1280px: the local backend on port 3000 does not allow requests from `http://localhost:5173` (CORS), so the admin pages cannot load in a browser. Needs an allowed origin in the local backend config, then a measured check of the search row (alignment of select, input and button tops; no horizontal scroll).
+- Shared dial codes snap back in the closed control: the select value is the dial code, so choosing a second +1 country re-selects the first. Pre-existing in default mode too. Fix needs the ISO code tracked as its own state. Same-code searches still post the same number, so the search result is not affected.
+- India-first defaults: `DEFAULT_DIAL_CODE` is +91, the fallback list is India alone, and sign-in is phone-by-+91 only (backend rule in fenzit-be). Copy is now neutral on screens we control; the default country, the fallback list and the sign-in rule are product decisions.
+- Compact labels show ISO codes, not country names. Product may prefer country names; a longer label needs a wider select.
+
+### Review follow-ups left open after the push (fenzit-web 9c64f2f, 2026-10-28)
+
+- Typing "+91" or "91" in the number field after picking +91 joins to "+91+91…"; the backend returns 400 and the page says "That number does not look right". Fix in the shared loader helper, not in the form. Reason: needs a rule for numbers that start with 91 in other countries.
+- Submitting an empty number shows the busy state, then no result, with no message. Add a client-side "Enter a number" message.
+- Admin loaders (`adminAccountLoader.ts`, `adminInspectLoader.ts`): the country list has no timeout, no shape filter and no "+91 must be present" check, unlike `countryCodes.ts`. One shared helper for both loaders would fix this and the duplicated `phoneFromParams`.
+- Shared dial codes snap back in the closed control (pre-existing; see earlier entry).
+- Focus: when Busy turns on while the number or country field has focus, it becomes disabled and focus drops. Move focus to the status line or keep the field enabled.
+- Breakpoint: the 600px search-row breakpoint is not one of the layout tokens (standards §5 uses 768px). Either move to 768px or record the exception here.
+- Form width: `.form` is 640px, wider than the 480px content max, with no stated reason.
+- First search: the skeleton does not show on the first lookup (`hasQuery` is false while data is idle).
+- Three busy signals at once (button label, status line, skeleton title). Pick one or link the button to its reason with `describedBy`.
+- Login: `LOGIN_COUNTRY_CODES` lists India only, and `PHONE_HINT` reads as a general format. Needs a product call on the sign-in rule (backend restricts to +91).
+- Not-found notice prints the raw number ("+919876543210") instead of the formatted shape.
+- Browser layout check at 360/390/768/1280 is still open; the local backend CORS setting blocked the admin pages earlier. Now testable on the live site.
