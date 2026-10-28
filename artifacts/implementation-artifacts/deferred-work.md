@@ -974,3 +974,6 @@ Still open:
 - Login: `LOGIN_COUNTRY_CODES` lists India only, and `PHONE_HINT` reads as a general format. Needs a product call on the sign-in rule (backend restricts to +91).
 - Not-found notice prints the raw number ("+919876543210") instead of the formatted shape.
 - Browser layout check at 360/390/768/1280 is still open; the local backend CORS setting blocked the admin pages earlier. Now testable on the live site.
+- Contact requests (`POST /api/v1/contact-requests`) have no rate limit, and every call adds a row. Anyone can fill the table with personal data. Early-access has the same gap. Needs a throttle on both routes, which means a new package: ask before adding it.
+- Contact requests: a lone UTF-16 surrogate (for example "\uD800") passes both the DTO and the browser check, then fails in Postgres as a 500. Fix in fenzit-be's contact DTO (reject unpaired surrogates) in the next backend change.
+- Contact requests: no component tests yet for ContactForms, CallBack or useContactSubmission (error clears on edit, focus moves on success, double submit is blocked). Add them after the user confirms the forms work.
