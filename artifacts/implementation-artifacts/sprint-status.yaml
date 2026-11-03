@@ -411,4 +411,4 @@ development_status:
   # rows). Shipped with owner consent: fenzit-be 0caec29 deployed first (401 guard probe
   # live), then fenzit-app a5847f2 + fenzit-web bd85b9f. Deferred: app-flow/link tests (test-
   # timing rule — after owner confirms on device), deletion-source column for the admin queue.
-  play-privacy-compliance-2026-11-03: done  # Play Console manual steps remain: policy URL, deletion URL, Data safety form
+  play-privacy-compliance-2026-11-03: done  # Play Console manual steps remain: policy URL, deletion URL, Data safety form. Post-test patch: employee Profile tab lacked the rows (separate TechnicianTabs screen) — fixed + device-verified, fenzit-app cc1c8e9

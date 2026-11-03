@@ -75,3 +75,7 @@ A Play reviewer installing the app can reach the privacy policy and terms from b
 - low — platform_admin sees member copy in the dialog: staff do not use the field app in everyday use, and the fix adds a third copy branch.
 - low — rights-section URL renders as plain text: linkifying adds parsing complexity; Play's requirement is that the policy names the resource, and the reader is already on fenzit.com.
 - low — URL constants manually synced to web routes: a cross-repo test would couple two separately deployed repos; the config comment documents the contract, and device test + Play review catch drift.
+
+### 2026-11-03 — post-review find (device test, employee role)
+
+- [x] [Review][Patch] Employee Profile tab (`features/technicianApp/ProfileScreen.tsx`) had no privacy/terms rows and no Delete account entry — the review and this spec assumed MoreScreen was the only settings surface, but employees use a separate TechnicianTabs Profile screen. Found on-device while testing the employee dialog; fixed by mirroring the More tab rows through the same `openWebPage` + `DeleteAccountConfirm` (the employee role gets the personal-data consequences copy). Verified on the Pixel 6: rows render, dialog shows the member copy, Cancel holds the session, the privacy row opens the live page. Shipped as fenzit-app cc1c8e9.
