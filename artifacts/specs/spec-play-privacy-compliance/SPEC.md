@@ -84,3 +84,15 @@ A Play reviewer installing the app can reach the privacy policy and terms from b
 
 - [x] [Review][Defer→Patch] App delete-flow/link tests written after the owner's on-device confirmation (test-timing rule satisfied): MoreScreen delete-flow + copy-switch + legal-row tests, PhoneScreen consent-phrase taps, `openWebPage` cases, new ProfileScreen tests (fenzit-app 394a4b3; 305 suites / 3947 tests).
 - [x] [Review][Defer→Patch] Deletion-source tracking: `source` column (web|app, default web), BE filing paths record it, admin queue displays it. Migration applied 2026-11-03 before the BE deploy (fenzit-be 39c72b1, fenzit-web ba1c31b).
+
+### 2026-11-04 — Play Console steps completed (owner account: Fenzit LLC, fenzit1000@gmail.com)
+
+- App entry created: Fenzit / com.fenzit / App / Free (package was already registered to the account).
+- App content, all declarations filed: privacy policy URL (fenzit.com/privacy-policy), sign-in details (reviewer credentials: owner phone + reusable master OTP 1039, full access), ads (none), content rating (IARC: Everyone / PEGI 3 / USK All ages), target audience (18+), data safety (submitted: name, phone, precise location, photos, UGC collected; nothing shared; deletion URL fenzit.com/delete-account; partial-deletion link → privacy policy), government apps (no), financial features (none), health (none), advertising ID (none).
+- Store settings: category Business; contact hello@fenzit.com / +91 92792 30451 / fenzit.com.
+- Store listing text saved as draft: "Fenzit", short + full descriptions (artifacts/play-listing/listing-copy.md).
+- Listing assets: 512 icon + 1024×500 feature graphic built from the launcher foreground art (artifacts/play-listing/graphics/); 8 device screenshots 1080×1920 (screenshots/final/) captured on the Pixel 6 against seeded demo data.
+- Demo tenant on production: "Sparkle Facility Services" (owner +91 9810012345, master OTP), 5-person team, 8 jobs across statuses (two completed with photo, one in progress), 6 customers, office geofence + enrolments, 3 check-ins, one pending + one approved leave. Seed scripts: artifacts/play-listing/seed-demo*.ts.
+- Promo video skipped for now (owner decision): build_video.py is ready in artifacts/play-listing/video/; Play takes a YouTube URL, addable any time.
+- Remaining (manual, file uploads): icon/feature-graphic/screenshots upload in Main store listing, optional YouTube URL, then Send for review in Publishing overview.
+- Ops flag: MSG91 SMS balance exhausted (seen on the owner's phone) — real OTP delivery is down until topped up; master OTP testing unaffected.
