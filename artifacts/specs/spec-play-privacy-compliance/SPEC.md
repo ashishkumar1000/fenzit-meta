@@ -117,3 +117,9 @@ A Play reviewer installing the app can reach the privacy policy and terms from b
 - Secrets required (owner-side): FENZIT_ASC_KEY_ID, FENZIT_ASC_ISSUER_ID, FENZIT_ASC_KEY_P8 (.p8 content, Admin/App Manager role key), FENZIT_APPLE_TEAM_ID. DEVELOPMENT_TEAM is passed as a command-line override (none checked into the pbxproj).
 - Info.plist GOOGLE_MAPS_API_KEY is committed inline (same key as Android keystore.properties) — CI needs no extra injection.
 - Prerequisite before the upload succeeds: the App Store Connect **app record for com.fenzit** must exist (signing auto-creates the profile, but pilot upload needs the record). TestFlight-first matches the repo's store policy ("RCs are the next patch sent to TestFlight first").
+
+### 2026-11-04 — Apple Developer enrollment started (hello@fenzit.com)
+
+- Apple Account created: Ashish Kumar / hello@fenzit.com / India / DOB on file; verification phone = Pixel 6 (+91 97173 31820) so SMS codes are readable from the device via adb. Password and CAPTCHA done by the owner directly in the browser.
+- Web enrollment flow (developer.apple.com/programs/enroll) accepted the Developer Agreement but now dead-ends: new enrollments MUST go through the **Apple Developer app** on iPhone/iPad/Mac (web alternative = "contact us" support route). Next step is manual on the Mac: App Store → sign in with the new Apple ID → install the free Apple Developer app → Account tab → enroll as Organization (Fenzit LLC, owner has a D-U-N-S number), then the $99 purchase (owner's card). Apple verifies the D-U-N-S + entity before membership activates (days, occasionally weeks).
+- Blocked-on-membership chain: Developer Program approval → ASC API key creation → FENZIT_ASC_* secrets + FENZIT_APPLE_TEAM_ID → com.fenzit app record → re-run ios-release workflow. iOS CI is otherwise fully wired.
