@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 10-15-2026  # Epic 10 DONE — real OTP delivery via MSG91 shipped end-to-end + DEPLOYED: fenzit-be 64597a7 (flow endpoint, registry, 502 contract, 4-digit OTP, master 1039, dev echo removed; prod-verified) + fenzo-app 76bc597 (4-box input, FR-FE1-3) + device pass on the Pixel 6. BMAD thorough review (13/5/0). Remaining = ops only: confirm code-1295 SMS receipt, then cutover flip in Render dashboard.
+last_updated: 11-03-2026  # Play Store privacy compliance SHIPPED + DEPLOYED: fenzit-be 0caec29 (signed-in deletion endpoint, deployed first, live-verified) + fenzit-app a5847f2 (legal links + reviewed delete-account flow) + fenzit-web bd85b9f (camera/children/in-app-deletion disclosures). Device pass on the Pixel 6 end-to-end (consent → 202 → DB row open → auto-logout). BMAD thorough review 4 lenses: 6 patch applied / 2 defer / 7 rejected. Play Console manual steps remain (policy URL, deletion URL, Data safety form).
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -394,3 +394,21 @@ development_status:
   # live on production (eaten '+', plus-prefix mismatch) and fixed same-hour (d288ba1).
   # Deployed: fenzit-be 73e0a3e + 47e182d + d288ba1 → fenzit-web f90d637 + 4b1ef14.
   web-admin-console-r2-2026-10-27: done  # BE ships first; shells verified on fenzit.com
+
+  # Play Store privacy compliance (artifacts/specs/spec-play-privacy-compliance — BMAD spec,
+  # ponytail-review first, then BMAD thorough code review 4 lenses: 0 decision-needed /
+  # 6 patch applied / 2 defer / 7 rejected with evidence): in-app legal links (login-screen
+  # consent line underlined + tappable, Account & settings Privacy/Terms rows open fenzit.com
+  # via openWebPage — no canOpenURL gate), reviewed in-app account deletion (role-specific
+  # consent dialog → POST /account-deletion/requests/me; JWT replaces the OTP proof;
+  # idempotent on the one-open-per-user index; auto-logout on 202; failure keeps the dialog),
+  # policy hardening (camera sentence, children section, in-app deletion pointer, date bump).
+  # BE unit spec added (6 tests: insert carries JWT userId, 23505 same-answer, friendly 500,
+  # public-path filing/lookup). Device pass on the Pixel 6 end-to-end: rows open Chrome on the
+  # live pages, dialog shows owner consequences, cancel keeps session, consent → 202 →
+  # account_deletion_requests row (open, 14:16:02Z, user 6b461174) → auto-logout. Login-screen
+  # link tap unverified — phone dropped off adb at that step (same code path as the verified
+  # rows). Shipped with owner consent: fenzit-be 0caec29 deployed first (401 guard probe
+  # live), then fenzit-app a5847f2 + fenzit-web bd85b9f. Deferred: app-flow/link tests (test-
+  # timing rule — after owner confirms on device), deletion-source column for the admin queue.
+  play-privacy-compliance-2026-11-03: done  # Play Console manual steps remain: policy URL, deletion URL, Data safety form

@@ -977,3 +977,8 @@ Still open:
 - Contact requests (`POST /api/v1/contact-requests`) have no rate limit, and every call adds a row. Anyone can fill the table with personal data. Early-access has the same gap. Needs a throttle on both routes, which means a new package: ask before adding it.
 - Contact requests: a lone UTF-16 surrogate (for example "\uD800") passes both the DTO and the browser check, then fails in Postgres as a 500. Fix in fenzit-be's contact DTO (reject unpaired surrogates) in the next backend change.
 - Contact requests: no component tests yet for ContactForms, CallBack or useContactSubmission (error clears on edit, focus moves on success, double submit is blocked). Add them after the user confirms the forms work.
+
+## Deferred from: code review of SPEC-play-privacy-compliance (2026-11-03)
+
+- App delete-flow/link tests (MoreScreen delete-account dialog: success signs out, failure keeps the dialog with the retry line, admin-profile copy; PhoneScreen phrases and More legal rows call `Linking.openURL` with the config constants; `openWebPage` cases in linking.test.ts). Test-timing rule: write after the owner confirms the flow on device.
+- Admin deletion-queue source tracking: the web and in-app flows insert identical rows with no `source` column, so reviewers cannot tell where a request came from. Needs a migration plus an admin-console change.
