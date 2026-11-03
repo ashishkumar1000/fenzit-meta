@@ -79,3 +79,8 @@ A Play reviewer installing the app can reach the privacy policy and terms from b
 ### 2026-11-03 — post-review find (device test, employee role)
 
 - [x] [Review][Patch] Employee Profile tab (`features/technicianApp/ProfileScreen.tsx`) had no privacy/terms rows and no Delete account entry — the review and this spec assumed MoreScreen was the only settings surface, but employees use a separate TechnicianTabs Profile screen. Found on-device while testing the employee dialog; fixed by mirroring the More tab rows through the same `openWebPage` + `DeleteAccountConfirm` (the employee role gets the personal-data consequences copy). Verified on the Pixel 6: rows render, dialog shows the member copy, Cancel holds the session, the privacy row opens the live page. Shipped as fenzit-app cc1c8e9.
+
+### 2026-11-03 — deferred items implemented (owner-approved)
+
+- [x] [Review][Defer→Patch] App delete-flow/link tests written after the owner's on-device confirmation (test-timing rule satisfied): MoreScreen delete-flow + copy-switch + legal-row tests, PhoneScreen consent-phrase taps, `openWebPage` cases, new ProfileScreen tests (fenzit-app 394a4b3; 305 suites / 3947 tests).
+- [x] [Review][Defer→Patch] Deletion-source tracking: `source` column (web|app, default web), BE filing paths record it, admin queue displays it. Migration applied 2026-11-03 before the BE deploy (fenzit-be 39c72b1, fenzit-web ba1c31b).

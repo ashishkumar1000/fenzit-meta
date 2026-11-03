@@ -980,5 +980,5 @@ Still open:
 
 ## Deferred from: code review of SPEC-play-privacy-compliance (2026-11-03)
 
-- App delete-flow/link tests (MoreScreen delete-account dialog: success signs out, failure keeps the dialog with the retry line, admin-profile copy; PhoneScreen phrases and More legal rows call `Linking.openURL` with the config constants; `openWebPage` cases in linking.test.ts). Test-timing rule: write after the owner confirms the flow on device.
-- Admin deletion-queue source tracking: the web and in-app flows insert identical rows with no `source` column, so reviewers cannot tell where a request came from. Needs a migration plus an admin-console change.
+- DONE 2026-11-03 — the owner confirmed the flows on device, so the test-timing hold lifted: MoreScreen delete-flow tests (success signs out, failure keeps the dialog with the retry line, admin vs employee copy, legal rows open the config URLs), PhoneScreen consent-phrase taps, `openWebPage` cases in linking.test.ts, and a new ProfileScreen test (the technician surface that had shipped without the rows). fenzit-app 394a4b3. 305 suites / 3947 tests green.
+- DONE 2026-11-03 — `source` column added (migration add_source_to_account_deletion_requests, default 'web', check constraint web|app), BE files 'web' from the public flow and 'app' from the JWT flow (fenzit-be 39c72b1), the admin queue shows "asked from the app / website" (fenzit-web ba1c31b).
