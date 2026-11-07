@@ -88,9 +88,15 @@ exactly as today.
   `/book-demo` (existing page).
 - Perk dots (existing pattern): "Built for owners and employees." / "Phone-number
   sign-in — no usernames." / "Every team gets 90 days free." — all facts true today.
-- Right column art: reuse the existing phone-panel art pattern (`HeroPreview`'s panel
-  style, one attendance panel) so the section matches the hero without new illustration.
-  `[ASSUMPTION] If reuse is not cheap, the panel ships copy+badge only — never new artwork.`
+- **Scan tile** (owner decision, 2026-11-07 — supersedes the original QR rejection):
+  a 96px QR code of `{config.playStoreUrl}` in a `{radius.medium}` tile on
+  `{color.surface.page}` with a hairline border, captioned "Scan to install on your
+  phone." in `{typography.small}` muted text. It sits under the perk list in the right
+  column; the QR keeps its own black-on-white artwork for scannability. Phones don't
+  render the tile — scanning from the same screen is nonsense — so it appears from
+  `{breakpoint.tablet}` (768px) up only.
+- Right column art: the scan tile carries the visual weight; no further illustration.
+  Never new artwork beyond the QR asset.
 
 **Header strip**
 

@@ -56,7 +56,7 @@ Google Play" — never a plain text link, never a bell/waitlist metaphor. It alw
 |---|---|
 | Header strip (all pages) | Text link "Get the app" → `#get-app` (cheap, no badge in the strip) |
 | Home hero | Primary: `StoreBadge` md. Secondary buttons unchanged (call back, demo, features) |
-| Home `#get-app` panel | `StoreBadge` md + "Book a demo" fallback link |
+| Home `#get-app` panel | `StoreBadge` md + "Book a demo" fallback link; right column adds the scan tile (QR → the listing) from 768px up |
 | Home FAQ | Answers link to the Play listing in prose |
 | Use-case pages (all 21) | Hero CTA + bottom CTA become `LinkButton` external "Get the app on Google Play" |
 | Attendance page | Same as use-case pages (hero + bottom CTA) |
@@ -110,10 +110,11 @@ search, with no form and no waiting-for-an-email step in between.*
 **Flow 2 — Priya researches on her laptop (desktop).**
 Priya, who runs a cleaning company, lands on the home page from a WhatsApp link a friend
 sent. The strip says the Android app is live. She scrolls, reads the FAQ, and reaches the
-`#get-app` panel: badge on the left, the app's attendance screen on the right. She
-scans/taps nothing yet — instead she taps "Book a demo", because she wants to see it with
-her own data first. *Climax beat: the page gives her both doors — self-serve download or
-human demo — without making her choose between them.*
+`#get-app` panel: badge on the left, perks and the scan tile on the right. She picks the
+laziest door — points her phone at the QR on the screen and taps the notification — and
+never touches her keyboard. If she wants hand-holding instead, "Book a demo" is right
+there. *Climax beat: the page gives her both doors — self-serve download or human demo —
+without making her choose between them.*
 
 **Flow 3 — Sampath adds his seven technicians (phone, referred by an owner).**
 Sampath already heard about Fenzit from another owner. He arrives straight to the Play
@@ -129,6 +130,8 @@ list.*
 - 360px: hero badge scales to content width without pushing the secondary buttons into
   horizontal scroll (actions wrap; badge keeps intrinsic width, capped by `max-width:
   100%`). `#get-app` panel single column. Footer badge wraps under the contact bar.
+- The scan tile is desktop/tablet-only (768px and up): a QR rendered on a phone asks the
+  user to scan their own screen, so phones don't see it at all.
 - 390/768/1280px: two-column panel from 768px up; badge never smaller than 48px tall.
 - Mobile web: no hover-dependent affordance anywhere in the delta; tap-only.
 - No native surface is touched; this is the marketing site only. The `smartbanner`-style

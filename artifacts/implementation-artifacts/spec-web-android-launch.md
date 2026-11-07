@@ -130,6 +130,7 @@ later change, recorded in the deferred-work ledger.
 ## Plan Change Log
 
 - 2026-11-07 (user request during review): round the Play badge to match the buttons — `--radius-md` clip on the badge image, focus ring radius aligned, asset's transparent margin trimmed once with Pillow (official artwork otherwise unmodified). Overrides the DESIGN.md "don't round" line, now amended in the spine.
+- 2026-11-07 (user request, post-confirmation pass): scan tile added to the #get-app panel — 96px QR of the Play URL (`src/assets/brand/play-store-qr.svg`, generated once with node-qrcode; no new dependency), "Scan to install on your phone." caption, desktop/tablet-only (≥768px) per Sally's call that a QR on a phone asks the user to scan their own screen. DESIGN.md/EXPERIENCE.md amended. Plus the unlocked post-confirmation tests: router-level call-back submission test (`router.call-back.test.tsx`), forbidden-copy invariants (`pageMeta.test.ts`, `entry-server.test.tsx`), and 3s finders on the two timing-flaky home tests in `router.test.tsx`. fenzit-be gains the two missing normalizePhone branch tests.
 
 ## Code Review
 
