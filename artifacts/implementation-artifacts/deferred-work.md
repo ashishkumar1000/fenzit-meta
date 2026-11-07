@@ -987,17 +987,26 @@ Still open:
   summary: DONE 2026-11-07 — the dead early-access endpoint is removed and the table dropped: fenzit-be 033fa14 (module deleted, normalizePhone moved verbatim to src/common/utils/normalize-phone.ts, Render deploy green, live endpoint 404s while contact-requests still 202s) and migration 20261107000001 applied via Supabase MCP (recorded as supabase_migrations version 20261107043842; the repo file's `drop table if exists` is idempotent, so any later `db push` of 20261107000001 no-ops safely).
   evidence: Data check 2026-11-07 found 0 rows in prod and dev (see below), so removal loses nothing. Code review lenses over the diff: no findings.
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
-  summary: normalizePhone coverage debt (pre-existing, surfaced while moving the util): the blank-input → undefined and "00"-prefix → "+" branches have no test in the repo — create-contact-request.dto.spec.ts covers only the Indian-mobile and already-E.164 paths. Fold into the post-confirmation test pass.
+  summary: DONE 2026-11-07 — fenzit-be f775182: both branches pinned in create-contact-request.dto.spec.ts through the real plainToInstance+validate pipeline; the verification-gap lens mutation-tested them (breaking either branch fails exactly its new test). 1922 tests green.
   evidence: /bmad-code-review verification-gap lens on fenzit-be 033fa14 (2026-11-07).
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
-  summary: QR code to the Play listing on the home download panel (desktop scan-to-install).
+  summary: DONE 2026-11-07 — fenzit-web 59af523: scan tile on the #get-app panel — 96px QR of the Play listing (committed SVG asset generated with node-qrcode, no new dependency), 'Scan to install on your phone.' caption, desktop/tablet only (768px+) per Sally's call; spines amended.
   evidence: Sally design assumption — needs a generated asset for a desktop-only convenience; revisit if owners ask for it.
 
 ## Deferred from: code review of spec-web-android-launch.md (2026-11-07)
 
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
-  summary: After the user confirms the launch change works, add the post-confirmation tests — (a) a router-level test that a call-back submit at "/" posts kind:"call_back" to /api/v1/contact-requests through the route action (guards the homeAction→callBackAction rewiring; code-review found no test catches a wrong action binding), (b) forbidden-copy invariant assertions (no early access/waitlist/"Launching 2026"/iOS) in the pageMeta.test.ts and registry.test.ts style, (c) look at the two timing-flaky home tests in router.test.tsx (findByRole at the 1000ms boundary; flaked once in three runs).
+  summary: DONE 2026-11-07 — fenzit-web 59af523: (a) router.call-back.test.tsx submits the call-back form at "/" through the real routes table and asserts the contact-requests wire contract, (b) forbidden-copy invariants over PUBLIC_PAGES meta, the index.html template (JSON-LD stays 'Web, Android'), llms.txt and every prerendered page (entry-server.test.tsx), (c) the two flaky home finders now get 3s. 477 tests green.
   evidence: Code-review verification-gap lens (2026-11-07); deferred by the repo's test-timing rule (implement → user confirms → tests).
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
   summary: Stale cached home pages (pre-deploy HTML) can still post the removed early-access form to "/", which callBackAction now records as a call_back lead — a few mislabeled rows in the staff queue during the cache-purge window after deploy; accepted, no guard.
   evidence: Code-review deletion lens (2026-11-07), low; a permanent 410-style guard for a transient window adds a branch nobody demonstrated a need for. Rows are human-reviewable in the queue.
+
+## Deferred from: bmad-build routing of SPEC-firebase-integration (2026-11-07)
+
+- source_plan: none
+  summary: Firebase Crashlytics (SPEC-firebase-integration CAP-4) — crash + non-fatal reporting with JS exception-handler chaining off, built on the RNFB app module that the push plan installs.
+  evidence: Split at bmad-build step-01 multi-goal gate — independently shippable from push; the user set push notifications as the first priority (2026-11-07).
+- source_plan: none
+  summary: Firebase Analytics (SPEC-firebase-integration CAP-5) — usage events, plus the AD_ID permission strip (`tools:node="remove"` + `google_analytics_adid_collection_enabled=false`) and the Play Console "does not use advertising ID" declaration that must ship with it.
+  evidence: Split at bmad-build step-01 multi-goal gate — independently shippable from push and still has an open question (the event catalog); the user set push notifications as the first priority (2026-11-07).
