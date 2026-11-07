@@ -418,5 +418,5 @@ development_status:
   staff-bulk-import-2-backend-migration-2026-11-07: done  # applied to Fenzit-Be as bulk_customer_import; verified
   staff-bulk-import-3-backend-validate-2026-11-07: done  # pushed in fenzit-be e1e6a8b; QA tests written
   staff-bulk-import-4-backend-commit-2026-11-07: done  # pushed in fenzit-be e1e6a8b; claim-first idempotency; QA tests written
-  staff-bulk-import-5-web-company-switch-2026-11-07: backlog
-  staff-bulk-import-6-web-import-screen-2026-11-07: backlog
+  staff-bulk-import-5-web-company-switch-2026-11-07: done  # fenzit-web 1f31890
+  staff-bulk-import-6-web-import-screen-2026-11-07: done  # fenzit-web 1f31890; known gaps in commit message
