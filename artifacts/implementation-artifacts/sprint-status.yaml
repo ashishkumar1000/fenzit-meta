@@ -412,3 +412,11 @@ development_status:
   # live), then fenzit-app a5847f2 + fenzit-web bd85b9f. Deferred: app-flow/link tests (test-
   # timing rule — after owner confirms on device), deletion-source column for the admin queue.
   play-privacy-compliance-2026-11-03: done  # Play Console manual steps remain: policy URL, deletion URL, Data safety form. Post-test patch: employee Profile tab lacked the rows (separate TechnicianTabs screen) — fixed + device-verified, fenzit-app cc1c8e9
+
+  # Staff bulk customer import (spec-owner-bulk-customer-import, staff-only). Stories in artifacts/specs/spec-owner-bulk-customer-import/stories.yaml.
+  staff-bulk-import-1-backend-forward-geocode-2026-11-07: done  # pushed in fenzit-be e1e6a8b
+  staff-bulk-import-2-backend-migration-2026-11-07: done  # applied to Fenzit-Be as bulk_customer_import; verified
+  staff-bulk-import-3-backend-validate-2026-11-07: done  # pushed in fenzit-be e1e6a8b; QA tests written
+  staff-bulk-import-4-backend-commit-2026-11-07: done  # pushed in fenzit-be e1e6a8b; claim-first idempotency; QA tests written
+  staff-bulk-import-5-web-company-switch-2026-11-07: backlog
+  staff-bulk-import-6-web-import-screen-2026-11-07: backlog

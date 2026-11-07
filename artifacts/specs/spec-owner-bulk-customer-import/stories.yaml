@@ -1,0 +1,39 @@
+- id: "1"
+  title: Forward geocode endpoint for staff (address to lat/lng)
+  description: >-
+    Add GET /places/geocode with address, city, state and pincode query params in fenzit-be, staff-only (user.manage plus X-Company-Id), using the existing Legacy Geocoding client. Separate bulk budget of 60 per minute per staff user. Covers CAP-3.
+  invoke_dev_with: >-
+    Google key stays server-side. Reuse GooglePlacesProvider's Geocoding call; do not add a new Google client. Server joins the filled parts (address, city, state, pincode) with commas and filters to India. Return lat/lng or a plain not-found shape.
+- id: "2"
+  title: Migration for bulk import (created_via value, import batch table)
+  description: >-
+    Allow created_via = 'bulk_import' on customers, add nullable customers.state, and add an import_batches table (who, company, file name, row counts, outcome). Deny-by-default RLS, admin-client-only access, as in story 15-2. Covers CAP-4 audit decision.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Pre-launch: schema change allowed. Keep the existing unique (tenant, country_code, phone) index untouched; the import relies on it.
+- id: "3"
+  title: Validate endpoint for an import sheet (stateless)
+  description: >-
+    Add POST /customers/import/validate taking JSON rows. Normalise phones with the chosen country, accept optional state (max 100), check required fields, lat/lng range, duplicates within the sheet and against existing customers. Returns per-row status and errors. Covers CAP-1 and CAP-2.
+  invoke_dev_with: >-
+    Server is the source of truth. Reuse the phone rules from CreateCustomerDto and the coordinate guard in validate-coordinates. Staff-only guards on the route.
+- id: "4"
+  title: Commit endpoint for an import sheet (idempotent, partial per row)
+  description: >-
+    Add POST /customers/import/commit with X-Idempotency-Key. New rows insert with created_via bulk_import. Phone matches update only the filled fields, including state. Failed rows are returned with reasons, valid rows still save. Writes one import_batches row and one company audit entry, "Fenzit staff imported N customers". Covers CAP-4 and the owner-visibility decision.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Follow the attendance idempotency pattern (findAttemptByIdempotencyKey style). A replay with the same key must not insert twice. Blank cells never clear stored values.
+- id: "5"
+  title: fenzit-web staff company switch and X-Company-Id wiring
+  description: >-
+    In fenzit-web, when staff pick a company from the phone lookup results, send X-Company-Id on every admin call made for that company. Covers CAP-5. Backend already supports the header for platform admins.
+  invoke_dev_with: >-
+    Only platform admins may use the header; keep the choice in a loader-level context, not useEffect. Follow CSS Modules and apiFetch rules in fenzit-web CLAUDE.md.
+- id: "6"
+  title: fenzit-web bulk import screen (upload, preview, fetch location, submit)
+  description: >-
+    Staff download a sample .xlsx or .csv (generated in the browser from the column list), fill it, then upload a .xlsx or .csv (max 500 rows, 5 MB), pick the phone country for the sheet, edit every cell in a preview, fetch location per row, and submit. Parsing runs in the browser with one pinned library. Covers CAP-1 to CAP-4 on the screen.
+  invoke_dev_with: >-
+    Library must be at least two weeks old, pinned exactly, and added to the stack table in docs/repos/fenzit-web/standards.md before install. Every screen needs loading, error and empty states.
