@@ -984,8 +984,8 @@ Still open:
 - DONE 2026-11-03 — `source` column added (migration add_source_to_account_deletion_requests, default 'web', check constraint web|app), BE files 'web' from the public flow and 'app' from the JWT flow (fenzit-be 39c72b1), the admin queue shows "asked from the app / website" (fenzit-web ba1c31b).
 
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
-  summary: fenzit-be still serves POST /api/v1/early-access and keeps the stored sign-ups; the web no longer calls it — decide separately whether to keep the archive or deprecate the endpoint and purge the data.
-  evidence: Removing a backend endpoint is a backend contract change (fenzit-be deploys first per cross-repo ordering); out of scope for the web-only launch change.
+  summary: fenzit-be still serves POST /api/v1/early-access but the web no longer calls it — deprecate the endpoint and drop the table. Checked 2026-11-07 (Supabase MCP): `early_access_signups` has 0 rows in Fenzit-Be production and Fenzit-dev, and `contact_requests` is also empty, so there is no archive to keep and nothing to purge; the cleanup is a plain endpoint + table removal.
+  evidence: Removing a backend endpoint is a backend contract change (fenzit-be deploys first per cross-repo ordering); out of scope for the web-only launch change. Row counts queried via Supabase MCP `execute_sql` on 2026-11-07.
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
   summary: QR code to the Play listing on the home download panel (desktop scan-to-install).
   evidence: Sally design assumption — needs a generated asset for a desktop-only convenience; revisit if owners ask for it.
