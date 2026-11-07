@@ -1002,3 +1002,38 @@ Still open:
   summary: Stale cached home pages (pre-deploy HTML) can still post the removed early-access form to "/", which callBackAction now records as a call_back lead — a few mislabeled rows in the staff queue during the cache-purge window after deploy; accepted, no guard.
   evidence: Code-review deletion lens (2026-11-07), low; a permanent 410-style guard for a transient window adds a branch nobody demonstrated a need for. Rows are human-reviewable in the queue.
 
+
+## Deferred from: code review of staff bulk customer import backend (2026-11-08)
+
+- Geocode budget is per API instance, not global: with N instances a staff user can make up to N × 60 forward-geocode calls a minute. Accepted for one instance (decided 2026-11-08). Needs a shared counter before scale-out; a DB counter would be a new RPC, so it needs a deliberate choice first.
+- A run that dies after its claim is taken but before its answer is stored is re-run after 10 minutes. The re-run updates saved rows, but writes a second batch row and audit entry.
+- Concurrent insert of the same phone between validate and insert reports the row as failed (PHONE_TAKEN_DURING_IMPORT) rather than updating it. Rare; message to be clearer.
+- Duplicate phone in one sheet marks every copy invalid; the message does not say why. Deliberate under the sheet-wide rule; copy only.
+- Excel can drop a leading zero from a numeric phone cell. Harmless for 10-digit Indian numbers; to be noted in the staff format guide.
+- Test coverage for buildDossier companyId mapping, the stable hash, the claim heartbeat and the batch status waits for the user's confirmation of the features (test-timing rule).
+
+Resolved 2026-11-08 (decided, applied): stale pin cleared on address change (no coordinates given); batch status column (running / completed); actor_user_id becomes NULL on staff delete (ON DELETE SET NULL, migrations 20261107000015 and 20261107000016); trunk 0 after a dial code is stripped.
+
+## Deferred from: BMAD code review of staff bulk customer import backend (2026-11-08)
+
+Fixed in this change: the hourly idempotency cleanup deleted finished import answers after 24 hours. Migration 20261108000001 excludes the import scope, so the answer is kept for good as the code and tests assume.
+
+Open, from the review (not fixed in this change):
+- Stale takeover can overwrite a just-finished answer: takeOver filters on age, not on "still unfinished", so a run that completes between read and takeover is re-run and its stored answer overwritten. Needs an extra filter on response_body (medium).
+- Audit entry lost on failure: writeAudit logs and returns, and the answer is stored, so a replay never writes it again. Needs a retry path or a reconciliation job (medium).
+- Final batch refresh failure leaves the batch `running` after the run returns completed. No refresh follows the last one (medium).
+- City, state or pincode change keeps the old pin, because only the address string is compared. Decide whether a change to any location field clears a pin with no coordinates (medium).
+- Coordinates in the commit body are not checked against the forward-geocode refusal (partial match, APPROXIMATE). The refusal only guards the lookup endpoint. Decide whether the commit path needs the same guard (medium).
+- lat=0 and lng=0 from a spreadsheet filler cell are stored as a real pin with no flag. A product decision; the test pins current behaviour (medium).
+- Trunk-0 strip applies to every dial code, including Italy where the 0 is kept (medium). Limit by country or flag.
+- No test for the partial_match and APPROXIMATE refusal in google-places.provider.ts; add when the features are confirmed (test-timing rule).
+- A run that goes more than 10 minutes without a refresh can be overtaken, and the original run's row writes are not fenced by claimToken (low).
+- An orphan batch row can remain if the batch insert commits but the response is lost (low).
+- Strict string compare on the address: a case or spacing change clears a good pin (low).
+- update-customer.dto.ts still hardcodes 120 instead of CUSTOMER_NAME_MAX (low, drift only).
+- Numeric phone with a dropped leading 0 (9 digits after +91) passes validation (low).
+- Lone surrogate in a name passes the code-point check and may fail at save (low, inferred, not run).
+- Any FK error 23503 on insert maps to PHONE_UNKNOWN_COUNTRY_CODE, including a tenant FK failure (low).
+- Refused partial match looks the same as ZERO_RESULTS to staff; only results[0] is checked (low).
+- Geocode budget is spent before the blank-street short-circuit (low).
+- Pre-existing lint errors (same at HEAD) in import-commit.replay.qa.spec.ts, import-rows.model.ts, places.service.geocode.spec.ts and places.service.ts (no-base-to-string on cause). Not from this change; fix in a lint pass.
