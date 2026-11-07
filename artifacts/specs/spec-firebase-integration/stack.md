@@ -6,20 +6,21 @@ Companion to [SPEC.md](SPEC.md). Versions and claims below were verified against
 
 | Piece | Version | Note |
 |---|---|---|
-| `@react-native-firebase/app` / `messaging` / `crashlytics` / `analytics` | **27.1.0** (exact peer match across all four) | TurboModules; New Architecture **required** since v26; namespaced API deleted — modular API only (`getMessaging`, `onMessage`, …) |
+| `@react-native-firebase/app` / `messaging` / `crashlytics` / `analytics` | **26.4.1** (exact peer match across all four) | Last CocoaPods-compatible major (v27 is SPM-only); TurboModules; New Architecture **required**; namespaced API deleted — modular API only (`getMessaging`, `onMessage`, …) |
 | `com.google.gms.google-services` (Gradle) | 4.5.0 | RNFB-pinned |
 | `com.google.firebase:firebase-crashlytics-gradle` | 3.0.8 | RNFB-pinned |
-| Firebase Android BOM | 35.0.2 | pulled transitively; do not override |
-| `firebase-admin` (fenzit-be) | 14.5.0 | needs Node ≥ 22 (Render runtime is fine) |
+| Firebase Android BOM | 34.18.0 | pulled transitively by RNFB 26.4.1; do not override |
+| `firebase-admin` (fenzit-be) | 14.5.0 | needs Node ≥ 22 APIs; fenzit-be runs on Bun — prefer the SDK's HTTP/1.1 transport |
 
-Fallback pin `26.4.1` exists only for the future iOS-on-CocoaPods decision (see [iOS-later](#ios-later-checklist)).
+Pinned to 26.4.1 on 2026-11-07 because the iOS project stays on CocoaPods (see the [iOS checklist](#ios-checklist)).
 
 ## Message contract (backend → device)
 
 - **`notification` + small `data` hybrid** — `notification` (title/body) so the OS displays in background/quit at high priority without any JS running; `data` carries `{"type": "<notification_event_type>", "id": "<entity_id>"}` (flat string map, ≤ 4 KB total, keys `from`/`gcm`/`google*` forbidden) for tap deep-linking and foreground routing.
 - **Never data-only for user-facing pushes** — background/quit data-only messages are deprioritized unless `priority: high`, and high-priority use that doesn't produce user-visible notifications degrades the app instance after FCM's 7-day behavioural evaluation.
-- Foreground: nothing auto-displays; `onMessage` routes to an in-app banner via a **local** notification (display handled by `@notifee/react-native`).
+- Foreground: nothing auto-displays and nothing is posted — `onMessage` refreshes the same stores the Realtime seam refreshes (no local notification; `@notifee/react-native` is archived and not used).
 - Per-user targeting by **token, never topic** (topics are for broadcasts only; Google: never a topic per user).
+- **Never cross-tenant:** a row is pushed only to its own `user_id`'s tokens, and only while that user is an active, non-disabled member of the row's tenant.
 
 ## Device-token lifecycle
 
@@ -43,7 +44,7 @@ CREATE TABLE device_tokens (
 );
 ```
 
-- Send: tokens by `user_id` → `sendEachForMulticast` in 500-token chunks (responses stay order-mapped) → delete rows whose response error is `messaging/registration-token-not-registered` or invalid-argument-malformed-token; retry only 429/503 with exponential backoff + jitter (honour `Retry-After`).
+- Send: an outbox sweep claims unsent recent rows (`pushed_at IS NULL`) with `FOR UPDATE SKIP LOCKED` — most rows are inserted by SQL RPCs and pg_cron, so a TS insert hook cannot cover them — then `sendEach` in ≤ 500-message chunks (responses stay order-mapped) → delete rows whose response error is `messaging/registration-token-not-registered` or invalid-argument-malformed-token; retry only 429/503 with exponential backoff + jitter (honour `Retry-After`).
 - Prune: nightly sweep deletes `last_seen_at` older than 60–90 days (Android expires registrations at 270 days; stale registrations are undeliverable long before).
 - Credentials: `GOOGLE_APPLICATION_CREDENTIALS` env/file mount (Google-recommended) pointing at a service account with role **Firebase Cloud Messaging API Admin**; JSON never in git, never in the app bundle.
 
@@ -58,35 +59,34 @@ CREATE TABLE device_tokens (
 4. App `build.gradle`: apply `com.google.gms.google-services` **before** `com.google.firebase.crashlytics` — either missing or misordered = startup crash ("No Firebase App '[DEFAULT]'" / "Crashlytics build ID missing").
 5. Optional release block: `nativeSymbolUploadEnabled true` for native-frame crashes; R8 mapping upload is automatic; **no extra ProGuard rules**.
 6. Project-root `firebase.json`: `messaging_android_notification_channel_id` → a real channel id (RNFB's default channel is "Miscellaneous" — not acceptable UX); disable Crashlytics JS exception-handler chaining (`crashlytics_javascript_exception_handler_chaining_enabled: false`).
-7. **Strip AD_ID**: Firebase Analytics auto-merges `com.google.android.gms.permission.AD_ID` into the manifest — remove it and its collection (same `tools:node="remove"` pattern as the existing FGS strip):
+7. **Strip AD_ID**: Firebase Analytics auto-merges `com.google.android.gms.permission.AD_ID` into the manifest — remove the permission (same `tools:node="remove"` pattern as the existing FGS strip) and turn collection off with `"google_analytics_adid_collection_enabled": false` in `firebase.json` (RNFB writes that meta-data itself; a hand-written duplicate breaks the manifest merge):
 ```xml
 <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
-<meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
 ```
 8. `./gradlew clean` after adding plugins, then **verify the merged manifest** (Android Studio Merged Manifest view, or Play App Bundle Explorer after upload) — `tools:node="remove"` is reported to not always apply cleanly in RN builds, and Play blocks releases whose advertising-ID declaration disagrees with the merged manifest.
 
 **Phase 2 — JS integration (fenzit-app).**
 1. `index.js`: `setBackgroundMessageHandler(getMessaging(), …)` **before** `AppRegistry` (required, runs as a 60 s headless task, no UI).
 2. POST_NOTIFICATIONS via `PermissionsAndroid` on API ≥ 33 — asked in context (first push-relevant moment), never at boot; denial degrades to in-app-only.
-3. Foreground: `onMessage` in the root component (unsubscribe on cleanup) → in-app banner via `@notifee/react-native` (also owns channel creation at app start).
+3. Foreground: `onMessage` (unsubscribe on cleanup) → refresh the Realtime seam's stores; no local notification. The Android channel named in `firebase.json` is created natively in `MainApplication.onCreate`.
 4. Deep link: on notification tap (`getInitialNotification` + `onNotificationOpenedApp`), route via the same mechanism the in-app bell uses (Story 3-4 deep links).
 5. Token lifecycle calls per the section above.
-6. Crashlytics: global JS handler is auto-installed; add `recordError` to the existing error boundary, `log()` breadcrumbs, `setUserId` at login. JS traces in release stay minified (no RN source-map support in Crashlytics) — archive Metro source maps per version for hand-decoding; acceptable to ship.
+6. Crashlytics: global JS handler is auto-installed; add `recordError` to the app error boundary (`AppErrorBoundary`, shipped 2026-11-07), `log()` breadcrumbs, and the signed-in role as a Crashlytics attribute (no user id). JS traces in release stay minified (no RN source-map support in Crashlytics) — archive Metro source maps per version for hand-decoding; acceptable to ship.
 7. Analytics: auto-collection ships on (sessions, screen_view, notification events); custom events via `logEvent` — params are **not validated** and silently drop when wrong (verify in DebugView: `adb shell setprop debug.firebase.analytics.app com.fenzit`). Respect limits: 500 event names, 25 params/event, name ≤ 40 chars, value ≤ 100 chars.
 
 **Phase 3 — fenzit-be (deploys first — cross-repo ordering).**
 1. `bun add firebase-admin`; `FirebaseModule` init once with `applicationDefault()` + project id.
 2. `device_tokens` table (Supabase migration) + register/delete endpoints (JWT-auth'd, idempotent upsert).
-3. Push hook in the notifications service: after the row insert, fan out `notification+data` per recipient tokens; failures log-only (never fail the insert or the API response).
+3. Outbox sweep over `notifications.pushed_at` (the column the table reserved for this): claims unsent recent rows, sends only to the recipient's tokens while they are an active member of the row's tenant; failures log-only (never touch the insert or an API response). Runs only when `PUSH_DELIVERY_PROVIDER=fcm`.
 
 **Phase 4 — Play disclosure (before the release that first ships these).**
 - Advertising ID declaration (App content): **"does not use advertising ID"** — consistent with the AD_ID strip in Phase 1; a mismatch blocks the upload.
 - Data safety: Analytics → "Device or other IDs" (app-instance ID only — AAID stripped) + "App interactions", purpose Analytics; Crashlytics → "Diagnostics" + "Device or other IDs" (install UUID), purpose App functionality; FCM → minimal (app version, user agent). All encrypted in transit, not shared beyond subprocessors.
 - Privacy policy: add a Firebase/Google section. (DPDP relevance for India users: covered by the policy update.)
 
-## iOS-later checklist
+## iOS checklist
 
-Gated on Apple Developer org enrollment. When it lands: **decide the dependency-manager question first** — RNFB v27 is SPM-only (Firebase Apple SDK ≥ 13 dropped CocoaPods at 12.19.3) and needs `use_frameworks! :linkage => :dynamic`, while RN 0.87 defaults to CocoaPods/static linkage. Either migrate the iOS podfile to RN SPM + dynamic frameworks (keep v27) or pin RNFB `26.4.1` (CocoaPods Firebase 12.19.x). Then (the iOS app is already registered and the plist sits in `ios/FenzitApp/`): add `GoogleService-Info.plist` to the Xcode app target → `FirebaseApp.configure()` in the Swift AppDelegate → Push Notifications capability + Background Modes (remote notifications) → APNs auth key (.p8) uploaded to Firebase → permission via react-native-permissions (RNFB's is a no-op) → physical-device testing only (ARM64 simulator can't register APNs) → dSYM upload is automatic → mirror the data-safety declarations in App Privacy.
+iOS code ships now (built on a Mac); delivery stays gated on Apple Developer org enrollment. In the code: Podfile `$RNFirebaseDisableSPM`, `$RNFirebaseAsStaticFramework` and `$RNFirebaseAnalyticsWithoutAdIdSupport` = true plus `use_frameworks! :linkage => :static` before `use_react_native!` (RNFB 26 defaults to SPM on RN ≥ 0.75; first `pod install` must log "SPM disabled") → `GoogleService-Info.plist` in the Xcode app target → `FirebaseApp.configure()` in the Swift AppDelegate → Push Notifications entitlement + `UIBackgroundModes` remote-notification → permission via RNFB `requestPermission` on iOS (Android's is a no-op; Android uses `PermissionsAndroid`). Pending enrollment: APNs auth key (.p8) uploaded to Firebase → physical-device testing only (ARM64 simulator can't register APNs) → dSYM upload is automatic → mirror the data-safety declarations in App Privacy. Device signing needs the paid org team (free personal teams can't sign Push) — so `CODE_SIGN_ENTITLEMENTS` sits on the Release config only until enrollment; after enrollment add it to Debug as well to test push on debug device builds.
 
 ## Gotchas (verified 2026-11-07)
 

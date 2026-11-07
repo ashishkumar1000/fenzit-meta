@@ -1002,11 +1002,3 @@ Still open:
   summary: Stale cached home pages (pre-deploy HTML) can still post the removed early-access form to "/", which callBackAction now records as a call_back lead — a few mislabeled rows in the staff queue during the cache-purge window after deploy; accepted, no guard.
   evidence: Code-review deletion lens (2026-11-07), low; a permanent 410-style guard for a transient window adds a branch nobody demonstrated a need for. Rows are human-reviewable in the queue.
 
-## Deferred from: bmad-build routing of SPEC-firebase-integration (2026-11-07)
-
-- source_plan: none
-  summary: Firebase Crashlytics (SPEC-firebase-integration CAP-4) — crash + non-fatal reporting with JS exception-handler chaining off, built on the RNFB app module that the push plan installs.
-  evidence: Split at bmad-build step-01 multi-goal gate — independently shippable from push; the user set push notifications as the first priority (2026-11-07).
-- source_plan: none
-  summary: Firebase Analytics (SPEC-firebase-integration CAP-5) — usage events, plus the AD_ID permission strip (`tools:node="remove"` + `google_analytics_adid_collection_enabled=false`) and the Play Console "does not use advertising ID" declaration that must ship with it.
-  evidence: Split at bmad-build step-01 multi-goal gate — independently shippable from push and still has an open question (the event catalog); the user set push notifications as the first priority (2026-11-07).
