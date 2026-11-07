@@ -1037,3 +1037,13 @@ Open, from the review (not fixed in this change):
 - Refused partial match looks the same as ZERO_RESULTS to staff; only results[0] is checked (low).
 - Geocode budget is spent before the blank-street short-circuit (low).
 - Pre-existing lint errors (same at HEAD) in import-commit.replay.qa.spec.ts, import-rows.model.ts, places.service.geocode.spec.ts and places.service.ts (no-base-to-string on cause). Not from this change; fix in a lint pass.
+
+## Deferred from: code review of geocode fallback and Fetch all locations (2026-11-08)
+
+- The customer name is now sent to Google as part of the lookup text. Decision made with the user (name first, then street and state). Recorded here as a privacy disclosure to Google; revisit if the DPA or privacy notice does not cover it.
+- No cancel button for Fetch all. A run continues until its lookups finish or stop with an error; leaving the page does not stop it (the 429 wait cannot be aborted).
+- A second 429 in the same run shows the rate-limit message per row, but the run does not pause the other rows.
+- If the first lookup finds nothing and the retry fails, the server answers 502, not the not-found shape.
+- Shared module-level not-found objects (google-places.provider.ts, places.service.ts) are returned by reference. Harmless today; a fresh object per call would remove the risk.
+- Mock provider failure sentinel and fixture matching compare the whole query, so a name in front of the sentinel no longer triggers the simulated failure. Test harness only.
+- Fetch all reads the sheet as it was when the run started for the addresses it looks up. An address edited during the run is looked up with the old text.
