@@ -984,8 +984,11 @@ Still open:
 - DONE 2026-11-03 — `source` column added (migration add_source_to_account_deletion_requests, default 'web', check constraint web|app), BE files 'web' from the public flow and 'app' from the JWT flow (fenzit-be 39c72b1), the admin queue shows "asked from the app / website" (fenzit-web ba1c31b).
 
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
-  summary: fenzit-be still serves POST /api/v1/early-access but the web no longer calls it — deprecate the endpoint and drop the table. Checked 2026-11-07 (Supabase MCP): `early_access_signups` has 0 rows in Fenzit-Be production and Fenzit-dev, and `contact_requests` is also empty, so there is no archive to keep and nothing to purge; the cleanup is a plain endpoint + table removal.
-  evidence: Removing a backend endpoint is a backend contract change (fenzit-be deploys first per cross-repo ordering); out of scope for the web-only launch change. Row counts queried via Supabase MCP `execute_sql` on 2026-11-07.
+  summary: DONE 2026-11-07 — the dead early-access endpoint is removed and the table dropped: fenzit-be 033fa14 (module deleted, normalizePhone moved verbatim to src/common/utils/normalize-phone.ts, Render deploy green, live endpoint 404s while contact-requests still 202s) and migration 20261107000001 applied via Supabase MCP (recorded as supabase_migrations version 20261107043842; the repo file's `drop table if exists` is idempotent, so any later `db push` of 20261107000001 no-ops safely).
+  evidence: Data check 2026-11-07 found 0 rows in prod and dev (see below), so removal loses nothing. Code review lenses over the diff: no findings.
+- source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
+  summary: normalizePhone coverage debt (pre-existing, surfaced while moving the util): the blank-input → undefined and "00"-prefix → "+" branches have no test in the repo — create-contact-request.dto.spec.ts covers only the Indian-mobile and already-E.164 paths. Fold into the post-confirmation test pass.
+  evidence: /bmad-code-review verification-gap lens on fenzit-be 033fa14 (2026-11-07).
 - source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
   summary: QR code to the Play listing on the home download panel (desktop scan-to-install).
   evidence: Sally design assumption — needs a generated asset for a desktop-only convenience; revisit if owners ask for it.
