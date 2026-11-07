@@ -982,3 +982,19 @@ Still open:
 
 - DONE 2026-11-03 — the owner confirmed the flows on device, so the test-timing hold lifted: MoreScreen delete-flow tests (success signs out, failure keeps the dialog with the retry line, admin vs employee copy, legal rows open the config URLs), PhoneScreen consent-phrase taps, `openWebPage` cases in linking.test.ts, and a new ProfileScreen test (the technician surface that had shipped without the rows). fenzit-app 394a4b3. 305 suites / 3947 tests green.
 - DONE 2026-11-03 — `source` column added (migration add_source_to_account_deletion_requests, default 'web', check constraint web|app), BE files 'web' from the public flow and 'app' from the JWT flow (fenzit-be 39c72b1), the admin queue shows "asked from the app / website" (fenzit-web ba1c31b).
+
+- source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
+  summary: fenzit-be still serves POST /api/v1/early-access and keeps the stored sign-ups; the web no longer calls it — decide separately whether to keep the archive or deprecate the endpoint and purge the data.
+  evidence: Removing a backend endpoint is a backend contract change (fenzit-be deploys first per cross-repo ordering); out of scope for the web-only launch change.
+- source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
+  summary: QR code to the Play listing on the home download panel (desktop scan-to-install).
+  evidence: Sally design assumption — needs a generated asset for a desktop-only convenience; revisit if owners ask for it.
+
+## Deferred from: code review of spec-web-android-launch.md (2026-11-07)
+
+- source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
+  summary: After the user confirms the launch change works, add the post-confirmation tests — (a) a router-level test that a call-back submit at "/" posts kind:"call_back" to /api/v1/contact-requests through the route action (guards the homeAction→callBackAction rewiring; code-review found no test catches a wrong action binding), (b) forbidden-copy invariant assertions (no early access/waitlist/"Launching 2026"/iOS) in the pageMeta.test.ts and registry.test.ts style, (c) look at the two timing-flaky home tests in router.test.tsx (findByRole at the 1000ms boundary; flaked once in three runs).
+  evidence: Code-review verification-gap lens (2026-11-07); deferred by the repo's test-timing rule (implement → user confirms → tests).
+- source_plan: `artifacts/implementation-artifacts/spec-web-android-launch.md`
+  summary: Stale cached home pages (pre-deploy HTML) can still post the removed early-access form to "/", which callBackAction now records as a call_back lead — a few mislabeled rows in the staff queue during the cache-purge window after deploy; accepted, no guard.
+  evidence: Code-review deletion lens (2026-11-07), low; a permanent 410-style guard for a transient window adds a branch nobody demonstrated a need for. Rows are human-reviewable in the queue.
