@@ -22,6 +22,11 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 - Single sprint — one source of truth: `artifacts/implementation-artifacts/sprint-status.yaml`.
 - Cross-repo structure — fenzit-app and fenzit-be deploy independently; backend changes deploy first.
 
+## Terminology
+
+- User-facing copy says **"Employee"**, not "Technician" — app screens, web admin, notifications, emails, and store text. Plain English.
+- Internal identifiers stay as they are: the DB role value `technician`, API fields, route and folder names such as `technicianApp`. Renaming them is a separate, planned change, never a side effect of copy work.
+
 ## Commit in the repo the change belongs to — never here
 
 - Files under `workspace/core/frontend/fenzit-app/` → run git with that directory as cwd (or `git -C workspace/core/frontend/fenzit-app ...`), push to its own remote. Same for `workspace/core/backend/fenzit-be/`.
