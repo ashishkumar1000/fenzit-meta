@@ -1,0 +1,54 @@
+- id: "1"
+  title: Backend invite SMS with role word, fitted names, trimmed company name and placeholder template
+  description: >-
+    After invite_member succeeds, send one SMS built from the single template
+    with the fitted first name (CAP-4), the company name trimmed to 20
+    characters (CAP-5) and the role word Employee, Admin or Viewer (CAP-1),
+    using a placeholder DLT template ID until the real one is supplied. A failed
+    SMS keeps the invite and returns sms_status so the owner sees "SMS not sent".
+    Every attempt is written to the audit log (CAP-6).
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    fenzit-be ships first. Name, company-name and role-word rules live in pure
+    functions with a small Devanagari table, not in the controller. Non-English
+    names outside Devanagari become "there". Never use the word Technician.
+    Log phone numbers only in masked form (e.g. +91 ******3210). Store a keyed
+    hash for cap counting; the hash key comes from backend secrets. Keep SMS sending switched
+    off until the real template ID is set. Test timing: implement first, then
+    confirm with the owner, then write tests.
+
+- id: "2"
+  title: Backend resend endpoint with 5-per-hour cap, admin only
+  description: >-
+    Company-admin-only endpoint to resend the invite SMS for an invited
+    membership. Refuses once that phone number has 5 invite SMS in the rolling
+    last hour, including re-invites (CAP-2). Counts come from the audit log (CAP-6).
+  invoke_dev_with: >-
+    Count from the persisted audit log, not in-process memory, so the cap holds
+    across instances. Enforce the admin-only check on the server; the app hiding
+    the button is not enough. Return a clear error code when the cap is reached.
+
+- id: "3"
+  title: fenzit-web download page at /app/download
+  description: >-
+    New page at fenzit.com/app/download that routes Android to the Play
+    listing, shows the iPhone coming-soon placeholder, and shows both on
+    desktop (CAP-3). Deploy before the SMS feature is switched on.
+  invoke_dev_with: >-
+    Store URLs come from config/appStores.ts. iOS placeholder must be a
+    config switch, so launching iOS later is a one-value change. Plain
+    English copy, no "Technician".
+
+- id: "4"
+  title: fenzit-app owner invite screen shows SMS status and admin-only Resend
+  description: >-
+    After an invite, show "SMS not sent" when sms_status is failed. Show the
+    Resend button only to company admins, with a clear message when the
+    5-per-hour cap is reached (CAP-2). No company-name warning (CAP-5 trims
+    silently in the SMS).
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Ships last, after fenzit-be stories 1 and 2 and fenzit-web story 3 are
+    deployed. Copy says "Employee", "Admin" or "Viewer" as the role word. Loading
+    and error states are required on the Resend button. The button hiding is a
+    convenience only; the server enforces the rule.

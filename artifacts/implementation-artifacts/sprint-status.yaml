@@ -420,3 +420,15 @@ development_status:
   staff-bulk-import-4-backend-commit-2026-11-07: done  # pushed in fenzit-be e1e6a8b; claim-first idempotency; QA tests written
   staff-bulk-import-5-web-company-switch-2026-11-07: done  # fenzit-web 1f31890
   staff-bulk-import-6-web-import-screen-2026-11-07: done  # fenzit-web 1f31890; known gaps in commit message
+
+  # Epic 21: Invite SMS with download link — spec artifacts/specs/spec-invite-sms-download-link/
+  # (SPEC.md + stories.yaml). Backend first (21-1, 21-2 additive), then web download page (21-3),
+  # then owner app (21-4, ships last). SMS sending stays OFF until the owner supplies the approved
+  # DLT template ID (placeholder constant until then). Web privacy copy committed 21d7683 (not pushed)
+  # and ships with the SMS feature.
+  epic-21: ready-for-dev
+  21-1-backend-invite-sms-with-role-word-and-audit: ready-for-dev  # fenzit-be; story file artifacts/implementation-artifacts/21-1-backend-invite-sms-with-role-word-and-audit.md
+  21-2-backend-invite-sms-resend-with-admin-only-cap: ready-for-dev  # fenzit-be; depends on 21-1
+  21-3-frontend-web-app-download-page: ready-for-dev  # fenzit-web; deploy before SMS is switched on
+  21-4-frontend-app-owner-invite-sms-status-and-resend: ready-for-dev  # fenzit-app; ships last
+  21-5-frontend-app-invite-pick-phone-from-contacts: review  # fenzit-app commit 397a896 (pushed); Pixel 6 device test still open; story artifacts/implementation-artifacts/21-5-frontend-app-invite-pick-phone-from-contacts.md
