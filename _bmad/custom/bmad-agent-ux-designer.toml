@@ -1,0 +1,16 @@
+# Team overrides for Sally (UX Designer) — merged over the skill's
+# customize.toml defaults by BMAD structural rules (scalars override,
+# arrays append, menu tables merge by `code`). Not overwritten on
+# BMAD updates; the base customize.toml above the skill is.
+
+persistent_facts = [
+  "The Impeccable design skill is installed in both UI repos at .claude/skills/impeccable/ (SKILL.md, reference/ playbooks, scripts/impeccable engine) — fenzit-web and fenzit-app.",
+  "When doing UI/UX design, critique, or polish work inside fenzit-web or fenzit-app, use Impeccable: run .claude/skills/impeccable/scripts/impeccable context once per session, follow the matching reference/<command>.md playbook, and read reference/craft-floor.md before any UI edit.",
+  "fenzit-app is Android (PRODUCT.md ## Platform: android) — use Impeccable's native playbooks there (reference/audit.native.md, reference/android.md); the detector, live mode, and edit hooks are web-only and apply to fenzit-web.",
+  "PRODUCT.md and DESIGN.md in each repo are the design-truth records; never invent product facts that are not in them, and never plan Hindi copy (owner deferred it, 2026-10-03).",
+]
+
+[[agent.menu]]
+code = "IP"
+description = "Impeccable design pass on a fenzit-web or fenzit-app surface (critique / audit / polish)"
+prompt = "Run an Impeccable design pass on the surface I name, in the repo I name (fenzit-web or fenzit-app): follow that repo's .claude/skills/impeccable/SKILL.md (context loader once, then the matching reference playbook, craft-floor.md before any UI edit), and report findings BMAD-style with severities before changing anything."
