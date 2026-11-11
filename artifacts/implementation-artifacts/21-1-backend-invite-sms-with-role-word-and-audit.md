@@ -3,7 +3,8 @@ title: 'Story 21-1: Backend invite SMS — role word, fitted names, trimmed comp
 type: 'feature'
 epic: 'epic-21'
 repo: 'fenzit-be'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_commit: '73bf45e64971e4b63c7a31b0d5dd611307c15a66'
 spec: 'artifacts/specs/spec-invite-sms-download-link/SPEC.md'
 stories_source: 'artifacts/specs/spec-invite-sms-download-link/stories.yaml'
 deploy_order: 'first (additive) — deploys before 21-2, 21-3 and 21-4'
@@ -120,3 +121,13 @@ Name the intended tests now:
 - The tests above are written and pass.
 - `/bmad-code-review` has run and its findings are triaged.
 - The owner has agreed to the commit. The commit lands in `fenzit-be` only. Nothing is pushed without consent.
+
+## Dev notes
+
+- **Migration:** `workspace/core/backend/fenzit-be/supabase/migrations/20261111000001_invite_sms_audit_and_counter.sql`. Not applied to the remote database yet.
+- **Code:** `src/auth/invite-sms/` (name and company rules, Devanagari table, `InviteSmsService`). Hook in `AuthService.inviteMember()`. Template placeholder `T-INVITE` in `src/common/constants/sms-templates.ts`. Config `INVITE_SMS_HASH_KEY` in `src/app.module.ts` (required in production, 32 characters minimum).
+- **Retention (chosen):** pg_cron jobs in the migration, the same way as the device-tokens and notifications cleanups. `invite-sms-audit-prune` deletes audit rows older than 12 months, daily at 03:50 UTC. `invite-sms-counter-prune` deletes counter rows older than 24 hours, hourly at :20.
+- **Name rule choices:** a converted Devanagari name is capitalised. Any non-ASCII character after conversion (letters, emoji, symbols) gives "there", so the SMS never leaves plain characters. Hyphens and apostrophes pass through.
+- **Company name:** trimmed and cut to 20 characters by code point. A non-English company name is not handled by this story and would make the SMS a 70-character message. Owner decision needed.
+- **Tests to write after confirmation:** the list in the Tests section above. Existing `auth.service.spec.ts` needs `InviteSmsService` added to its providers.
+- **Deploy:** `fenzit-be` ships first. Set `INVITE_SMS_HASH_KEY` in production before deploy, or the app will not boot.

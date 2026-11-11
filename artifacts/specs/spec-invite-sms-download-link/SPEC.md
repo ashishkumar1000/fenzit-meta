@@ -70,5 +70,7 @@ A new employee invited from the owner app receives one SMS on their phone that n
 
 ## Open questions
 
-- **DLT template approval.** The single template with a role variable needs one DLT approval. The owner supplies the approved ID later; the placeholder stays and SMS sending stays off until then.
-- **Owner role mapping.** Confirm that the owner is stored as `company_admin` (so the role word is `Admin` and Resend is available to the owner).
+- **DLT template approval.** The single template with a role variable needs one DLT approval. Submitted by the owner; approval pending (as of 2026-11-11). The placeholder stays and SMS sending stays off until the approved ID is set.
+- **Owner role mapping. Resolved 2026-11-11 (owner confirmed).** The company owner is stored as `company_admin`, so the role word is `Admin` and Resend is available to the owner. Super admin is Fenzit staff, stored as `users.platform_admin = true` (checked in DB 2026-11-11 for hello@fenzit.com, which has no membership row) and is not a company membership role; it is never an invitable role and never gets the role word.
+- **Cap decisions (2026-11-11, owner).** (1) A provider timeout counts toward the 5-per-hour cap, because the SMS may have been delivered. (2) A capped invite returns `sms_status: refused_cap`, a new value alongside `sent`, `failed` and `not_configured`, so the owner app can explain the limit. (3) The cap covers every invite, re-invite and resend for a phone. (4) A slot is reserved before the send, so parallel sends cannot pass the cap; a crash between reserve and send keeps the slot until the 24-hour cleanup.
+- **SMS text decisions (2026-11-11, owner).** (5) A company name in Devanagari is transliterated with the same table as names; any other non-English company name becomes "your company". (6) A person name with any character outside plain English letters (after Devanagari conversion) falls back to "there".

@@ -3,7 +3,7 @@ title: 'Story 21-3: fenzit-web download page at /app/download — Android to Pla
 type: 'feature'
 epic: 'epic-21'
 repo: 'fenzit-web'
-status: 'ready-for-dev'
+status: 'in-progress'
 spec: 'artifacts/specs/spec-invite-sms-download-link/SPEC.md'
 stories_source: 'artifacts/specs/spec-invite-sms-download-link/stories.yaml'
 deploy_order: 'after 21-1 and 21-2 are deployed; before 21-4 and before sending is switched on'
@@ -72,6 +72,32 @@ The invite SMS links to `https://fenzit.com/app/download`. The page sends an And
 4. Add the route, the `PUBLIC_PAGES` entry, the speculation rule and the `llms.txt` line.
 5. Add the paired CSS Module and check it with `bun run check:styles`.
 6. Run the design-system check (`bun run check:design-system`) to confirm no new raw values.
+
+### Review Findings (2026-11-11, commits cbafd6c and 1ea2e7f in fenzit-web)
+
+Four review layers ran (blind hunter, edge-case hunter, verification gap, acceptance audit against this story). Triaged below. Admin landing (1ea2e7f) is out of this story's scope; its findings are listed here because they came from the same review.
+
+**Decision needed**
+- [x] [Review][Decision] D1: Android auto-redirect to the Play intent link. `DownloadAppPage.tsx:18` calls `useRedirectTo(PLAY_STORE_APP_LINK)` for Android. The Behaviour table asks for a button only, and Out of scope excludes app links. Options: (1) keep the auto-redirect; (2) drop it and show the Play button only. **Decided: removed the redirect and the hook; the Play button is the only Android action.**
+- [x] [Review][Decision] D2: Desktop instruction. The old page told desktop visitors to open the link on a phone. The new desktop view has no such line. Options: (1) add "Open this link on your phone" back; (2) keep as is. **Decided: desktop lead now says to open the link on a phone.**
+
+**Patch**
+- [x] [Review][Patch] P1 (medium): `AdminHome` returns `null` while the loader is loading or failed, so the landing is blank with no loading or error text. CLAUDE.md requires both states. [`AdminPage.tsx` AdminHome, `data === undefined || data.status === "failed"`]
+- [x] [Review][Patch] P2 (medium): Internal jargon in user copy: "Destructive work stays in the owner's super CLI". Rewrite in plain English. [`AdminPage.tsx:278`]
+- [x] [Review][Patch] P3 (low): The download page heading is hardcoded in three places. Read it from `DOWNLOAD_APP_PAGE.title`. [`DownloadAppPage.tsx` lines 25, 50, 53]
+- [x] [Review][Patch] P4 (low): `UserChip` shows a blank first line for a whitespace-only name. Trim before the check. [`AdminPage.tsx` UserChip]
+- [x] [Review][Patch] P5 (low): `SectionIndex` renders an empty description line when a section has no blurb. Hide the line when empty. [`AdminPage.tsx` SectionIndex]
+- [x] [Review][Patch] P6 (low): `LEDE.member` is unreachable (members redirect before the index). Remove it. [`AdminPage.tsx` LEDE]
+- [x] [Review][Patch] P7 (low): Duplicate helpers in the download page (`AppStoreBlock` only wraps `AppStoreButton`; the iPhone copy repeats). Merge them. [`DownloadAppPage.tsx`]
+- [x] [Review][Patch] P8 (low): The index row hover and arrow transition has no `prefers-reduced-motion` guard. [`AdminPage.module.css` `.indexRow`, `.indexGo`]
+
+**Defer** (pre-existing or waiting on owner confirmation)
+- [x] [Review][Defer] Tests for the download page branches, index row hrefs, blurb coverage, chip name, and sidebar landing state. Deferred until the owner confirms the pages (test timing rule). Deferred, pre-existing.
+- [x] [Review][Defer] Layout at 360 to 1280 px, `100dvh`, safe-area insets, and gutter bleed on phones. Needs a device check (AC 8). Deferred, pre-existing.
+- [x] [Review][Defer] Commit 1ea2e7f bundled a `ForceUpdateFields.module.css` change, and its message names only the glyph change. Not rewritten without consent. Deferred, pre-existing.
+- [x] [Review][Defer] Sidebar highlights the first section on the landing with no test. Visual choice to confirm. Deferred, pre-existing.
+
+**Dismissed (4):** the two guards' treatment of `/app/download` agrees today; the Android-only meta description is required by the metadata guard; the Play button shows briefly before detection is the spec's first-paint rule. Separate doc fix, not a code finding: the spec's touchpoints table says `src/app/router.tsx`, but the route is in `src/app/routes.tsx`.
 
 ## Constraints
 

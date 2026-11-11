@@ -1047,3 +1047,18 @@ Open, from the review (not fixed in this change):
 - Shared module-level not-found objects (google-places.provider.ts, places.service.ts) are returned by reference. Harmless today; a fresh object per call would remove the risk.
 - Mock provider failure sentinel and fixture matching compare the whole query, so a name in front of the sentinel no longer triggers the simulated failure. Test harness only.
 - Fetch all reads the sheet as it was when the run started for the addresses it looks up. An address edited during the run is looked up with the old text.
+
+## Deferred from: code review of story 21-3 (2026-11-11)
+
+- Tests for the download page's three platform branches, the iPhone heading, the App Store conditional, the admin index row hrefs, blurb coverage, the chip name, and the sidebar landing state. Wait for owner confirmation (test timing rule).
+- Download and admin layout at 360 to 1280 px, `100dvh`, safe-area insets, and phone gutter bleed on the index rows. Needs a device check (story 21-3 AC 8).
+- Commit 1ea2e7f in fenzit-web bundled a `ForceUpdateFields.module.css` style change that its message does not mention. Not rewritten without consent.
+- Sidebar first-section highlight on the admin landing has no test and is a visual choice to confirm.
+
+## Deferred from: code review of story 21-2 (2026-11-11)
+
+- **Invite request waits on the SMS provider** — `inviteMember` awaits `sendInviteSms`, so each invite HTTP call includes the provider timeout. [Source: src/auth/auth.service.ts]
+- **429 has no Retry-After** — the window is a rolling 60 minutes, so the earliest retry time can be computed. [Source: src/auth/invite-sms/invite-sms-resend.service.ts]
+- **Resend does not re-check status at send time** — a person who joins between the `invited` check and the send still gets the text. [Source: src/auth/invite-sms/invite-sms-resend.service.ts]
+- **Logger object in the stack position** — `logger.error('...', { error })` is a codebase-wide pattern; the Supabase error may print poorly. [Source: src/auth/invite-sms/invite-sms.service.ts]
+- **Audit foreign key is ON DELETE RESTRICT** — a future hard delete of a texted membership will fail; check removal flows before any hard delete. [Source: supabase/migrations/20261111000001_invite_sms_audit_and_counter.sql]

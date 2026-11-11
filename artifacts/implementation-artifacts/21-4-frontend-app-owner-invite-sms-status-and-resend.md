@@ -3,7 +3,7 @@ title: 'Story 21-4: fenzit-app owner invite — "SMS not sent" status and admin-
 type: 'feature'
 epic: 'epic-21'
 repo: 'fenzit-app'
-status: 'ready-for-dev'
+status: 'in-progress'
 spec: 'artifacts/specs/spec-invite-sms-download-link/SPEC.md'
 stories_source: 'artifacts/specs/spec-invite-sms-download-link/stories.yaml'
 deploy_order: 'last — after 21-1, 21-2 and 21-3 are deployed'
@@ -29,7 +29,7 @@ After an owner invites someone, the owner must see whether the SMS went out. If 
 
 ## Contract (from 21-1 and 21-2)
 
-**Invite response** (`POST /auth/invite`, 201): adds `sms_status: "sent" | "failed" | "not_configured"`.
+**Invite response** (`POST /auth/invite`, 201): adds `sms_status: "sent" | "failed" | "not_configured" | "refused_cap"`. `refused_cap` means the 5-per-hour limit for this number stopped the text (decision 2026-11-11).
 
 **Resend** (`POST /auth/invite/:membershipUserId/resend-sms`):
 - `201` `{ sms_status }`
@@ -49,6 +49,7 @@ The app branches on `error_code` only, never on `message`.
 | `sent` | Nothing extra. |
 | `failed` | "SMS not sent. Tap Resend to try again." |
 | `not_configured` | "SMS sending is not switched on yet." (only while the backend is in placeholder mode) |
+| `refused_cap` | "This person has already received 5 invite SMS in the last hour. Try again later." No Resend button; the reason is shown instead. |
 
 **Resend button:**
 - Shown only to a company admin. Employees and viewers never see it. (The server still enforces this; the app check is only a convenience.)
