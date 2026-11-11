@@ -3,7 +3,7 @@ title: 'Story 21-5: fenzit-app invite — pick the phone number from the phone b
 type: 'feature'
 epic: 'epic-21'
 repo: 'fenzit-app'
-status: 'review'
+status: 'done'
 spec: 'artifacts/specs/spec-invite-sms-download-link/SPEC.md'
 stories_source: 'artifacts/specs/spec-invite-sms-download-link/stories.yaml'
 deploy_order: 'independent of the backend; ships with or after 21-4'
@@ -12,7 +12,7 @@ spec_checkpoint: true
 
 ## Status
 
-Built and pushed to fenzit-app `main` as commit `397a896`. The Android device test on the Pixel 6 is still open (see Device test). The design below reflects what was built, with these changes from the first draft: the picker is an icon at the end of the phone field instead of a separate button, the icon is a custom SVG (`ContactCardIcon`), and the name and phone fields use the floating label. Also covered: the same picker on the Add customer phone field, and the Technicians screen title now reads "Employees".
+Done. Built and pushed to fenzit-app `main` as commit `397a896`. The owner ran the Android device test on the Pixel 6 on 2026-11-11 and it passed (see Device test). The design below reflects what was built, with these changes from the first draft: the picker is an icon at the end of the phone field instead of a separate button, the icon is a custom SVG (`ContactCardIcon`), and the name and phone fields use the floating label. Also covered: the same picker on the Add customer phone field, and the Technicians screen title now reads "Employees".
 
 ## Intent
 
