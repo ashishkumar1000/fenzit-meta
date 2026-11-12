@@ -1062,3 +1062,10 @@ Open, from the review (not fixed in this change):
 - **Resend does not re-check status at send time** — a person who joins between the `invited` check and the send still gets the text. [Source: src/auth/invite-sms/invite-sms-resend.service.ts]
 - **Logger object in the stack position** — `logger.error('...', { error })` is a codebase-wide pattern; the Supabase error may print poorly. [Source: src/auth/invite-sms/invite-sms.service.ts]
 - **Audit foreign key is ON DELETE RESTRICT** — a future hard delete of a texted membership will fail; check removal flows before any hard delete. [Source: supabase/migrations/20261111000001_invite_sms_audit_and_counter.sql]
+
+## Deferred from: code review (2026-11-12, camera/face-detector removal)
+
+- Camera permission "never ask again" on Android shows the generic camera-permission message with no route to Settings. Pre-existing in the shared takePhoto path (photoPicker.ts), not introduced by the removal. Fix in the shared picker when the permission copy is next touched.
+- Employee row phone: the full number is on one line (numberOfLines=1), so a narrow screen or large text size can cut the tail with an ellipsis. Layout decision: wrap it or keep one line. (Code review 2026-11-12.)
+- Hook-level test missing for the avatar "Take photo" wiring: useAvatarUpload.changePhoto should be tested to pass cameraType 'front' and 512 px bounds. The picker-level tests are in photoPicker.frontCamera.test.ts. (Code review 2026-11-12.)
+- Planning docs still describe the face-guide selfie: artifacts/planning-artifacts/ux-designs/ux-Fenzo-2026-09-25-attendance-leave/DESIGN.md and artifacts/planning-artifacts/prds/prd-Fenzo-attendance-2026-09-25/prd.md. Add a note or update. (Code review 2026-11-12.)

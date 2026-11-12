@@ -72,7 +72,7 @@ The app branches on `error_code` only, never on `message`.
 6. **Success** updates the status and hides the message.
 7. **Copy** is plain English, sentence case. Role words: "Employee", "Admin", "Viewer". Never "Technician".
 8. **No company-name warning.** The company name is trimmed silently in the SMS (CAP-5). The invite form is unchanged.
-9. **No full phone number** on screen. Use the name, or the masked number if the screen already shows one.
+9. **Full phone number on the employee row** (changed 2026-11-12 at the owner's request; this replaces the original masking rule). The row shows the dial code and the whole number. The call button dials the same number.
 10. **Accessibility.** Resend has the button role and a clear label. The status line is announced to screen readers when it appears. Tap targets meet the minimum size used by the design system.
 11. **Responsive.** Works at 360, 390, 768 and 1280 px.
 12. **Correct the stale comment.** Update the comment in `technicians.ts` so it describes the real behaviour: the endpoint returns `sms_status`.
@@ -102,7 +102,7 @@ Name the intended tests now:
 - Error mapping: known codes, an unknown code, and a missing error body.
 - Loading: disabled during the call; re-enabled after a failure.
 - Network timeout: the message appears; the button is enabled again.
-- Masking: no full phone number is rendered.
+- Phone display: the full number is rendered on the employee row (see AC 9, changed 2026-11-12).
 - Accessibility: correct role and label; the status line is a live region.
 
 ## Device check
