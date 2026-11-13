@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-13-2026  # Epic 22 (employee-created jobs) registered: spec committed, stories 1-4 done in fenzit-be (uncommitted, dev-migrated), next story 5; epic 21 invite SMS still in-progress (21-1..21-4)
+last_updated: 11-13-2026  # Epic 22 backend COMPLETE: stories 1-6 committed+pushed (fenzit-be 43f368b + follow-ups) and migrated to live (MCP-verified). Remaining: 22-7 mobile, 22-8 web. Epic 21 statuses unchanged pending app/web verification.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -438,15 +438,18 @@ development_status:
   # companions job-approval-states.md, reports-dashboard.md). Execution order:
   # stories 1-6 backend (fenzit-be, additive, deploy first), 7 mobile
   # (fenzit-app), 8 web (fenzit-web). Owner = company_admin membership role;
-  # the product word is Employee. Stories 1-4 built + tested in fenzit-be
-  # 2026-11-12 (UNCOMMITTED; migrations 20261112000001-04 applied to
-  # Fenzit-dev only, live untouched). Next: story 5 (notifications).
-  epic-22: in-progress  # employee-created jobs with approval, notifications, reports — started 2026-11-12
-  22-1-backend-per-employee-job-permission-setting: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000001 (memberships.can_create_jobs/job_approval_required + set_member_job_settings RPC), PATCH members/:userId/job-settings, list fields; 12/12 dev integration
-  22-2-backend-employee-creates-job-with-approval-routing: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000002 (jobs.created_by, pending_approval status, create_job_with_log params); pending excluded from TODAY/sync; 8/8 dev integration, 9/9 unit
-  22-3-backend-owner-approve-and-reject: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000003 (decided_by/decided_at/rejection_reason, rejected status, decide_pending_job race-safe, JOB_NOT_PENDING 409); 31/31 dev integration, 21/21 unit
-  22-4-backend-owner-edits-pending-jobs-audit-visibility: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000004 (owner edits + per-field before/after activity, PT409 assignee lock, PT422 hint); assignee locked while pending; cross-employee detail 403->404 per CAP-7; 18/18 dev integration, 8/8 unit
-  22-5-backend-push-and-inbox-notifications-with-timestamps: backlog  # owner on submission; creator on approve/reject/owner-edit; additive timestamp migration
-  22-6-backend-reports-endpoints-and-approval-queue-filters: backlog
-  22-7-mobile-employee-and-owner-flows: backlog  # fenzit-app; deploys after fenzit-be stories 1-6
-  22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: backlog  # fenzit-web; landing dashboards per role on /admin and /admin/me; deploys after fenzit-be stories 1-6
+  # the product word is Employee. Backend COMPLETE 2026-11-12/13: all six
+  # stories committed + pushed in fenzit-be (43f368b stories 1-6, 6087474
+  # review follow-ups, 026cd70 story-6 integration suite, 5d4411e + e97801f
+  # perf indexes, c53e9dd past-start refusal + idempotency fingerprint);
+  # migrations 20261112172401-26 + index migrations applied to LIVE
+  # (Fenzit-Be, MCP-verified 2026-11-13). Remaining: 22-7 mobile, 22-8 web.
+  epic-22: in-progress  # employee-created jobs with approval, notifications, reports — started 2026-11-12; backend done + live-migrated 2026-11-13
+  22-1-backend-per-employee-job-permission-setting: done  # fenzit-be 43f368b: memberships.can_create_jobs/job_approval_required + set_member_job_settings RPC, PATCH members/:userId/job-settings (company_admin only), list fields
+  22-2-backend-employee-creates-job-with-approval-routing: done  # fenzit-be 43f368b: jobs.created_by, pending_approval status, create_job_with_log params; pending excluded from TODAY/sync; creator = technician_id
+  22-3-backend-owner-approve-and-reject: done  # fenzit-be 43f368b: decided_by/decided_at/rejection_reason, rejected status, decide_pending_job race-safe (JOB_NOT_PENDING 409); HISTORY includes rejected (CAP-7)
+  22-4-backend-owner-edits-pending-jobs-audit-visibility: done  # fenzit-be 43f368b: owner edits pending jobs with per-field before/after activity rows, assignee lock (PT409), cross-employee detail 404 (CAP-7); migration 20261112000004
+  22-5-backend-push-and-inbox-notifications-with-timestamps: done  # fenzit-be 43f368b: pending-job-notifications.ts + push-copy.ts + alerts wiring; owner on submission, creator on approve/reject/owner-edit; 397-line wiring spec
+  22-6-backend-reports-endpoints-and-approval-queue-filters: done  # fenzit-be 43f368b: src/job-reports/ (controller/service/report-data/report-rules/approval-queue + DTOs); story-6 integration suite 026cd70; perf indexes 5d4411e + e97801f
+  22-7-mobile-employee-and-owner-flows: backlog  # fenzit-app; deploys after fenzit-be stories 1-6 — backend is live, safe to start
+  22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: backlog  # fenzit-web; landing dashboards per role on /admin and /admin/me; deploys after fenzit-be stories 1-6 — backend is live, safe to start
