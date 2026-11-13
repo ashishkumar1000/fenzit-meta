@@ -1,0 +1,57 @@
+- id: "1"
+  title: Per-employee job permissions and approval setting
+  description: >-
+    Owner sets, per employee, whether they may create jobs and whether those jobs need approval; changes apply to new jobs only (CAP-1). Backend only, in fenzit-be.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Backend first; fenzit-be deploys before fenzit-app and fenzit-web. Owner means membership role company_admin only. Enforce the permission on the server, not only in the client.
+- id: "2"
+  title: Employee creates a job, with approval routing
+  description: >-
+    An employee with permission creates a job for an existing or new customer. Approval off assigns it at once; approval on saves it as Pending, excluded from assigned lists and schedules (CAP-2, CAP-3, CAP-4).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Store the creator on every job; owner-created jobs are tagged creator = owner. Refuse creation without permission with a plain-English reason. Pending owner notification is story 5.
+- id: "3"
+  title: Owner approve and reject
+  description: >-
+    Owner approves a Pending job (it becomes Assigned to the creator) or rejects it with or without a reason. Both are atomic and idempotent; a second decision returns a conflict (CAP-5, decisions only).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Use a single conditional state transition so exactly one decision wins a race. Test the race and the repeated decision, not only the happy path.
+- id: "4"
+  title: Owner edits to pending jobs, audit trail, and visibility
+  description: >-
+    Owner edits any field of a Pending job, with each edit saved to an audit trail; an edit to a non-Pending job is refused. Visibility is limited to creator and owner, and rejected jobs stay in the creator's history (CAP-5 edits, CAP-7).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Scope every read and write to the job's company; cross-company access returns not found. Each edit save records changed fields with before and after values, the user, and the time.
+- id: "5"
+  title: Push and inbox notifications, with timestamps
+  description: >-
+    Creator gets one push and one inbox entry per approve, reject, or owner edit save; the owner gets one push and one inbox entry per submission. Inbox items have read state. Adds submission and decision timestamps (CAP-4, CAP-6).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Notification is sent only after the decision commits. Backend migration adds the timestamps; the migration is additive so old clients keep working.
+- id: "6"
+  title: Reports endpoints and approval queue filters
+  description: >-
+    Company-scoped owner and employee report queries for the headline counts, pipeline and per-employee breakdown, plus approval queue filters by employee and submission age (CAP-8 data, CAP-9 data, CAP-10).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Compute every number from job records in the database, not from a stored counter. Clients do not aggregate raw job lists. Filters combine.
+- id: "7"
+  title: Mobile employee and owner flows
+  description: >-
+    On fenzit-app, employees create jobs and see their Pending, assigned and rejected counts; the owner sets per-employee permissions, works the approval queue with filters, approves, rejects, edits, and reads the inbox (CAP-1, 2, 4, 5, 6, 9, 10).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Use "Employee" in user-facing copy; keep the technician role and API field names. Show loading, error and empty states. Deploys after fenzit-be story 1 to 6.
+- id: "8"
+  title: Web owner and employee reports dashboards, settings, and approval queue
+  description: >-
+    The existing fenzit-web sign-in routes owners to /admin and employees to /admin/me. Replace the owner overview with the owner reports dashboard and extend /admin/me with the employee dashboard; add the settings screen and the approval queue with filters, approve, reject and edit (CAP-8, CAP-1, CAP-5, CAP-10).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Sign-in and role routing already exist; do not build a new login. Use CSS Modules, no any types, and no TanStack Query or useEffect fetching in fenzit-web. Deploys after fenzit-be story 1 to 6.

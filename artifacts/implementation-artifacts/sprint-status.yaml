@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-03-2026  # Play Store privacy compliance SHIPPED + DEPLOYED: fenzit-be 0caec29 (signed-in deletion endpoint, deployed first, live-verified) + fenzit-app a5847f2 (legal links + reviewed delete-account flow) + fenzit-web bd85b9f (camera/children/in-app-deletion disclosures). Device pass on the Pixel 6 end-to-end (consent → 202 → DB row open → auto-logout). BMAD thorough review 4 lenses: 6 patch applied / 2 defer / 7 rejected. Play Console manual steps remain (policy URL, deletion URL, Data safety form).
+last_updated: 11-13-2026  # Epic 22 (employee-created jobs) registered: spec committed, stories 1-4 done in fenzit-be (uncommitted, dev-migrated), next story 5; epic 21 invite SMS still in-progress (21-1..21-4)
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -432,3 +432,21 @@ development_status:
   21-3-frontend-web-app-download-page: in-progress  # fenzit-web; deploy before SMS is switched on; parallel to 21-1 (no code dependency)
   21-4-frontend-app-owner-invite-sms-status-and-resend: in-progress  # fenzit-app; ships last
   21-5-frontend-app-invite-pick-phone-from-contacts: done  # fenzit-app commit 397a896 (pushed); Pixel 6 device test passed 2026-11-11; story artifacts/implementation-artifacts/21-5-frontend-app-invite-pick-phone-from-contacts.md
+
+  # Epic 22: Employee-created jobs with per-employee owner approval — spec
+  # artifacts/specs/spec-employee-created-jobs/ (SPEC.md + stories.yaml +
+  # companions job-approval-states.md, reports-dashboard.md). Execution order:
+  # stories 1-6 backend (fenzit-be, additive, deploy first), 7 mobile
+  # (fenzit-app), 8 web (fenzit-web). Owner = company_admin membership role;
+  # the product word is Employee. Stories 1-4 built + tested in fenzit-be
+  # 2026-11-12 (UNCOMMITTED; migrations 20261112000001-04 applied to
+  # Fenzit-dev only, live untouched). Next: story 5 (notifications).
+  epic-22: in-progress  # employee-created jobs with approval, notifications, reports — started 2026-11-12
+  22-1-backend-per-employee-job-permission-setting: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000001 (memberships.can_create_jobs/job_approval_required + set_member_job_settings RPC), PATCH members/:userId/job-settings, list fields; 12/12 dev integration
+  22-2-backend-employee-creates-job-with-approval-routing: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000002 (jobs.created_by, pending_approval status, create_job_with_log params); pending excluded from TODAY/sync; 8/8 dev integration, 9/9 unit
+  22-3-backend-owner-approve-and-reject: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000003 (decided_by/decided_at/rejection_reason, rejected status, decide_pending_job race-safe, JOB_NOT_PENDING 409); 31/31 dev integration, 21/21 unit
+  22-4-backend-owner-edits-pending-jobs-audit-visibility: done  # built + tested 2026-11-12, uncommitted in fenzit-be; migration 20261112000004 (owner edits + per-field before/after activity, PT409 assignee lock, PT422 hint); assignee locked while pending; cross-employee detail 403->404 per CAP-7; 18/18 dev integration, 8/8 unit
+  22-5-backend-push-and-inbox-notifications-with-timestamps: backlog  # owner on submission; creator on approve/reject/owner-edit; additive timestamp migration
+  22-6-backend-reports-endpoints-and-approval-queue-filters: backlog
+  22-7-mobile-employee-and-owner-flows: backlog  # fenzit-app; deploys after fenzit-be stories 1-6
+  22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: backlog  # fenzit-web; landing dashboards per role on /admin and /admin/me; deploys after fenzit-be stories 1-6
