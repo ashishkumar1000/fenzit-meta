@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-13-2026  # Epic 22 backend COMPLETE: stories 1-6 committed+pushed (fenzit-be 43f368b + follow-ups) and migrated to live (MCP-verified). Remaining: 22-7 mobile, 22-8 web. Epic 21 statuses unchanged pending app/web verification.
+last_updated: 11-14-2026  # Epic 22: 22-8 web DONE (fenzit-web 599c9b9 pushed; Sally pass + BMAD review, 24 patches; owner-session verified). Remaining: 22-7 mobile. Epic 21 statuses unchanged pending app/web verification.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -452,4 +452,4 @@ development_status:
   22-5-backend-push-and-inbox-notifications-with-timestamps: done  # fenzit-be 43f368b: pending-job-notifications.ts + push-copy.ts + alerts wiring; owner on submission, creator on approve/reject/owner-edit; 397-line wiring spec
   22-6-backend-reports-endpoints-and-approval-queue-filters: done  # fenzit-be 43f368b: src/job-reports/ (controller/service/report-data/report-rules/approval-queue + DTOs); story-6 integration suite 026cd70; perf indexes 5d4411e + e97801f
   22-7-mobile-employee-and-owner-flows: backlog  # fenzit-app; deploys after fenzit-be stories 1-6 — backend is live, safe to start
-  22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: backlog  # fenzit-web; landing dashboards per role on /admin and /admin/me; deploys after fenzit-be stories 1-6 — backend is live, safe to start
+  22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: done  # fenzit-web; built + Sally UX pass + BMAD review (8 layers, 24 patches applied), committed 599c9b9 and pushed 2026-11-14; owner-session verified live (reject dialog, settings dialog, phone round-trip); test cases next
