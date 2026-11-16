@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-16-2026  # Tracker reconciliation: epic 22 closed (22-7 done); epic 20 + epic 21 closed — all code committed + pushed (verified in repos). Remaining: ops items only (MSG91 cutover, DLT template for invite SMS switch-on, Play Console steps, pre-launch Maps key restriction + iOS validation); parked: epic-6, epic-8, admin-user-management.
+last_updated: 11-16-2026  # Epic 23 registered from SPEC-company-hierarchy (commit 54bb335) — 7 stories in backlog; spec through 4 review rounds + research validation. Prior: epic 22 closed, ops items remain (MSG91 cutover, DLT template, Play Console, pre-launch Maps key restriction); parked: epic-6, epic-8, admin-user-management.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -451,3 +451,12 @@ development_status:
   22-6-backend-reports-endpoints-and-approval-queue-filters: done  # fenzit-be 43f368b: src/job-reports/ (controller/service/report-data/report-rules/approval-queue + DTOs); story-6 integration suite 026cd70; perf indexes 5d4411e + e97801f
   22-7-mobile-employee-and-owner-flows: done  # fenzit-app cb3df30 pushed to main 2026-11-13 (employee create flow + owner approval queue + 16 jest suites); shipped in release app 1.4.4 build 10404; code review done (user-confirmed 2026-11-16)
   22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: done  # fenzit-web; built + Sally UX pass + BMAD review (8 layers, 24 patches applied), committed 599c9b9 and pushed 2026-11-14; owner-session verified live; test cases written (5 suites, 89 tests) + reviewed (4 layers, 15 patch clusters applied) — committed fenzit-web 9ff2163 (fd3ea50 debug cleanup)
+
+  epic-23: backlog  # company reporting hierarchy with manager approvals — contract committed 54bb335 (2026-11-16) at artifacts/specs/spec-company-hierarchy/ (SPEC + approval-routing + stories.yaml + .decision-log.md, decisions D1-D17); zero-RPC epic, backend-first deploy order
+  23-1-backend-hierarchy-data-model-and-manager-assignment: backlog  # memberships.manager_id migration (FK, CHECK, index) + assignment/removal transactions, audit per re-parented member, chain+headcount payload
+  23-2-backend-subtree-scoping-and-permission-scope-dimension: backlog  # recursive-CTE helper + guard scope dimension (role x subtree); leave/jobs/attachments subtree reads
+  23-3-backend-leave-approval-routing-and-notifications: backlog  # resolved-approver walk, fallback set, notifications to resolved set, reassignment notices; journey suite green baseline first
+  23-4-backend-job-approval-without-rpc: backlog  # decide_pending_job RPC -> NestJS transaction, same endpoint contract; job.submitted routes to resolved approver set
+  23-5-mobile-manager-surfaces: backlog  # Reports-to picker, Your-team queues, teammates-off glance, notification kinds + taps
+  23-6-web-manager-column-and-editing: backlog  # MembersTable Reports-to column, settings/invite dialog fields, re-parenting confirmation
+  23-7-backend-retire-decide-pending-job-rpc-gated: backlog  # gated on story 4 live in both frontend releases; separate migration
