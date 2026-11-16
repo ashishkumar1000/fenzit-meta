@@ -1,0 +1,51 @@
+- id: "1"
+  title: Hierarchy data model and manager assignment (BE)
+  description: >-
+    Migration adds memberships.manager_id (composite FK to users, not-self CHECK, index on (tenant_id, manager_id)); manager set/change and removal re-parenting run as NestJS transactions refusing inactive targets, admins, cycles and depth beyond 20, with one audit row per changed membership (each re-parented member included); the member list and invite payload gain the manager, the full upward chain and the subtree headcount (CAP-1).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Backend first; fenzit-be deploys before both frontends. Zero RPC: the migration is DDL only (column, FK, CHECK, index), locks are inline pg_advisory_xact_lock, audit rows are direct inserts. The database enforces only what DDL can — active-membership, admin-target, cycle and depth-cap checks live in the transaction, under the tenant lock, with the affected member rows locked FOR UPDATE in a consistent order (concurrent reassignments must not jointly create a cycle). Include the test: assigning a manager to an admin is refused with a plain-English reason. Cross-company ids answer not found.
+- id: "2"
+  title: Subtree scoping and the permission scope dimension (BE)
+  description: >-
+    Recursive-CTE subtree helper over the pg pool (depth-capped and deduplicated so a corrupt tree cannot loop); the permission guard gains a role-by-subtree scope check; manager subtree reads land for leave lists/details and jobs lists/details including attachments (subtree check precedes signed-URL minting), while members without reports, viewers and admins are unchanged (CAP-2).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    permissions.ts stays the single source; add the scope dimension there, not a new role value. Subtree rights are additive to role rights (D13) — a viewer assigned as manager gains subtree reads, deliberately. Reads run with the service-role client, so scoping is the service layer's job, not RLS. Cross-branch reads return not found, never 403.
+- id: "3"
+  title: Leave approval routing and notifications (BE)
+  description: >-
+    Resolved-approver walk for leave: approve/reject/revoke scoped to the resolved approver set (single approver, or all active admins on fallback) with owner override and admin self-decide (D11), apply-on-behalf routed up per D14, submission and reminder notifications (leave.pending_reminder and the attendance reminders that name admins) routed to the resolved approver set with dedupe, and the reassignment notices emitted from tree-change transactions (CAP-3, CAP-4).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    First restore the attendance-leave journey suite's green baseline (26 probes recorded red at HEAD — fix or ledger the skips), then extend the permanent suite with: the race, the reassignment (set-difference notices), admin-self-decide (D11 — an admin's own filing is decided by the admin, other admins not notified), the actor-is-approver on-behalf path (a manager's on-behalf filing routes to the nearest eligible manager above the subject, never to the actor), the ownerless-company path (no active admin: submission and reminder notifications suppressed with a logged warning, request stays pending, decision attempt refused, never auto-approved), and a recipient-set assertion that a non-approver admin receives NO submission notification. Leave actions are already NestJS transactions; extend guards and recipients, do not touch the day-state transition machinery or the overlap index. Walk and decision write in one transaction under the same advisory locks; the submission audit event records the resolved approver set at submission (routing stays derived at action time). Never auto-approve. Dedupe keys keep the existing shape.
+- id: "4"
+  title: Job approval without RPC (BE)
+  description: >-
+    The job decision path moves from the decide_pending_job RPC to a NestJS transaction with the same endpoint contract; the decision right is the resolved approver set with owner override and admin self-decide, job.submitted routes to the resolved approver set, and the job-side reassignment notices ("now awaiting your approval" / "no longer yours to approve") follow the same emission and dedupe rules as story 3 (CAP-3, CAP-4).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Same endpoint POST /jobs/:id/approval, same request and response shape — additive to clients. Guarded UPDATE ... WHERE status = 'pending_approval' so exactly one decision wins; one activity_logs row in the same step; walk and write in one transaction under the same locks; the submission audit event records the resolved approver set at submission. Extend the journey suite as in story 3 (green baseline first). This revises the epic-22 SPEC non-goal and its CAP-7/approver-identity contracts; recorded in D6. The RPC itself is retired later (story 7), not here.
+- id: "5"
+  title: Manager surfaces in fenzit-app
+  description: >-
+    Reports-to picker at invite and on the member settings sheet (with the D13 viewer warning); the upward chain and headcount shown on the member's record; Your-team pending leave queue and pending-jobs queue with approve/reject available only where the member is in the resolved approver set — higher managers see lower-branch requests read-only, the action disabled with a plain-English reason — plus the teammates-already-off glance; apply-on-behalf for subtree members' leave with the filing routed up; new notification card kinds and tap routes; role gates widened from admin-binary to subtree (CAP-5).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Deploys after fenzit-be stories 1 to 4. Clone the EmployeePickerSheet pattern for the picker; clone the OwnerLeaveQueue and Jobs-pending-segment patterns for the queues. Plain English copy: Reports to, Your team, Reporting manager — never L2/L3, never Technician. Loading, error and empty states for every queue. Disabled controls always say why (a request outside the member's resolved set shows why the action is unavailable). Authorisation is never cached client-side; a demoted manager loses access at once.
+- id: "6"
+  title: Web manager column and editing (fenzit-web)
+  description: >-
+    MembersTable gains a Reports-to column with the upward chain and headcount; the member settings dialog and the invite dialog gain the manager field with an explicit confirmation of re-parenting effects and the D13 viewer warning; assigning a manager to an admin is refused; manager web approvals stay out of scope (CAP-6).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Deploys after fenzit-be stories 1 to 4. CSS Modules only, no any, no TanStack Query, no useEffect fetching. Manager sign-in still lands on existing web surfaces; do not open the owner console to managers. Reuse the existing loaders/actions pattern; no new client cache.
+- id: "7"
+  title: Retire the decide_pending_job RPC (BE, gated)
+  description: >-
+    After story 4 is verified live in both frontend releases, remove the now-unused decide_pending_job function in its own migration (CAP-3 housekeeping).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Gated: run only when no live deployment depends on the RPC (backend change shipped and both frontends released). Separate migration, separate change, per the breaking-change ordering rules.

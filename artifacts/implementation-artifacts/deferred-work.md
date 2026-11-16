@@ -1178,3 +1178,19 @@ Decision recorded during the same review (user's call, 2026-11-13):
 - **CAP-6 web surface**: the notifications inbox list (open + mark read) and the creator's view of owner edits on the job are mobile-only so far; fenzit-web has no inbox or edit-history screen. Not in 22-8 web's scope, recorded so it is not forgotten. [fenzit-web src (no inbox code)]
 - **Approval-queue rows do not show "any owner edits made so far"** (reports-dashboard.md queue description; CAP-5/CAP-6 audit visibility). The rows show submitter, submitted time and age only. [src/pages/AdminApprovalQueuePage.tsx]
 - **Settings for a removed employee**: the job-settings control renders on removed-status employee rows too (deliberate — pending jobs may belong to now-inactive employees), but what a save against a removed member should do is unpinned by any test or BE contract. [src/pages/AdminEmployeesPage.tsx]
+
+## Deferred from: company-hierarchy planning, SPEC-company-hierarchy (2026-11-16)
+
+Deliberate non-goals of epic 23, recorded so they are not forgotten — most are also in the SPEC's Non-goals:
+
+- **Delegation / substitute approver** when a reporting manager is on leave — the #1 differentiator in user feedback across HRMS products (BambooHR "Acting as", greytHR delegation, Zoho delegates; Darwinbox flagged for lacking it). Today owners cannot delegate at all; once the tree exists (epic 23), the workaround will be re-pointing the manager, and the proper fix stays cheap on our model: a delegate grant, not a tree change.
+- **Escalation timers / auto-forward on timeout** up the chain (Zoho level timers, Darwinbox MLA). Industry norm: remind first, escalate second, auto-approve last and off by default. On our tree model escalation is literally "go up one level" from the resolved-approver walk.
+- **Comp-off on the same approval rails** — India-market expectation (Keka, greytHR run comp-off through the identical chain). Needs attendance balance work first.
+- **Web approval surfaces for managers** (decision D2: app-only in epic 23). Opening the web owner console to managers needs `consoleRole`/`sectionsFor` extension and is a larger role-plumbing change.
+- **Manager-queue triage gaps propagate from epic-22 deferrals** (ApprovalQueueCard description/urgency line, age-chip behaviour, queue pagination, edit-visibility on rows) — when managers get queues, those same gaps apply to them; fix together in a queue-polish pass, not per-story.
+- **Managers creating jobs for their people** — future story; would be RPC-free per D1.
+
+## Deferred from: code review of SPEC-company-hierarchy (2026-11-16)
+
+- **Epic 23 not yet registered in sprint-status.yaml** — the SPEC/stories reference "epic 23" but the tracker does not have it yet; registration is the next planned step (sprint planning run), not a spec defect.
+- **Plain-English refusal copy examples** for invalid manager assignment and unresolved-approver errors are promised but not drafted — build-time detail for story 1, drafted in that story.
