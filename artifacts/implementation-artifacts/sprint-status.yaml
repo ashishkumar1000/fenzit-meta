@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-16-2026  # Epic 22 CLOSED: 22-7 mobile done (fenzit-app cb3df30, released in app 1.4.4) — all stories done.
+last_updated: 11-16-2026  # Tracker reconciliation: epic 22 closed (22-7 done); epic 20 + epic 21 closed — all code committed + pushed (verified in repos). Remaining: ops items only (MSG91 cutover, DLT template for invite SMS switch-on, Play Console steps, pre-launch Maps key restriction + iOS validation); parked: epic-6, epic-8, admin-user-management.
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -220,7 +220,7 @@ development_status:
   18-3-frontend-month-calendar-and-day-detail-sheet: done  # DONE 2026-09-30: spec frozen after 3-lens adversarial review (26 findings patched: BE distances gps-gated + today echo, useMonthStatuses lifecycle, keyed history fetch, Sunday-first, soft-chip cells, Sheet title); ONE BE prereq shipped first (fenzit-be 1ddf21d deployed+probed: DayStatusRow +checkinDistanceM/checkoutDistanceM gps-sourced-only, envelopes +today); build 199/2376 -> 3-lens code review (contract 10/10 PASS, 6 deviations ACCEPT, 9 findings + 3 gaps patched incl. the release tripwire script) -> 2384 green; DEVICE WALKTHROUGH PASS (AC-1 12px same-hue proof month, real-month today ring, Day Detail live — walkthrough-found unrounded-distance defect fixed; spec §6/§9). COMMITTED: fenzit-be 1ddf21d + fenzo-app 9198eb7 + fenzit-meta docs
   18-4-frontend-correction-sheet-ui: done  # DONE 2026-09-30: build agent cut mid-run by a usage limit → retried and COMPLETED (continue-partial prompt); 3-lens code review + step-03: 6 patches (Z-form offset carrier '+00:00' — BE normalises zero offsets to 'Z'; next-day-checkout pre-fill gate; submit-time error reveal; StatusBadge leads the correct-stage flag row per mock Frame B; saved-cue announce; honest comment), 2 defers (IST fallback reach, mid-open day-switch nit), rest dismissed-with-evidence (Sheet X = 17-7 precedent); tsc clean 201/2447 (+6 triage tests); DEVICE WALKTHROUGH PASS (D1 gate incl. the Not-tracked negative case, fresh-mount stage, latched write, in-place Present→cell-flip→Absent, 'Correction history · 2 corrections' expanded with actor/old→new/notes; DB echo: 1 active absent override + exactly 2 audit rows seq 311/312; residue recorded not reverted); spec §8/§6 records
   18-5-office-rule-mandatory-with-prefilled-default: done  # BE gate 3 shipped in the shared Epic 19 BE pass (migration 20260929000005, review-amended owner-facing messages); FE prefill DONE 2026-09-30 (fenzo-app 6f30406): emptyOfficeForm + formFromDetail no-rule fallback seed 09:30/18:30 (spec-19 D7 + resolution 15; 2 model pins, 2269 green, device-verified Add office renders the seeds)
-  epic-19: in-progress  # Reminders & Consolidated Views — 6 stories; BE half (19-1..19-3) committed+pushed (fenzit-be a3c8aa8); FE stories remain
+  epic-19: done  # Reminders & Consolidated Views — all 6 stories + 19-5a done (closed 2026-10-01 with 19-6)
   19-1-backend-scheduled-reminders: done  # 2026-09-29 — implementation + BMAD review (group A) patches applied; unit 90/1400 + real-DB 28/535 green; 18-x tests-only-after-walkthrough rule overridden by review-driven patch tests (user "apply every patch"); fenzit-be a3c8aa8 committed+pushed
   19-2-backend-owner-dashboard-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
   19-3-backend-monthly-and-self-view-read-api: done  # 2026-09-29 — same pass as 19-1 (shared spec, one review)
@@ -228,8 +228,6 @@ development_status:
   19-5-frontend-owner-monthly-view-ui: done  # 2026-09-30 — walkthrough PASS (UJ-4 one-flow deep-link + correction live on device); review closed (10 patches + 1 spec fix, 4 defers, 4 dismissals — spec §10); loader-on-param-load per user direction. COMMITTED: fenzit-be aa1b6c1 (today echo; deployed first), fenzo-app 19-5. NEXT: 19-6
   19-5a-frontend-home-attendance-entry-tile: done  # direct user request, no story file (2026-09-30); fix placement: BE owner /users/me branch embeds the attendance mirror (view's tenant-level attendance_enabled computes for owner rows; production-verified) → FE gates a Home Tile on profile.attendance.attendanceEnabled (fail-hidden absent mirror; hub's wizard gate covers staleness); FE mirror type aligned to the wire's nested shape (the 15-7 flat-field seed was a silent no-op — now functional); More row stays deliberately UNGATED (sole funnel into the 15-8 wizard) but its subtitle aligned to the hub framing; 3-lens review + step-03 triage: 2 patches (More subtitle, established-dashboard test pin), 3 dismissals w/ rationale (ungated More row is load-bearing; fail-loud = AD-17 policy; maybeSingle latent note); BE 38 unit + 5 e2e + build green, FE 221/2696 + tsc clean; device-verified on Pixel 6 vs production (tile → hub, walkthrough crash = RN dev-inspector noise, unrelated); COMMITTED: fenzit-be d49ca24 (19-5 journey leg, was uncommitted) + 6d2f0fa (owner mirror, deployed first), fenzo-app 2f93ae8
   19-6-frontend-employee-self-view: done  # (2026-10-01) EPIC 19 CLOSED — FR-26/UJ-5: My month section on the technician Attendance tab (me-scoped RealMonthPane + read-only DayDetailSheet + 'Days worked: N so far' + owner-identical chips + meta line + ACTIVE-only holidays); history_only = dated ended note (new BE attendanceEndedOn via view column attendance_ended_on, CASE-gated history_only, migration MCP-applied + fenzit-be 8f791a1 deployed FIRST) + past-only posture (no Today/Apply, bound at ended month, leave history re-hosted); spec-phase review caught the P1 (plain-range current-month me/monthly fetch 422s ~29/30 days → useMyMonthly echo-gated on the pane's clock); 3-lens review + step-03: 0P1/4P2/13P3 → 4 patches (check-in bridge todaySignal, silent-refresh error-clear, data-aware stale-note posture, FLIP pin mount-scoped) + focus min-gap; walkthrough (Pixel 6, prod) ALL PASS w/ DB parity at every step + DEVICE-FOUND R9 burn (history_only bootstrap opened October on fresh login — mirror carries posture not date) → FIXED (date-transition re-opens the one shot while un-navigated; pinned + live-verified: October+spinner → September, '0 worked · 2 absent'); Component lab RETIRED (screen/route/tile/test-case/tripwire + docblock sweep); FE 223 suites/2767 + tsc clean (post-fix), BE 90/1421 + e2e 71/71; enrolment flip fixtures honestly restored (Suresh active again, view-verified); COMMITTED: fenzit-be 8f791a1, fenzo-app add0b49
-  19-6-frontend-employee-self-view-ui: backlog
-
   # Epic 20: Leave day-sheet actions & owner attention — direct user request
   # 2026-10-01 (post-19-6). Scope: day sheet stops offering "Apply leave" on
   # leave days; "Cancel request" (pending + approved) and "Convert to full
@@ -240,8 +238,8 @@ development_status:
   # day rows carry leaveRequestId; owner /users/me mirror gains
   # attendance.pendingLeaveRequests. No migration, no RPC, no new endpoint.
   # Story file: artifacts/implementation-artifacts/20-1-frontend-leave-day-sheet-actions-and-owner-attention.md
-  epic-20: in-progress
-  20-1-frontend-leave-day-sheet-actions-and-owner-attention: in-progress
+  epic-20: done  # CLOSED 2026-11-16 (tracker reconciliation) — 20-1 implemented + committed
+  20-1-frontend-leave-day-sheet-actions-and-owner-attention: done  # fenzit-app bb24833 (day-sheet actions + owner attention strip) + f5146aa (confirm fires on dialog press); pushed to main
 
   # Story 20.2: "Short day" tile on the owner dashboard — user request
   # 2026-10-01 after the deployed tiles-partition fix (they consider parking
@@ -426,11 +424,11 @@ development_status:
   # then owner app (21-4, ships last). SMS sending stays OFF until the owner supplies the approved
   # DLT template ID (placeholder constant until then). Web privacy copy committed 21d7683 (not pushed)
   # and ships with the SMS feature.
-  epic-21: in-progress
-  21-1-backend-invite-sms-with-role-word-and-audit: in-progress  # fenzit-be; story file artifacts/implementation-artifacts/21-1-backend-invite-sms-with-role-word-and-audit.md
-  21-2-backend-invite-sms-resend-with-admin-only-cap: in-progress  # fenzit-be; depends on 21-1 (built on its uncommitted changes)
-  21-3-frontend-web-app-download-page: in-progress  # fenzit-web; deploy before SMS is switched on; parallel to 21-1 (no code dependency)
-  21-4-frontend-app-owner-invite-sms-status-and-resend: in-progress  # fenzit-app; ships last
+  epic-21: done  # CLOSED 2026-11-16 (tracker reconciliation) — all five stories committed + pushed; SMS sending itself remains OFF until the owner supplies the approved DLT template ID (ops, user-run)
+  21-1-backend-invite-sms-with-role-word-and-audit: done  # fenzit-be de24d1f pushed to main
+  21-2-backend-invite-sms-resend-with-admin-only-cap: done  # fenzit-be 4564e6b (+ f555b41 cap-count fix) pushed to main
+  21-3-frontend-web-app-download-page: done  # fenzit-web cbafd6c (+ 4e5eecc review patches, 1026a41 legal pages, 5d2f287 tests) pushed to main
+  21-4-frontend-app-owner-invite-sms-status-and-resend: done  # fenzit-app 94105d2 (+ 12af07f fix) pushed to main; shipped in release app 1.4.1
   21-5-frontend-app-invite-pick-phone-from-contacts: done  # fenzit-app commit 397a896 (pushed); Pixel 6 device test passed 2026-11-11; story artifacts/implementation-artifacts/21-5-frontend-app-invite-pick-phone-from-contacts.md
 
   # Epic 22: Employee-created jobs with per-employee owner approval — spec
