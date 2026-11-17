@@ -1237,3 +1237,8 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
 - FK index on leave_requests(leave_type_id, tenant_id) — fold into the pre-launch FK-index migration batch (46 indexes already proposed, owner unanswered).
 - Case-insensitive leave-type catalog uniqueness (unique on lower(name)) + DB-level whitespace check — needs a new migration; add to the pre-launch batch.
 - Expose a leave request's typing (leave_type_id + effective paid marking) on the owner leave list/detail — fenzit-web stories 23-10/23-11 own that surface; stopgap = no-op PATCH /attendance/leave/:id/type returns the current effective marking.
+
+## Deferred from: code review of plan-23-3-component-library-and-salary-structures (2026-11-17)
+
+- Case-insensitive component-name uniqueness (unique on lower(name)) for salary_components — needs a new migration; add to the pre-launch batch alongside the identical leave_types defer from 23-2. (Real edge: "basic" and "Basic" can coexist today.)
+- effective-dating.ts (resolveEffective/isMonthKey/monthFirstDay) ships tested but with no production caller until stories 23-4/23-6 adopt it — plan-mandated pre-build; do not delete, wire it into the calendar/heads config resolution next.
