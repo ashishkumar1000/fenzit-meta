@@ -1072,6 +1072,13 @@ Open, from the review (not fixed in this change):
 - **No real-DB integration test for the audit outcomes** — the widened `skipped_active` CHECK was verified live via MCP on 2026-11-17 (insert inside a rolled-back transaction), but no durable test inserts each of the five outcomes. [Source: supabase/migrations/20261117000001_invite_sms_audit_skipped_active.sql]
 - **Owner-app copy for `skipped_active`** — the shipped app renders the value as no status line (safe); honest copy ("Already joined, no SMS was needed") belongs in a later FE change. [Source: fenzit-app src/features/technicians/inviteSms.ts]
 
+## Deferred from: BMAD code review of the resend copy split (2026-11-17)
+
+- **`INVITE_NOT_PENDING` is status-agnostic; the app copy asserts "already joined"** — the backend 409s for any non-`invited` status, so a removed member (only reachable via a race: Resend is offered only on invited rows) would be told they "already joined". Realistic app path makes the copy true; if it ever matters, the owning fix is BE-first: 404 removed members, or a distinct code per status. Also note the BE spec's it.each tests a `suspended` status the schema cannot produce. [Source: fenzit-be src/auth/invite-sms/invite-sms-resend.service.ts:90, invite-sms-resend.service.spec.ts:161]
+- **Web admin resend errors show generic copy** — `fenzit-web`'s `errorMessages.ts` has none of the invite codes (`INVITE_NOT_PENDING`, `INVITE_NOT_FOUND`, `INVITE_SMS_LIMIT_REACHED`, `NOT_COMPANY_ADMIN`), so a failed web resend reads "try again" with no reason. Add the four codes to `MESSAGES_BY_CODE`. [Source: fenzit-web src/utils/errorMessages.ts, adminBrowseLoaders.ts resend intent]
+- **No roster refresh after a joined-refusal** — when Resend 409s because the person joined, the hook gives the caller no signal to refetch, so the list keeps showing them as pending until a manual reload; a later change should let the hook report the joined state to the list. [Source: fenzit-app src/features/technicians/useResendInviteSms.ts]
+- **Release note due at the next app release** — the resend error copy changed (joined-refusal now says why); it is a user-visible change and belongs in `release-notes/<version>.txt`. [Source: fenzit-app release-notes/]
+
 ## Deferred from: the invite SMS go-live flip (2026-11-17)
 
 - **2-part SMS for long values** — the approved DLT copy dropped the planned 160-character guarantee: with a 12-character name and a 20-character company the message renders at 170 characters (2 SMS credits). Typical values stay within one part. The template is frozen; a shorter re-registration would be a new DLT template. [Source: src/common/constants/sms-templates.ts T-INVITE comment]
