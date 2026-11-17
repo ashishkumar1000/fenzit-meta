@@ -1,0 +1,322 @@
+# Epic 23 — Payroll. Derived from SPEC.md + canonical-fixture.md + statutory-verification.md
+# (memlog entries 1–84). Renumbered 2026-11-17 (was epic 24) — user decision: payroll first,
+# hierarchy becomes epic 24. Execution order = list order. Backend stories 1–9 first (fenzit-be
+# deploys first), then web 10–11 (fenzit-web); mobile 12 needs only BE 1–8 and may run in
+# parallel with web.
+#
+# Paths for dev notes: SPEC.md, canonical-fixture.md (the test oracle) and
+# statutory-verification.md sit in this folder; the code-audit digest =
+# artifacts/planning-artifacts/research/domain-payroll-feature-scope-2026-11-16/digests/code-audit-r3-1.md;
+# the web test pattern lives in fenzit-web src/pages/AdminEmployeesPage.test.tsx.
+#
+# Human gates: spec_checkpoint on 1 (data model) and 6 (run engine); done_checkpoint on
+# 6 (user confirms the fixture numbers before stories 7–9 proceed) and 12 (epic end).
+- id: "1"
+  title: Employment data for payroll (BE)
+  description: >-
+    Employment/Form V fields on the membership — the full CAP-13 field set — plus the owner-set
+    employee code, with save validation and backfill of existing memberships (CAP-13).
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Backend first. Zero RPC: DDL migration only, everything else NestJS. Fields live where the
+    code-audit digest (path in the file header) says membership/profile data already sits; all
+    payroll FKs go through memberships; deny-by-default RLS with explicit tenant filters.
+    Service-side validation: exit date ≥ join date; PAN (5 letters + 4 digits + letter); IFSC
+    (4 letters + 7 alphanumeric); clearing the join date is allowed (that is the real
+    missing-join skip path), but saving an exit date while join is missing is rejected.
+    Backfill of ~842 existing memberships: join date from an admin-supplied value or the date
+    part of created_at in the tenant timezone; a removed membership without an exit date falls
+    back to its status-change date clamped to ≥ the backfilled join date (rows that cannot
+    clamp are flagged for admin fix, never silently inverted); never invent PAN/DOB/UAN.
+    Employee code is owner-set — no generation logic here (spec-human-readable-ids CAP-4).
+    DOB/PF/UAN/bank details are never exposed to other employees; the employee's own profile
+    read keeps existing app behaviour. Create test/payroll-journey.e2e-spec.ts (real-DB
+    helpers, throwaway tenant, one API call + DB assert per step, FK-safe cleanup) seeded from
+    canonical-fixture.md Employee A's Form V fields verbatim; extend with: exit<join rejected,
+    invalid PAN rejected, cross-tenant read not found.
+- id: "2"
+  title: Leave-type catalog for LOP (BE)
+  description: >-
+    A new leave-type catalog — paid/unpaid typing linked to the existing leave rows — with an
+    admin configuration endpoint; LOP in a run derives only from unpaid-typed leaves plus
+    unapproved absences (CAP-12) — the derivation itself lands with the run engine (story 6).
+  invoke_dev_with: >-
+    Zero RPC. There is no leave-type table today (leave_requests carries only a free-text
+    reason): this story adds the schema — a leave-type table plus a type link on
+    leave_requests (or leave_request_days, wherever the day rows the run engine's LOP
+    derivation reads live per the code-audit digest, path in the file header) — and config
+    endpoints. Default paid/unpaid marking for existing types: propose casual/sick/earned as
+    paid and any unpaid/LOP type as unpaid, and confirm the mapping with the user at
+    dispatch. Reclassification semantics: applies to runs executed after the change; locked
+    months keep their snapshots. Extend the journey suite: typing persisted (assert the new
+    table + the day-row join), reclassification visible only to later runs. Copy says
+    paid/unpaid leave, plain English.
+- id: "3"
+  title: Component library and salary structures (BE)
+  description: >-
+    Company-level component library (exactly one designated basic) and per-employee structures as
+    effective-dated rows with the guarded formula language, resolved per month-start (CAP-1, CAP-2).
+  invoke_dev_with: >-
+    Zero RPC. Two effective-dated config tables; structure rows carry a unique
+    (membership, effective_from) — a same-date save updates the existing row or is rejected
+    naming the conflict. Month-start resolution as of the run month's first day (tenant tz) —
+    a mid-month-dated revision is first used by the next month's run, an unlocked re-run
+    resolves its own month, locked months keep snapshots. Exactly one basic component enforced
+    in the service (a structure saved without one is rejected, plain-English error);
+    deactivation rejected while any employee structure references it (list the employees);
+    rename allowed and reflected from the next run. Formula language: component refs,
+    constants, + − × ÷, percent-of only; a cycle is rejected at save naming the chain (whole
+    set re-checked on every edit); operand-without-amount, division by a zero-amount operand
+    and negative component amounts are rejected at save. Money numeric(18,2). Journey suite:
+    canonical-fixture.md variant A structure (basic 20,000 + HRA 40% → 28,000) and variant F
+    (November uses the revision, unlocked October re-run keeps 2026-09-01).
+- id: "4"
+  title: Payroll calendar and policy config (BE)
+  description: >-
+    Effective-dated LOP divisor convention (calendar | fixed-30 | fixed-26, default fixed-26),
+    attendance cut-off day (default 25), pay date (default 1) and the per-state "rules
+    notified?" switch, plus the month-status API the run engine and web UI consume (CAP-4,
+    CAP-8).
+  invoke_dev_with: >-
+    Zero RPC. Cut-off valid 1–28; 29/30/31 rejected with the February reason. Pay date valid
+    1–7 (the CoW window: payable before expiry of the 7th day); the 8th onward rejected with
+    the CoW reason. Per-state "rules notified?" config switch (SPEC legal constraint: central
+    Form V template + per-state overlay flag; journey leg asserts the flag persists). All
+    effective-dated values use month-start resolution as of the run month's first day (tenant
+    tz): a mid-month-dated change is first used by the next month's run; an unlocked re-run
+    resolves its own month, never the newest save; locked months keep snapshots. Month-status
+    API returns, per run month: cut-off day, pay date, locked flag, first-payroll-month bound.
+    The locked flag is part of the response contract from day one and resolves to false while
+    no lock state exists (absent lock row = unlocked) — the lock story adds the state it
+    reads. The first-payroll-month bound derives only from in-scope (active employee-role)
+    memberships with a join date; a future-dated or absent bound surfaces in the month-status
+    response with a plain-English reason instead of silently rejecting every run. Journey
+    suite: both rejections with their reasons, the rules-notified flag, month-start resolution
+    of a mid-month change.
+- id: "5"
+  title: Deduction heads and statutory engine (BE)
+  description: >-
+    Flat/percentage deduction heads with a basic|gross basis computed on the earned basis amount,
+    plus the pure statutory computation module — PF on earned basic with the effective-dated ceiling
+    and enrollment rules, and the new-regime TDS estimator (CAP-6).
+  invoke_dev_with: >-
+    Zero RPC. Statutory math as a pure computation module (no I/O in the math; the run engine
+    calls it). PF: 12% × min(earned basic, ceiling); ceiling config rows carry ₹15,000 (until
+    2026-09-16) and ₹25,000 (from 2026-09-17, S.O. 5109(E)) resolved at month-start; employer
+    share recorded, never deducted; the PF-covered switch is an effective-dated config row
+    resolved at month-start like all payroll config — PF applies only from the tenant's
+    first-coverage month onward (an unlocked re-run of an earlier month resolves that month as
+    not covered even though the switch is on today; the first-coverage month is the resolved
+    month of the switch and a re-run keeps it); a populated UAN or PF account number
+    (ever-member) is covered regardless of the switch; exclusion applies only to never-members
+    above the ceiling (admin config with an EPFO-flux warning). 15-day EPFO joiner convention:
+    v1 ships exact earned basic and the divergence is documented in statutory-verification.md —
+    the plan closes that Open Question, not inherits it. TDS: new-regime FY 2026-27 slab rows,
+    standard deduction ₹75,000, s.157 rebate with marginal relief — apply the rebate before
+    asserting any TDS number (canonical-fixture.md variant H is designed above ₹12L so its
+    computed row exists; a below-₹12L row asserts TDS 0.00) — 4% cess; projection = current
+    monthly structure × months of employment in FY (never the post-LOP period gross), spread
+    over the remaining FY months including the run month; re-spread distributes (annual
+    estimate − TDS already deducted in prior periods of the FY) over the remaining months;
+    overridden months keep their override; a leaver's final run deducts the full remainder.
+    Admin override behind an employer-liability acknowledgment, scoped to one employee and one
+    salary period, survives unlocked re-runs, immutable after lock. Heads computed on the
+    earned basis (basic → earned basic, gross → post-LOP gross). Journey suite: canonical-fixture.md
+    variant B (2% of earned gross = 484.62) and variant H (ceiling binds → PF 3,000; TDS
+    20,973.33/month); a 2026-09 run resolves ₹15,000 (PF 1,800.00 on the 25-day window).
+- id: "6"
+  title: Monthly run engine (BE)
+  description: >-
+    The async monthly payroll run — population, payable window, LOP-equivalent from the existing
+    day-status engine, earnings per the single pay formula, deduction assembly and the 50% cap —
+    with the run status machine, serialization and atomicity (CAP-3, CAP-5, Run arithmetic).
+  spec_checkpoint: true
+  done_checkpoint: true
+  # done_checkpoint: user confirms the fixture numbers before stories 7–9 proceed.
+  invoke_dev_with: >-
+    The Run arithmetic section of SPEC.md is the invariant — implement it literally. Zero RPC.
+    Async run with polled status queued→running→completed|failed (failed terminal and
+    retryable); a zero-employee company completes with the no_employees completion marker per
+    canonical-fixture.md; concurrent runs for the same month serialize via the existing
+    advisory-lock idiom, re-checked before final commit; atomic per tenant-month (a failed run
+    leaves zero payslips); idempotent re-run; run accepted only for months ≥ the first
+    payroll month and only from the month's cut-off day (tenant tz) — the rejections
+    (before-bound month, future month, pre-cut-off attempt) each carry a plain-English reason
+    and leave zero payslips. Population: active employee-role memberships only (the
+    membership role value is `employee` — company_admin and viewer excluded, removed members
+    excluded, no inclusion config), deduplicated by user_id so one person yields at most one
+    payslip and one PF contribution. Population and all month-start-resolved config
+    (structures, divisor, cut-off, leave typing, statutory rows) are snapshotted once at run
+    start; mid-run changes apply only to later runs. Payable window = employment window ∩
+    (run month ∪ the run's prior-period post-cut-off dates), capped at the divisor; month M's
+    own dates count only up to M's resolved cut-off; a date's ownership is fixed by its
+    owning month's month-start-resolved cut-off (never the consuming run's); LOP-equivalent
+    counts only on days inside the capped payable set — the cap discards pay and LOP on the
+    discarded tail. Earnings = structure ÷ divisor × (payable − LOP-equivalent), floored at
+    zero with any shortfall recorded for recovery. LOP comes from the existing day-status
+    engine (summariseEmployeeMonth incl. owner corrections) — payroll never recomputes
+    attendance: unpaid-typed leaves (half-day 0.5), absent days with no approved leave,
+    owner-corrected half_day days (0.5), counted only inside the window; an owner override
+    replaces that date's leave-derived LOP treatment — each date contributes at most one LOP
+    source; leave outside the window never LOPs; each date belongs to exactly one run under
+    the cut-off; checkout_missing paid and flagged; days inside the window with no attendance
+    data paid and flagged. Skips (no effective structure, no attendance enrolment, empty
+    window, missing join date) are listed in the run summary — never a silent ₹0 payslip; a
+    resolved zero-amount structure is a legitimate ₹0.00 payslip (snapshot, slip number,
+    lockable), not a skip. Cap: flat 50% of post-LOP pre-deduction gross, employer shares and
+    recovery lines outside the base, checked after overrides; the cap and TDS basis = the
+    payslip earning-line set for the period, built by summing earning lines (not re-derived
+    from the structure) — off-cycle lines join this same set when the off-cycle story lands,
+    until then the set is run earnings only; gross and every statutory basis clamp at zero
+    before PF/TDS/head computation; breach clamps and raises the excess as a recovery line on
+    the next run (roll-forward until absorbed; the run summary shows the outstanding
+    balance). Journey suite — money rows verbatim from canonical-fixture.md: base row net
+    21,953.85; variants C, C2, E, I, F; G (zero-employee run with no_employees status,
+    not_configured skip, never-enrolled skip, Oct-27 leave lands in November with LOP 1.0 and
+    October unchanged, owner/removed rows absent, no-PAN warning, checkout_missing day paid
+    pending correction and flagged, enrolment-gap days paid and flagged); variant D base
+    clamp row (override TDS 12,000 + insurance head → deductions 14,761.54 clamped to
+    12,115.39, net 12,115.38, excess 2,646.15 raised as a recovery line); the November
+    prior-period money row (structure 30,800, PF 2,538.46, net 26,876.92); owner-corrected
+    half-day (net 21,461.54); the divisor-conventions table (21,953.85 / 22,413.33 /
+    22,509.68); effective dating (September PF 1,800.00 on the 25-day window); cut-off
+    re-scoping (set cut-off 20, run October, window ends Oct 20 — an Oct-22 leave lands in
+    November's run).
+- id: "7"
+  title: Payroll lock and audit trail (BE)
+  description: >-
+    Permanent month lock (no unlock in v1) with 409 PAYROLL_MONTH_LOCKED on every frozen operation,
+    and the payroll audit trail — who/what/when for every payroll-relevant change (CAP-9, CAP-11).
+  invoke_dev_with: >-
+    Zero RPC. A month that never ran cannot be locked (409) — and neither can a month whose
+    only runs are failed (zero payslips): the 409 copy says run payroll first. Lock freezes
+    re-run, payslip edit and off-cycle targeting (each 409 PAYROLL_MONTH_LOCKED); freezes
+    month M's pre-cut-off attendance dates only (post-cut-off days stay editable until M+1's
+    run consumes them); config edits are never blocked (effective-dated rows keep snapshots).
+    Month-status API exposes locked (the flag story 4 already returns). This story creates
+    the payroll off-cycle-lines table (employee, month, amount, wage|bonus tag, status
+    staged|applied, acknowledgment) with deny-by-default RLS — the off-cycle story builds on
+    it (CAP-10). Lock confirmation copy states permanence, the off-cycle remedy, and lists
+    outstanding staged off-cycle lines (an empty set until the off-cycle feature lands —
+    CAP-10). Audit: every structure, head, calendar, run, lock and off-cycle change recorded
+    with actor, action, target, ordered by created_at with a monotonic tiebreaker per the
+    chosen idiom; pick generic audit_log vs domain append-only in the plan and say why.
+    Journey suite: each 409, never-run 409, failed-run-month 409, the attendance boundary
+    (after locking October: a correction PUT on Oct 20 → 409 PAYROLL_MONTH_LOCKED, on Oct 27
+    → accepted; November's run consumes the Oct-27 day as prior-period), audit returns one
+    entry per scripted edit in order.
+- id: "8"
+  title: Payslip snapshot and Form V PDF (BE)
+  description: >-
+    Payslip rows store the full Form V + product field snapshot (DB-assertable; the PDF renders
+    from it), with gap-free slip-number allocation and PDF generation on the existing async
+    report pipeline (CAP-7).
+  invoke_dev_with: >-
+    Zero RPC. Slip numbers: job_sequences ON CONFLICT idiom called from NestJS — never a
+    SECURITY DEFINER function; gap-free allocation, the live set may gap after regeneration.
+    Snapshot carries the entire Form V field set (date of issue, establishment name + address,
+    wage period, employee name, father's/mother's/spouse name, designation, UAN, bank account
+    number, wage-rate break-up via components, total attendance paid days / days worked,
+    overtime ₹0.00, gross wages payable, deductions PF / ESI / others, net wages paid) plus
+    product extras (employee code, PAN, date of joining, slip number, payment date); the ESI
+    line renders the admin-head value or ₹0.00 — no ESI computation; missing PAN renders blank
+    with an admin-visible warning, never a fabricated value. PDF rides the existing report
+    pipeline (request → worker → pdfmake → R2 → presigned URL). Payslip visibility: admin
+    previews pre-lock; employee-visible only after the month is locked; access is
+    owner-or-own; cross-tenant reads return zero rows. Regeneration of an unlocked month
+    issues a new slip number, destroys and replaces the superseded row, invalidates the prior
+    presigned URL, and cancels (or fail-safes) queued report jobs referencing the destroyed
+    snapshot so no superseded PDF is ever delivered; a post-lock PDF retry regenerates the
+    file only, never recomputes amounts. Journey suite: the canonical-fixture.md payslip's
+    field set asserted from the snapshot row; regeneration leg (regenerate the unlocked month
+    → exactly one live row with a new slip number, the old row gone, the prior presigned URL
+    no longer serves the file); the employee leg end to end (own history + PDF download, not
+    another employee's, not before lock); cross-tenant leg (a second tenant's admin queries
+    the payslip/history → zero rows).
+- id: "9"
+  title: Off-cycle payout (BE)
+  description: >-
+    One-off lines for a specific employee in an unlocked month — earnings (bonus, arrear,
+    correction) or negative recovery lines — tagged wage (joins PF base) or bonus (never joins),
+    staged or applied, with the run-engine integration for staged lines and recovery absorption
+    (CAP-10).
+  invoke_dev_with: >-
+    Zero RPC. The target month must be the current open month or an earlier unlocked month
+    within the runnable bound (≥ first payroll month); a future month is rejected with a
+    plain-English reason; a locked month is rejected (409); an off-cycle line for an employee
+    with no effective structure is rejected. A negative recovery line is accepted only when
+    the request carries the employer-liability acknowledgment, enforced server-side; an
+    unacknowledged negative line is rejected. A line is staged when its month has not run yet
+    and appears on the month's payslip when it runs; every line joins the wage-period gross,
+    the 50%-cap basis and the TDS projection (the earning-line-set basis story 6 already
+    sums); a bonus never joins the PF base. Recovery absorption: the excess raised by a run is
+    deducted on the next run subject to the same cap check, the unabsorbable remainder rolls
+    forward — unbounded roll-forward is intended, the outstanding balance is shown in every
+    run summary and each month's excess adds to it; recovery lines raised by month M's run
+    are absorbable only by runs for a later month (a re-run of M ignores its own raised
+    recovery and does not duplicate it); the final run = the last run whose payable window
+    intersects the employment window (November, not October, for an Oct-27 leaver), and the
+    leaver's TDS remainder and unabsorbed recovery deduct on that run in full. A staged line
+    for an employee the run skips stays staged — neither applied nor dropped — and is listed
+    in the run summary and the lock confirmation as orphaned (CAP-9/CAP-10); an orphaned
+    staged line can be re-targeted to any unlocked month (edit, not re-create) so owed money
+    stays reachable. Journey suite: canonical-fixture.md variant G D+bonus row (cap 14,615.39
+    clamp, net 14,615.38, excess 146.15, PF unchanged 2,076.92); variant D's excess 2,646.15
+    appearing as a recovery deduction on the next run subject to the cap (outstanding balance
+    before and after in the run summary, roll-forward remainder asserted, leaver's final run
+    deducts the remainder); staged-line appearance on first run; re-run preservation (exactly
+    one payslip with the line intact); no other employee's payslip changes.
+- id: "10"
+  title: Web payroll configuration (fenzit-web)
+  description: >-
+    All payroll configuration surfaces in the web admin — employment data, component library,
+    per-employee structures, deduction heads and the payroll calendar (CAP-13, CAP-1, CAP-2,
+    CAP-6, CAP-8 admin surfaces).
+  invoke_dev_with: >-
+    Deploys after BE stories 1–5. CSS Modules strictly, loaders/actions pattern, no TanStack
+    Query, no useEffect fetching, no any. Employment-data form: every CAP-13 field editable
+    with plain-English validation errors (exit ≥ join, PAN/IFSC format); DOB/PF/UAN/bank
+    fields are admin-only. Component library: create/edit/rename; deactivation refused with
+    the referencing employees listed; the basic designation made explicit. Structure editor:
+    effective dating with the whole-month rule stated; formula errors (cycle chain,
+    zero-operand division, negative amount) shown at save. Heads: flat/percentage + basis;
+    the never-member-above-ceiling exclusion carries the EPFO-flux warning; the computed-
+    amount override surface (employee + salary period + amount behind the
+    employer-liability acknowledgment copy, scoped per CAP-6) and the company PF-covered
+    switch (with the first-coverage-month note) live here too. Calendar form: divisor,
+    cut-off, pay date with the CoW and February rejection reasons surfaced at save.
+    Disabled controls always say why; copy says Employee. Tests: colocated bun:test component
+    tests (src/pages/AdminPayroll*.test.tsx) mirroring AdminEmployeesPage.test.tsx's
+    mocked-fetch page tests, run via `bun test`.
+- id: "11"
+  title: Web runs, lock, off-cycle and audit (fenzit-web)
+  description: >-
+    The operations surfaces — run trigger with status polling and run summary, lock action with its
+    confirmation copy, off-cycle staging and the audit list (CAP-3, CAP-9, CAP-10, CAP-11 admin
+    surfaces).
+  invoke_dev_with: >-
+    Deploys after BE stories 1–9. Same web rules: CSS Modules strictly, loaders/actions
+    pattern, no TanStack Query, no useEffect fetching, no any. Run trigger shows the polled
+    status; the run summary lists skipped employees with their reasons, paid-pending flags
+    (checkout_missing, no-attendance days) and the outstanding recovery balance. Lock action
+    carries the confirmation copy: permanence, the off-cycle remedy, outstanding staged
+    lines; locked months render locked everywhere (status API); on any 409
+    PAYROLL_MONTH_LOCKED the page refetches month-status and re-renders the locked state with
+    the lock copy instead of a raw error. Off-cycle staging: amount, wage/bonus tag,
+    negative-recovery acknowledgment; staged vs applied made visible. Payslip preview links
+    refetch a fresh presigned URL on expiry (expired/403 triggers a new URL request, not a
+    broken viewer). Audit list ordered as the API returns it. Tests: colocated bun:test
+    component tests (src/pages/AdminPayroll*.test.tsx) mirroring AdminEmployeesPage.test.tsx,
+    run via `bun test`.
+- id: "12"
+  title: Mobile payslip self-service (fenzit-app)
+  description: >-
+    Employee self-service in the mobile app — own payslip history, detail and PDF download, visible
+    only after the month is locked; no payroll admin UI in the app (CAP-7 employee leg).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Deploys after BE stories 1–8 (independent of web stories 10–11). Design-system tokens and
+    atomic components; explicit loading/error/empty states; offline and timeout boundaries handled
+    gracefully. Copy says Employee. The API enforces own-payslip-only — the client never assumes
+    it. PDF opens from the presigned URL; handle its expiry with a re-fetch. Pixel 6 device pass
+    before done; test timing rule applies (implement → user confirms on device → tests).
