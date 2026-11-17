@@ -479,7 +479,7 @@ development_status:
   # canonical fixture. BMAD code review batched at epic end.
   epic-23: backlog
   23-1-backend-employment-data-for-payroll: done  # CAP-13 shipped 2026-11-17: fenzit-be a195de7 pushed (migration applied via MCP — 160 rows backfilled, 0 unclampable; GET/PATCH /members/:userId/employment, member.employment admin-only; journey e2e 13 legs). Elicitation (4 methods) + thorough BMAD review (4 lenses → 8 patches, incl. audit-rpc try/catch + migration-file replay leg). Plan: plan-23-1-employment-data-for-payroll.md
-  23-2-backend-leave-type-catalog-for-lop: backlog  # CAP-12: paid/unpaid typing — NEW schema (leave-type table + day-row link; no catalog exists today); derivation lands with the run engine
+  23-2-backend-leave-type-catalog-for-lop: done  # CAP-12 shipped 2026-11-17: fenzit-be 4802a29 pushed (leave_types + composite FK live via MCP, 16 existing requests untouched/NULL=paid; CRUD + typing + apply leaveTypeId behind leave.types). Elicitation (4 methods) + thorough review (4 lenses → 12 patches: multi-row in-use probe, apply-path persistence pin, race hardening). Plan: plan-23-2-leave-type-catalog-for-lop.md; defers (FK index, case-insensitive names, read-side exposure) in deferred-work.md
   23-3-backend-component-library-and-salary-structures: backlog  # CAP-1,2: components (one basic), effective-dated structures, guarded formula language, month-start resolution
   23-4-backend-payroll-calendar-and-policy-config: backlog  # CAP-4,8: divisor/cut-off/pay-date effective-dated config, per-state rules-notified switch + month-status API
   23-5-backend-deduction-heads-and-statutory-engine: backlog  # CAP-6: flat/percentage heads on earned basis, PF earned-basic engine with dated ceiling + TDS estimator, overrides

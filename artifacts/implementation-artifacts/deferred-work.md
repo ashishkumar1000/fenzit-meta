@@ -1231,3 +1231,9 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
   summary: No instrumentation on the SMS install funnel — nothing measures "meta redirect fired" vs "visitor tapped the fallback badge" vs "visitor stuck on page", across real Android browsers and in-app webviews. Needs analytics plumbing before measuring go-live conversion.
 - source: BMAD code review (verification-gap layer)
   summary: RESOLVED (2026-11-17) — tests written and shipped in fenzit-web `89cb461` (`src/pages/DownloadAppPage.test.tsx`, 3 platform tests). Original note: render DownloadAppPage with useMobilePlatform mocked to "android" and assert the meta refresh is `0; url=https://play.google.com/store/apps/details?id=com.fenzit` plus the new lead; sibling "other" render asserting desktop branch shows the badge with no redirect. Write after the owner confirms the jump on a real device.
+
+## Deferred from: code review of plan-23-2-leave-type-catalog-for-lop (2026-11-17)
+
+- FK index on leave_requests(leave_type_id, tenant_id) — fold into the pre-launch FK-index migration batch (46 indexes already proposed, owner unanswered).
+- Case-insensitive leave-type catalog uniqueness (unique on lower(name)) + DB-level whitespace check — needs a new migration; add to the pre-launch batch.
+- Expose a leave request's typing (leave_type_id + effective paid marking) on the owner leave list/detail — fenzit-web stories 23-10/23-11 own that surface; stopgap = no-op PATCH /attendance/leave/:id/type returns the current effective marking.
