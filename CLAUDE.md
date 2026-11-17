@@ -79,10 +79,20 @@ Ponytail (`/ponytail`; six skills under `.agents/skills/ponytail*`, installed vi
 - Reviews compose — `/ponytail-review` is a quick diff pass; it never replaces `/bmad-code-review`, which stays mandatory before every commit.
 - Activation — say "ponytail" or "be lazy" on a task, or `/ponytail [lite|full|ultra|off]`; active until "stop ponytail". Ponytail never cuts validation, error handling, security, accessibility, or anything the plan or the user asked for.
 
+## New SVG requests — spawn a fresh agent per SVG (standing rule)
+
+Whenever the owner asks for an SVG (icon, illustration, any context — app, web, docs, dashboards), do NOT draw it yourself and do NOT clone an emoji or a stock glyph. Instead: **spawn one background agent per SVG** (parallel for sets), each with a **fresh context**, that **searches the internet first** and then **hand-makes an original**.
+
+- **Fresh context per SVG, research first** — the agent opens with 2–3 web searches on contemporary hand-drawn/sketch icon design for its concept, studies the TRADITIONAL version specifically in order to avoid it, invents 2 original concepts, and ships only the freshest that still reads at target size.
+- **Soul-first brief, cliché banned** — describe the concept's SOUL, not the object ("uptime = an unbroken journey", not "a clock"; "SMS = words travelling", not "an envelope"), and explicitly BAN the obvious metaphors and emoji clones in the brief.
+- **Adaptable style contract in every brief** (this is what makes a set feel drawn by one hand): stroke-based line art, round linecaps/joins, ONE accent color per meaning, deliberately imperfect hand-drawn geometry (subtle wobble, no perfect circles/symmetry) — "a confident engineer's margin sketch". Adapt viewBox, size, palette, and background to the destination (e.g. 18×18 on dark for a dashboard; the app's design-system colors in RN); a set shares one contract, a lone SVG takes the destination's.
+- **Strict output contract**: `FILE: <name>.svg` followed by raw valid standalone SVG — `xmlns` required, `width`/`height`/`viewBox` required, no `<text>` elements, no prose, no fences. Validate (parse as XML, check size attrs) before use; re-dispatch a broken one rather than hand-patching.
+- Where the SVG must be embedded by a third-party surface (e.g. Grafana Cloud text panels sanitize away inline SVG and data-URIs — only remotely-hosted `https` images render), host the files in a public repo and serve via CDN — see the `svg-icon-invention-method` memory for the Grafana specifics.
+
 ## Platform tips
 
 - iOS simulator — no backspace key; use `ui_describe_all` for coordinates.
-- Render dashboard — NODE_ENV overrides Dockerfile env (currently set to development).
+- Render dashboard — NODE_ENV was the silent telemetry killer (see the Grafana memory); it is `production` since 2026-11-17 — Render env overrides the Dockerfile default, so env flips there are deploys of their own.
 - Android device UI testing — use uiautomator2 (https://github.com/openatx/uiautomator2), not raw adb + uiautomator dump scripts. It is about 9x faster per screen read. Installed: `python3 -m pip install --user uiautomator2` (v3.7.0), then `python3 -m uiautomator2 init` once per device. Connect with `u2.connect('<serial>')`. `deviceInfo` RPC fails on the Pixel 6 build (ApplicationSharedMemory); dump, click and `app_current` work. Check the sheet or screen name before any save in a UI test.
 
 ## Where things live

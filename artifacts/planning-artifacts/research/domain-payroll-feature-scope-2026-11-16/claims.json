@@ -1,0 +1,21 @@
+[
+  {"ref": "F4", "claim": "EPF 12%/12%, Rs15000 wage ceiling unchanged since Sept 2014, deposit by 15th", "class": "regulatory", "pub_date": "2026-09"},
+  {"ref": "F5", "claim": "ESI 10+ employees, <=Rs21000 gross, 3.25%/0.75%", "class": "regulatory", "pub_date": "2026-09"},
+  {"ref": "F6", "claim": "PT 21 states, cap Rs2500/employee/year, slab-based", "class": "regulatory", "pub_date": "2026"},
+  {"ref": "F7", "claim": "LWF 16 states, Rs3-Rs240 range, Haryana 0.2% wage-based, Karnataka Rs50/Rs100 2025", "class": "regulatory", "pub_date": "2026-07"},
+  {"ref": "F8", "claim": "Gratuity after 5 years: last salary x 15 x years / 26, payable within 30 days", "class": "regulatory", "pub_date": "2026-09"},
+  {"ref": "F9", "claim": "TDS: deposit by 7th, quarterly 24Q, Form 16 after FY, new regime default", "class": "regulatory", "pub_date": "2026"},
+  {"ref": "F10", "claim": "Form renaming 24Q->138, 16->130 under Income-tax Rules 2026", "class": "regulatory", "pub_date": "2026-09"},
+  {"ref": "FA59-79", "claim": "Factories Act s.59 OT 2x beyond 9h/48h; s.79 EL 1 per 20 worked", "class": "regulatory", "pub_date": "2026-11"},
+  {"ref": "PWA7", "claim": "PWA s.7(3) 50% deduction cap general, 75% band <Rs200/month earners", "class": "regulatory", "pub_date": "2026-11"},
+  {"ref": "L3", "claim": "LOP divisor is per-company setting; statutory 26 only in min-wage/gratuity/encashment", "class": "convention-practice", "pub_date": "2026-06"},
+  {"ref": "L12", "claim": "Labour codes notified 21 Nov 2025, rules rollout through 2026", "class": "regulatory", "pub_date": "2025-11"},
+  {"ref": "L14-17", "claim": "EL accrual 1/15 or 1/22 per S&E state acts; encashment = days x (wages/26); exit encashment exempt to Rs25 lakh", "class": "regulatory", "pub_date": "2026-11"},
+  {"ref": "LS25", "claim": "Cadence: attendance cutoff 20th-25th, run 26th-30th, pay 1st-7th next month", "class": "convention-practice", "pub_date": "2026"},
+  {"ref": "LS23", "claim": "RazorpayX Prime Rs3499/mo <=20 emp, Elite Rs6499/mo 50 emp", "class": "pricing", "pub_date": "2026-11"},
+  {"ref": "LS24", "claim": "SMB entry pricing ~Rs20-50 PEPM", "class": "pricing", "pub_date": "2026-11"},
+  {"ref": "LS18", "claim": "AI layer (assistant, anomaly detection) advertised by Zoho/Keka/greytHR", "class": "product-feature", "pub_date": "2026-11"},
+  {"ref": "LS13", "claim": "Native bank payouts / bank-advice files at greytHR/Zoho/RazorpayX", "class": "product-feature", "pub_date": "2026-11"},
+  {"ref": "F2", "claim": "CTC > gross > net definitions; CTC includes employer PF", "class": "glossary", "pub_date": "2025-02"},
+  {"ref": "F1", "claim": "Salary structure build order: basic -> HRA -> allowances -> special allowance balancing", "class": "glossary", "pub_date": "2026-11"}
+]
