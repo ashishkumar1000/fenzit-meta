@@ -1059,9 +1059,23 @@ Open, from the review (not fixed in this change):
 
 - **Invite request waits on the SMS provider** — `inviteMember` awaits `sendInviteSms`, so each invite HTTP call includes the provider timeout. [Source: src/auth/auth.service.ts]
 - **429 has no Retry-After** — the window is a rolling 60 minutes, so the earliest retry time can be computed. [Source: src/auth/invite-sms/invite-sms-resend.service.ts]
-- **Resend does not re-check status at send time** — a person who joins between the `invited` check and the send still gets the text. [Source: src/auth/invite-sms/invite-sms-resend.service.ts]
+- **Resend does not re-check status at send time** — a person who joins between the `invited` check and the send still gets the text. [Source: src/auth/invite-sms/invite-sms-resend.service.ts] **Addressed 2026-11-17:** the shared send path now re-checks the membership status right before sending (`skipped_active`); the residual window is the gap between that select and the provider call, which cannot be closed against an external vendor.
 - **Logger object in the stack position** — `logger.error('...', { error })` is a codebase-wide pattern; the Supabase error may print poorly. [Source: src/auth/invite-sms/invite-sms.service.ts]
 - **Audit foreign key is ON DELETE RESTRICT** — a future hard delete of a texted membership will fail; check removal flows before any hard delete. [Source: supabase/migrations/20261111000001_invite_sms_audit_and_counter.sql]
+
+## Deferred from: BMAD code review of the invite SMS go-live flip (2026-11-17)
+
+- **Named guard tests (write after the owner confirms the live SMS)** — (1) guard fires on an active/removed/missing membership: no provider call, no counter row, audit `skipped_active`, returns `skipped_active`; (2) guard DB read error: audit `failed`, no provider call; (3) the guard runs before the cap reserve and the company lookup (a skip consumes no slot); (4) the guard's `eq('user_id', …)`/`eq('tenant_id', …)` arguments pin tenant scoping. [Source: src/auth/invite-sms/invite-sms.service.ts status guard]
+- **Guard-read DB failure is audited as generic `failed`** — a vendor rejection and a status-guard read blip are indistinguishable in the audit outcome; the log level (error vs warn) is the only trace. Acceptable; a dedicated outcome would need another migration. [Source: src/auth/invite-sms/invite-sms.service.ts]
+- **Hard-deleted membership loses its skip-audit row** — if the membership row is deleted between invite and send, the audit insert violates the ON DELETE RESTRICT FK and is swallowed, so the outcome is lost. Extends the existing FK note below; an audit row cannot exist without its FK target. [Source: supabase/migrations/20261111000001_invite_sms_audit_and_counter.sql]
+- **`fitFirstName` has no tests at all** — it now feeds the live DLT variable `##employee##`; the story 21-1 test list (Devanagari, 12/13-character cuts, emoji, single letter) was never written. Also named: a test pinning `INVITE_SMS_APPROVED_COPY`'s variable names (`employee`/`company`/`url`) and the rendered length against the fixed URL. [Source: src/auth/invite-sms/invite-sms-text.ts]
+- **No real-DB integration test for the audit outcomes** — the widened `skipped_active` CHECK was verified live via MCP on 2026-11-17 (insert inside a rolled-back transaction), but no durable test inserts each of the five outcomes. [Source: supabase/migrations/20261117000001_invite_sms_audit_skipped_active.sql]
+- **Owner-app copy for `skipped_active`** — the shipped app renders the value as no status line (safe); honest copy ("Already joined, no SMS was needed") belongs in a later FE change. [Source: fenzit-app src/features/technicians/inviteSms.ts]
+
+## Deferred from: the invite SMS go-live flip (2026-11-17)
+
+- **2-part SMS for long values** — the approved DLT copy dropped the planned 160-character guarantee: with a 12-character name and a 20-character company the message renders at 170 characters (2 SMS credits). Typical values stay within one part. The template is frozen; a shorter re-registration would be a new DLT template. [Source: src/common/constants/sms-templates.ts T-INVITE comment]
+- **Role word gone from the SMS** — the approved copy has no `##role##` variable, so an admin or viewer invite also reads "as an Employee" (owner accepted 2026-11-17). If that ever needs to change, it needs a fresh DLT template registration per role or a longer single template. [Source: artifacts/specs/spec-invite-sms-download-link/SPEC.md]
 
 ## Deferred from: code review (2026-11-12, camera/face-detector removal)
 

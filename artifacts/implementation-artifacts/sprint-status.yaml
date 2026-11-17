@@ -421,10 +421,16 @@ development_status:
 
   # Epic 21: Invite SMS with download link — spec artifacts/specs/spec-invite-sms-download-link/
   # (SPEC.md + stories.yaml). Backend first (21-1, 21-2 additive), then web download page (21-3),
-  # then owner app (21-4, ships last). SMS sending stays OFF until the owner supplies the approved
-  # DLT template ID (placeholder constant until then). Web privacy copy committed 21d7683 (not pushed)
-  # and ships with the SMS feature.
-  epic-21: done  # CLOSED 2026-11-16 (tracker reconciliation) — all five stories committed + pushed; SMS sending itself remains OFF until the owner supplies the approved DLT template ID (ops, user-run)
+  # then owner app (21-4, ships last). GO-LIVE COMPLETE 2026-11-17: DLT template approved, MSG91
+  # panel ID 6afb418448cacda45c094b32 shipped in fenzit-be 65091b2 (Render-deployed); approved copy
+  # has no role variable (all roles read "Employee", owner accepted) and a fixed ##url## =
+  # https://fenzit.com/app/download (page live, 200). New last-line guard: an activated member is
+  # never texted (audit outcome + sms_status 'skipped_active'; migration applied to both DBs).
+  # BMAD code review 2026-11-17: 10 patches applied, 8 deferred. Live test passed: invite SMS
+  # received + Resend verified on real numbers (audit: sent rows, masked numbers, counter rows).
+  # The stale "privacy copy 21d7683 not pushed" note was wrong — the copy already shipped via the
+  # 21-3 legal-pages commit; fenzit-web needed nothing.
+  epic-21: done  # CLOSED 2026-11-17 (go-live) — all stories shipped, SMS sending ON and live-tested
   21-1-backend-invite-sms-with-role-word-and-audit: done  # fenzit-be de24d1f pushed to main
   21-2-backend-invite-sms-resend-with-admin-only-cap: done  # fenzit-be 4564e6b (+ f555b41 cap-count fix) pushed to main
   21-3-frontend-web-app-download-page: done  # fenzit-web cbafd6c (+ 4e5eecc review patches, 1026a41 legal pages, 5d2f287 tests) pushed to main
