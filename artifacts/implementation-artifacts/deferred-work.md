@@ -1194,3 +1194,8 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
 
 - **Epic 23 not yet registered in sprint-status.yaml** — the SPEC/stories reference "epic 23" but the tracker does not have it yet; registration is the next planned step (sprint planning run), not a spec defect.
 - **Plain-English refusal copy examples** for invalid manager assignment and unresolved-approver errors are promised but not drafted — build-time detail for story 1, drafted in that story.
+
+- source_spec: `artifacts/planning-artifacts/research/domain-payroll-feature-scope-2026-11-16/research.md` (payroll brainstorm, 2026-11-16)
+  summary: DEFERRED — payroll good-to-haves and engine-grade features cut from the first payroll sprint (user direction: keep it simple).
+  evidence: Brainstorm locked scope = must-do M1–M5 (monthly payroll run with LOP, configurable divisor, half-day 0.5, statutory payslip in-app+PDF, admin-defined deduction heads) + G1 payroll lock, G3 off-cycle payout, G2 audit trail. Deferred for later epics: G4 leave encashment at exit; G5 comp-off; G6 overtime pay line; statutory filing engines (PF ECR, ESI challans, Form 24Q eTDS, Form 16 generation); bank-transfer advice integration; WhatsApp payslip delivery; loans & advances with EMI; full F&F settlement workflow; maker-checker governance; AI layer; contractor payments; multi-entity payroll.
+  followup_note: Statutory rates/ceilings must ship as config data with effective dates (labour-code rules rollout through 2026 — re-check via Deepen pass on the research folder before each follow-on epic).

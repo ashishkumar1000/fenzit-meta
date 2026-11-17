@@ -22,12 +22,15 @@ A pain to solve: owners and technicians cannot cite a job or a person — the on
 - **CAP-3**
   - **intent:** People are referenced by code wherever the product lists or prints them: roster rows, owner leave request rows, the attendance report PDF, the technician job-activity PDF, and the user DTOs behind them.
   - **success:** API responses (`TechnicianSummary`, profile/`users/me`, owner leave list rows) include `employeeCode`, and the FE roster row plus both PDFs render it next to the person's name; rows without a code (fresh invites, tenant-less users) render nothing rather than a placeholder.
+- **CAP-4** *(added 2026-11-16, via payroll spec session)*
+  - **intent:** Owner can set an employee's code at creation and edit it later in the owner app; leaving it blank keeps auto `EMP-NNN` allocation as fallback.
+  - **success:** An owner-set code appears on roster/payslip surfaces for that employee; a blank creation leaves the auto `EMP-NNN` path intact; an edit colliding with an in-use code in the same tenant is rejected with a clear error; edits are visible after refresh.
 
 ## Constraints
 
 - Additive-only: new nullable column, new counter table, new trigger/function, additive DTO fields. Existing API contracts, RLS, sync, realtime payloads, deep links, R2 keys, and UUID PKs are unchanged.
 - Codes are tenant-scoped business references: uniqueness per `(tenant_id, employee_code)` (named constraint `users_tenant_employee_code_unique`); cross-tenant duplicates acceptable; codes are never used for authorization.
-- Codes are write-once: once set, an `employee_code` is never cleared or re-allocated by the trigger (guard on `OLD.employee_code IS NULL`), keeping the never-reused property even under future manual/support SQL.
+- Codes are write-once **by the auto-allocator only** *(amended 2026-11-16)*: the trigger never clears or re-allocates a code on its own, but the owner can now set a code at creation and edit it later through the app (CAP-4). Owner edits are explicit user actions that must respect tenant uniqueness — a collision is rejected, never silently renumbered; the auto-allocator stays monotonic and never reuses codes.
 - Allocation is race-safe via a row-locked counter upsert (the `job_sequences` pattern); the counter is monotonic, so codes of removed users are never reused.
 - Allocation lives in the DB (trigger), not NestJS — a deliberate deviation from project-context rule 6 ("business logic in NestJS"): ID infrastructure must also cover raw-SQL writers (backfill, integration seeds, support SQL) that bypass the app, following the sanctioned `update_updated_at_column` trigger precedent. New DB function follows house convention: `SECURITY DEFINER`, pinned `search_path`, `REVOKE EXECUTE` from public/anon/authenticated in its own migration.
 - Ship as ONE migration, in order: trigger/function first, then backfill (`created_at ASC, id ASC` per tenant), then set each tenant counter to its backfilled max — single transaction, so no live insert can land between backfill and counter init.
@@ -41,7 +44,7 @@ A pain to solve: owners and technicians cannot cite a job or a person — the on
 
 - No customer codes (`C-NNN`) this round.
 - No cross-tenant/global uniqueness and no tenant prefix inside codes.
-- No UI to edit or reassign codes.
+- ~~No UI to edit or reassign codes~~ *(removed 2026-11-16 — owner-set/editable codes are now CAP-4)*.
 - No change to job-number generation, notification payloads, or deep links.
 
 ## Success signal
