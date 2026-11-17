@@ -1242,3 +1242,8 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
 
 - Case-insensitive component-name uniqueness (unique on lower(name)) for salary_components — needs a new migration; add to the pre-launch batch alongside the identical leave_types defer from 23-2. (Real edge: "basic" and "Basic" can coexist today.)
 - effective-dating.ts (resolveEffective/isMonthKey/monthFirstDay) ships tested but with no production caller until stories 23-4/23-6 adopt it — plan-mandated pre-build; do not delete, wire it into the calendar/heads config resolution next.
+
+## Deferred from: code review of plan-23-5-deduction-heads-and-statutory-engine (2026-11-18)
+
+- **Empty-string UAN/PF-account counts as never-member** — the employment save (23-1) accepts `uan_number: ''` (no IsNotEmpty/normalisation to null), so the exclusion rule's truthiness check treats it as not-populated. Consistent with the run-time derivation, but the data hygiene fix (normalise '' → null on the employment save, ideally with a one-off cleanup) belongs to the employment surface, not this story. Settle when the members module is next touched.
+- **roundMoney's epsilon comment overclaims** (formula.ts:265-269, shipped 23-3) — the epsilon term exceeds 0.1 above scaled 5.6e13 (₹5.63e11), so a true .xx4 intermediate can round up there; verified unreachable in the fixture's domain (200k-value sweep, zero drift; the flip needs ≈ ₹1,877 crore annual income). Comment should say "within realistic payroll magnitudes" instead of "never".
