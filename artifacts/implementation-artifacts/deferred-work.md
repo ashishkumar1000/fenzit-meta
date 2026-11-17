@@ -1220,3 +1220,14 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
   summary: DEFERRED — payroll good-to-haves and engine-grade features cut from the first payroll sprint (user direction: keep it simple).
   evidence: Brainstorm locked scope = must-do M1–M5 (monthly payroll run with LOP, configurable divisor, half-day 0.5, statutory payslip in-app+PDF, admin-defined deduction heads) + G1 payroll lock, G3 off-cycle payout, G2 audit trail. Deferred for later epics: G4 leave encashment at exit; G5 comp-off; G6 overtime pay line; statutory filing engines (PF ECR, ESI challans, Form 24Q eTDS, Form 16 generation); bank-transfer advice integration; WhatsApp payslip delivery; loans & advances with EMI; full F&F settlement workflow; maker-checker governance; AI layer; contractor payments; multi-entity payroll.
   followup_note: Statutory rates/ceilings must ship as config data with effective dates (labour-code rules rollout through 2026 — re-check via Deepen pass on the research folder before each follow-on epic).
+
+## Deferred from: code review (2026-11-17) — fenzit-web download-page redirect (no spec, ad-hoc fix)
+
+- source: BMAD code review (verification-gap + blind-hunter layers)
+  summary: No-JS visitors never auto-redirect — the meta-refresh tag only appears in the client render after hydration; SSR HTML is always the desktop branch. A User-Agent check in the SSR/route-loader layer returning a redirect would serve the right destination with zero JS and no layout flash.
+- source: BMAD code review (blind-hunter + edge-case-hunter layers)
+  summary: Back-button re-redirect — pressing Back from the Play listing returns to fenzit.com/app/download, which instantly re-redirects. Mitigations (history.replace, sessionStorage guard) need a hook-based approach; accepted for now since the page's only entry is the SMS link.
+- source: BMAD code review (blind-hunter layer)
+  summary: No instrumentation on the SMS install funnel — nothing measures "meta redirect fired" vs "visitor tapped the fallback badge" vs "visitor stuck on page", across real Android browsers and in-app webviews. Needs analytics plumbing before measuring go-live conversion.
+- source: BMAD code review (verification-gap layer)
+  summary: Intended test (named, not written — per test-timing rule): render DownloadAppPage with useMobilePlatform mocked to "android" and assert the meta refresh is `0; url=https://play.google.com/store/apps/details?id=com.fenzit` plus the new lead; sibling "other" render asserting desktop branch shows the badge with no redirect. Write after the owner confirms the jump on a real device.
