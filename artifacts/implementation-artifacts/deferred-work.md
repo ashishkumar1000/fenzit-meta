@@ -1247,3 +1247,21 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
 
 - **Empty-string UAN/PF-account counts as never-member** — the employment save (23-1) accepts `uan_number: ''` (no IsNotEmpty/normalisation to null), so the exclusion rule's truthiness check treats it as not-populated. Consistent with the run-time derivation, but the data hygiene fix (normalise '' → null on the employment save, ideally with a one-off cleanup) belongs to the employment surface, not this story. Settle when the members module is next touched.
 - **roundMoney's epsilon comment overclaims** (formula.ts:265-269, shipped 23-3) — the epsilon term exceeds 0.1 above scaled 5.6e13 (₹5.63e11), so a true .xx4 intermediate can round up there; verified unreachable in the fixture's domain (200k-value sweep, zero drift; the flip needs ≈ ₹1,877 crore annual income). Comment should say "within realistic payroll magnitudes" instead of "never".
+
+## Deferred from: code review of plan-sess_ef008789 customers-page-redesign (2026-11-18)
+
+- **No tests for any customers-page surface** — loader URL→query contract, action intent/409 mapping, customersUrl builder, CSV paged walk, add-dialog rules, page shell (single h1, tiles, VIP≥10, showing-line clamp). The employees twins all have tests; the customers round is the already-agreed follow-up task after the owner confirms the page.
+- **CSV phone cell starts with "+"** (CustomersExport.tsx:57, same as shipped EmployeesExport.tsx:46) — a formula trigger the guardFormula comment deliberately exempts. Verify in Google Sheets during the test round; if it garbles, fix both exports together (tab-prefix or drop the +).
+- **Hand-edited page bounds not upper-clamped** (readCustomersFilters:111, CustomersPager window) — parity with the shipped employees twins; page-past-end shows the honest empty-state copy and the BE PGRST103 recount degrades gracefully.
+- **Add-customer dialog can close mid-POST** (backdrop/Cancel, AddCustomerDialog:34-36) — shipped house pattern across AddEmployeeDialog/JobSettingsDialog/RejectDialog; the create still lands and the list refetches.
+- **Jobs column not sortable** (CustomersTable.tsx:136) — the mockup/plan listed it; BE /customers/page has no jobs sort option yet, so the FE header would be a lie. Add the BE sort first if the owner wants it.
+
+## Deferred from: code review of plan-23-7-payroll-lock-and-audit (2026-11-18)
+
+- **Leave writes can still mutate a locked month's dates** — corrections (put + delete) refuse via the date gate, but owner leave-apply-for-employee (creates `approved` days, up to 7 days past) and `approve()` (transitions pending days regardless of date) are ungated. Payroll effect is inert for a locked month's pre-cutoff dates (no future run consumes them), but the two sibling paths disagree on the same frozen dates. Follow-up: wire `assertPayrollDateEditable` (or a range-aware variant) into the leave write paths, with a pinned e2e answer either way.
+- **A lock can exist with no audit entry** — writeAuditRow stays best-effort after the lock commits (house idiom); no reconciliation/alert path for the most compliance-sensitive action. Defer an audit-gap watchdog until an auditor actually asks.
+- **Audit read is a fixed limit 100 with no cursor/filters** — a few real months will push early history past the cap. Add pagination when a consumer needs it.
+- **Zero-amount staged off-cycle lines** — `amount numeric(18,2) not null` has no sign/zero check (negatives are deliberate = recovery); story 9's staging surface must validate zero/negative semantics per tag.
+- **Wider freeze inventory** — only corrections (put + delete) are gated; an inventory of other attendance write surfaces (check-in/out edits, leave day overrides) against the gate was never made. Do it when any second writer is added.
+- **Audit view exposes raw UUIDs for actor/target** — LockView.lockedBy and AuditEntryView.actorId return bare ids; name resolution belongs to the UI story that renders the trail.
+- **Engine lock-probe path has no automated test** — the queued-then-locked race is unstageable deterministically; the probe is 4 plain lines inside the engine's write tx. Accept for v1.
