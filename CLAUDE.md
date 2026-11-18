@@ -39,6 +39,19 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 
 This repo and both child repos use **bun** — never npm, yarn, or pnpm (enforced by the `preinstall` check in `package.json`). Use `bun install`, `bun run <script>`, `bunx <pkg>`. Never generate or commit `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`. `fenzit-be` has no lockfile — never commit `bun.lock` there. On `fenzit-app`, run tests via `bun run test` — bare `bun test` breaks on RN Flow types.
 
+## Context7 — hard rule for library docs
+
+**Never answer a library/framework/SDK/API/cloud-service question — or write code that touches a library/cloud API — from training data alone.** Pull current docs from the Context7 MCP tools first, even when you are sure you already know the answer; training data goes stale (React Native/Expo, React, NestJS, Supabase SDK usage, Bun, Cloudflare, Grafana, Render…). The rule covers writing and reviewing code as much as Q&A, and applies to subagents too — carry it into BMAD build/review dispatches whenever the task touches a library API.
+
+- **Precedence — project sources win.** Supabase MCP for DB/schema questions (first-party, not a Context7 mirror); vendor docs (cloudflare-api MCP, vendor sites) for their own services; Context7 for framework/library docs. A refactor or code review of project code does not exempt the rule when the answer hinges on a library API. Passing mentions and answers CLAUDE.md already fixes (bun commands, test runners) do not force a lookup.
+- **Failure fallbacks.** Only-unavailable exception: Context7 not connected, erroring, or unreachable — say so in one line ("Context7 unavailable — answering from training data"), proceed, and keep flagging follow-ups on the same topic. Also stop-and-flag (same one-line form): resolve returns no match, a known ID returns nothing or garbage even after one re-resolve, the query cap is exhausted, or a mid-flow error — any of these means no usable docs; never guess an ID or loop on retries.
+
+1. **Resolve when unsure of the ID** — `resolve-library-id` (library name + a specific query); pick by reputation and snippet count, official org over community mirror; on a tie, query the top two once and pick the one matching our pinned version. Never guess an ID.
+2. **Query with the exact ID** — `query-docs`; one narrow, topic-scoped query per concept ("useEffect cleanup", not "React hooks"). Cap: 3 queries per question (the tool's own limit) — rephrase or change angle rather than repeating near-identical queries.
+3. **Skip resolve only when the ID was verified earlier this session** (e.g. `/vercel/next.js`) — call `query-docs` directly.
+4. **Pass `language`** (TypeScript, SQL…) so code examples match our stack, and name the version when it matters. Versions live in each child repo's `package.json` — the two repos can pin different versions of the same library, so scope to the repo you are coding in.
+5. **Verify before using** — cross-check returned APIs against the dependency pinned in the repo you are writing code for. When Context7 and project code disagree, project code wins, and record the stale-docs gotcha (memory or `deferred-work.md`) so the next agent does not repeat it.
+
 ## Tech constraints
 
 - Android needs JDK 17 — system JDK 26 breaks the build.
