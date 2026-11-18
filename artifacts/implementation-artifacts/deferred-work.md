@@ -1,3 +1,24 @@
+# Deferred work
+
+## Ledger policy (2026-11-18, owner direction)
+
+This ledger is for work that must not be lost — not a parking lot. An entry
+earns its place only if BOTH hold:
+
+1. It is a real defect or gap (not polish, not "nice to have").
+2. It has an owner: a named story, a trigger condition, or "next time file X is
+   touched". An unowned entry is a decision to accept — say so in the story's
+   plan doc instead and leave the ledger alone.
+
+Everything else is settled in the moment: fix it now, or consciously accept it
+and record the acceptance in the story plan — never the ledger.
+
+**Pickup mechanism:** every story plan starts by scanning this file for items it
+owns (by story ID or file/surface) and folds them into its scope; items without
+an owner are dropped at each epic retrospective.
+
+---
+
 - source_spec: `artifacts/implementation-artifacts/spec-1-1-backend-address-autosuggest-endpoint.md`
   summary: RESOLVED (2026-09-09) — `GooglePlacesProvider` implemented and live: the live-credential check passed (2026-09-08, see the spec-google-places-live-provider entries below), and `places.module.ts` now binds it as the `PlacesProvider` DI default via a config factory (`createPlacesProvider` returns the Google provider whenever `GOOGLE_PLACES_API_KEY` is set, falling back to `MockPlacesProvider` otherwise) — so test/dev environments without a key keep the deterministic mock.
   evidence: Split off Story 1.1's spec to stay under the token ceiling, and because `GOOGLE_PLACES_API_KEY` has no real value yet — the live provider can't be exercised against real Google traffic until the user supplies a key, so it can't usefully ship (or be verified) alongside the module scaffold. The narrowed spec ships `PlacesModule` fully wired end-to-end with `MockPlacesProvider` as the DI default, satisfying every AC testable without a live key; swapping in `GooglePlacesProvider` is a follow-up `useClass` change with no other code impact once the key exists.
@@ -1258,10 +1279,13 @@ Deliberate non-goals of epic 23, recorded so they are not forgotten — most are
 
 ## Deferred from: code review of plan-23-7-payroll-lock-and-audit (2026-11-18)
 
-- **Leave writes can still mutate a locked month's dates** — corrections (put + delete) refuse via the date gate, but owner leave-apply-for-employee (creates `approved` days, up to 7 days past) and `approve()` (transitions pending days regardless of date) are ungated. Payroll effect is inert for a locked month's pre-cutoff dates (no future run consumes them), but the two sibling paths disagree on the same frozen dates. Follow-up: wire `assertPayrollDateEditable` (or a range-aware variant) into the leave write paths, with a pinned e2e answer either way.
-- **A lock can exist with no audit entry** — writeAuditRow stays best-effort after the lock commits (house idiom); no reconciliation/alert path for the most compliance-sensitive action. Defer an audit-gap watchdog until an auditor actually asks.
-- **Audit read is a fixed limit 100 with no cursor/filters** — a few real months will push early history past the cap. Add pagination when a consumer needs it.
-- **Zero-amount staged off-cycle lines** — `amount numeric(18,2) not null` has no sign/zero check (negatives are deliberate = recovery); story 9's staging surface must validate zero/negative semantics per tag.
-- **Wider freeze inventory** — only corrections (put + delete) are gated; an inventory of other attendance write surfaces (check-in/out edits, leave day overrides) against the gate was never made. Do it when any second writer is added.
-- **Audit view exposes raw UUIDs for actor/target** — LockView.lockedBy and AuditEntryView.actorId return bare ids; name resolution belongs to the UI story that renders the trail.
-- **Engine lock-probe path has no automated test** — the queued-then-locked race is unstageable deterministically; the probe is 4 plain lines inside the engine's write tx. Accept for v1.
+Six further findings were triaged as non-critical and settled in the moment per
+the ledger policy (recorded in the story plan, not here): audit-gap watchdog
+(best-effort idiom is deliberate), audit read pagination (limit 100 fine
+pre-launch), zero-amount staged off-cycle validation (owned by story 23-9 — note
+carried on its sprint-status row), wider attendance freeze inventory
+(speculative), raw-UUID actors in the audit view (UI story), engine probe test
+(accepted for v1).
+
+- RESOLVED (2026-11-18, owner-directed follow-up — fenzit-be `8d95289`) — **Leave writes could still mutate a locked month's dates.** The gate now wires into every leave write path: apply (self + on-behalf, gate before the eligibility facts), approve, revoke, employee-cancel; reject stays deliberately UNGATED (a pending day never fed the run — queue hygiene); the check-in auto-cancel SKIPS a frozen date (logged) instead of failing the check-in it runs inside; the disable sweep's APPROVED arm carves frozen dates out (logged), its pending arm ungated by design. One resolution body behind assertPayrollDateEditable / assertPayrollDatesEditable / hasFrozenPayrollDate / frozenPayrollDates. A frozen "today" is real: the run opens on the cut-off day, so a same-day run+lock freezes the cutoff day itself. Journey leg pins the API answers (apply 409 / approve 409 / reject 200 / future approve 200). The follow-up's own 3-lens review found and patched the last miss (the disable sweep's approved arm). Residuals accepted and recorded in the story plan: the skip is log-only observability, and an unpaid-typed + attended frozen day leaves a payslip-LOP mismatch whose only remedy is the off-cycle line.
+- RESOLVED (2026-11-18, same follow-up round, review finding) — **`PATCH /leave/:id/type` is not lock-gated**: reclassifying paid/unpaid on a locked month's approved days rewrites what the run consumed. NOT fixed here on purpose: the write path is non-transactional supabase (no pg tx to hold the advisory gate in), so an atomic gate needs the path restructured first — inert until a recompute surface exists. **Owner: story 23-9** (off-cycle payout is the first recompute surface); note carried on its sprint-status row.
