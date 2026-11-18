@@ -2,7 +2,10 @@
 # (memlog entries 1–84). Renumbered 2026-11-17 (was epic 24) — user decision: payroll first,
 # hierarchy becomes epic 24. Execution order = list order. Backend stories 1–9 first (fenzit-be
 # deploys first), then web 10–11 (fenzit-web); mobile 12 needs only BE 1–8 and may run in
-# parallel with web.
+# parallel with web. Added 2026-11-18 (owner-commissioned after a 3-agent research pass on
+# Frappe HRMS + Zoho/Keka/greytHR/RazorpayX): story 13 — earned-leave accrual and balances
+# (BE) — executes BEFORE the FE block; story 14 — mobile leave balances (fenzit-app) —
+# executes after 12.
 #
 # Paths for dev notes: SPEC.md, canonical-fixture.md (the test oracle) and
 # statutory-verification.md sit in this folder; the code-audit digest =
@@ -266,6 +269,98 @@
     before and after in the run summary, roll-forward remainder asserted, leaver's final run
     deducts the remainder); staged-line appearance on first run; re-run preservation (exactly
     one payslip with the line intact); no other employee's payslip changes.
+- id: "13"
+  title: Earned-leave accrual and balances (BE)
+  description: >-
+    Per-tenant leave programs on a FIXED four-type catalog (owner decision 2026-11-18):
+    every company sees exactly four leave types — Earned Leave (monthly, default 1/month,
+    carry-forward on), Sick Leave (monthly, default 0.5/month, carry-forward off),
+    Bereavement (annual fixed, default 0 days — blocks applications until the owner sets
+    the real number) and Comp-Off (no accrual, paid — any time, any number, owner
+    approves). The four are FIXED: they always exist and cannot be added or deleted; the
+    owner initially sees the default values and edits the VALUES (accrual rate/days,
+    carry-forward, over-balance, paid, enabled) — the accrual mode is inherent to each
+    type, not a setting. A company that does not give a type switches it off (enabled
+    flag) instead of deleting it; employees see only the enabled types (story 14).
+    The balance is derived, never scheduled, in the April–March FY (derived from the
+    tenant's today): balance = opening credits + accrued − consumed + carry-forward.
+    Accrued(Y) for a monthly type = rate × calendar months from max(join month, FY-start
+    month) through the current month (as-of today) or through FY end (the prior-FY
+    full-year basis for carry-forward); the join month counts in full — no day-level
+    proration. An annual-grant type's accrued is its full days for the FY from day one.
+    Carry-forward (carry_forward types only — monthly types; an annual grant never
+    carries) is derived on read: unused(Y) = opening credits(Y) + accrued(Y) +
+    carry-forward(Y) − consumed(Y), and carry-forward(Y+1) = unused(Y); no year-end
+    routine. Consumed counts WORKING days only — leave_request_days rows on a weekly off
+    or holiday carry no debit (mirroring countWorkingDays) — being the pending + approved
+    days of that type, half-day parts consuming 0.5; a revoke/cancel/auto-cancel restores
+    it naturally because consumed is derived. Applies enforce the balance (block with a
+    plain-English 422, or a per-type allow-over-balance escape hatch); mode-none types
+    (Comp-Off) are exempt from the check entirely. Employee and owner can read balances,
+    and the payslip gains a leave-balance section captured at run time.
+    Rate/carry-forward/over-balance/enabled changes affect computations from the change
+    onward; locked months keep their frozen payslip snapshots.
+    Derived from a 3-agent research pass (Frappe HRMS ledger model, minus every enterprise
+    surface around it; Zoho/Keka/greytHR/RazorpayX common denominator); the accrual model
+    and all five owner decisions of 2026-11-18 are recorded in the research digest.
+  invoke_dev_with: >-
+    Backend only (fenzit-be), zero RPC, NestJS + raw SQL in pg tx. New module
+    leave-balance.service.ts owns the balance math (the ~300-line rule; leave.service.ts
+    stays out of accrual). Migration: leave_types gains code (stable internal code —
+    earned|sick|bereavement|comp_off — with a unique (tenant_id, code) index),
+    accrual_days (numeric, decimals allowed — sick 0.5/month, bereavement 5/year),
+    carry_forward (boolean, default false) and allow_over_balance (boolean, default
+    false) — carry_forward and allow_over_balance are REJECTED at config validation for
+    annual-grant types (a deliberate 0-day block is expressed by the 0; a company
+    without the type disables it); accrual_mode is DERIVED from the code (monthly for
+    earned/sick, annual for bereavement, none for comp_off), pinned by a check
+    constraint, not a free setting. New leave_balance_credits (tenant, user, type, year,
+    days, source) for opening balances/manual grants; source must be a manual value — a
+    carry-forward-sourced credit is rejected because the derived CF would double it. The
+    same migration reshapes the catalog to the fixed four: per tenant the four rows are
+    ensured with the default values — earned monthly 1 CF-on, sick monthly 0.5 CF-off,
+    bereavement annual 0, comp_off no accrual paid, all four enabled — with canonical
+    display names set on the fixed rows. Existing tenants' already-created types map
+    onto the fixed rows by name match (case-insensitive keywords), keeping their values
+    and taking the fixed codes and canonical names; a row whose name matches a fixed
+    name but fits a different code counts as unmatched; unmatched custom types are kept
+    but DISABLED and flagged in the migration output (not PATCHable — read-only
+    remnants; the dev DB is empty today so this is fixture-only). The 23-2 create/delete
+    CRUD narrows to PATCH-values + enable/disable per fixed type (create and delete
+    retire — pre-launch break allowed); names are not editable in v1. Every values-PATCH
+    and enable/disable writes one audit row (the existing leave.type_updated pattern
+    with old/new pairs); the migration's seed writes none (system action). NO
+    scheduler/background job and NO year-end routine anywhere;
+    accrued/availed/carry-forward are always computed on read in the April–March FY per
+    the description formula. Balance consumed = (pending + approved) WORKING days of
+    that type, half-day parts consuming 0.5, off-day rows carrying no debit. A leave
+    whose span crosses the FY boundary debits each FY segment against that segment's own
+    FY balance (owner-confirmed default). Disabling a type never touches its pending
+    requests — the owner may still approve or reject them — and consumed counts (and the
+    payroll unpaid-day read) include a disabled type's days. Apply-time check inside
+    applyTransact after validateApplyFacts and the payroll-lock gate, under the existing
+    per-employee attendance lock (concurrent applies already serialise); over-balance →
+    422 LEAVE_INSUFFICIENT_BALANCE with the numbers in the plain-English message unless
+    allow_over_balance is set on the type; applying to a DISABLED type is rejected
+    server-side (the app hiding it is never the only guard). Read surfaces: leave-types
+    endpoint for the employee app (closes the 23-2 ledgered defer; returns only ENABLED
+    types; mode-none Comp-Off shown without a balance — copy says the owner approves)
+    and GET /attendance/me/leave/balances (own, leave.own) +
+    GET /attendance/leave/:employeeId/balances (leave.read_all) — both EXCLUDE mode-none
+    types. Payslip: leave-balance snapshot columns on payroll_payslips + the engine's
+    capture query + the payslip read mapping/PDF template (three touch points), captured
+    as of the pay-period's last day, ENABLED types only (locked months keep frozen
+    snapshots). The payroll engine's unpaid-day read is UNTOUCHED — excess-to-LOP
+    auto-conversion is explicitly deferred; re-typing an approved leave
+    (PATCH /leave/:requestId/type) re-derives consumption automatically. Journey legs:
+    join-month proration numbers (full join month), the 0.5/month sick-leave balance
+    with a half-day consuming 0.5, the annual-grant type available immediately,
+    carry-forward into a new FY for a monthly type (and the annual-grant type NOT
+    carrying; the unused(Y) chain includes credits + CF), an FY-boundary-spanning
+    request debiting each segment to its own FY, over-balance 422 + allow path, off-day
+    rows carrying no debit, pending-counted balance under the lock, payslip section,
+    revoke-restores-balance, and the fixed-catalog migration (matched types keep values,
+    unmatched types land disabled + flagged).
 - id: "10"
   title: Web payroll configuration (fenzit-web)
   description: >-
@@ -320,3 +415,20 @@
     gracefully. Copy says Employee. The API enforces own-payslip-only — the client never assumes
     it. PDF opens from the presigned URL; handle its expiry with a re-fetch. Pixel 6 device pass
     before done; test timing rule applies (implement → user confirms on device → tests).
+- id: "14"
+  title: Mobile leave balances (fenzit-app)
+  description: >-
+    Employee self-service for the accrual feature — per-type leave balances (accrued,
+    availed, remaining) and a leave-type picker when applying showing ONLY the fixed four
+    catalog types that are enabled (a disabled type never reaches the app); Comp-Off
+    appears in the picker WITHOUT a balance card (copy: the owner approves each request);
+    the owner's leave screens show balances too (small companion story to BE 13, closes
+    the 23-2 read-side defer).
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Deploys after BE story 13 (independent of web stories 10–11). Design-system tokens and
+    atomic components; explicit loading/error/empty states; offline and timeout boundaries
+    handled gracefully. Copy says Employee. Balance card at the top of the apply form;
+    insufficient balance surfaces the API's plain-English message, never a raw code.
+    Pixel 6 device pass before done; test timing rule applies (implement → user confirms
+    on device → tests).
