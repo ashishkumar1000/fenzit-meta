@@ -298,8 +298,9 @@
     plain-English 422, or a per-type allow-over-balance escape hatch); mode-none types
     (Comp-Off) are exempt from the check entirely. Employee and owner can read balances,
     and the payslip gains a leave-balance section captured at run time.
-    Rate/carry-forward/over-balance/enabled changes affect computations from the change
-    onward; locked months keep their frozen payslip snapshots.
+    Rate/carry-forward/over-balance/enabled changes re-price the whole FY on the next
+    read (the balance is derived on read — no snapshots, no monthly history; owner
+    decision 2026-11-18); locked months keep their frozen payslip snapshots.
     Derived from a 3-agent research pass (Frappe HRMS ledger model, minus every enterprise
     surface around it; Zoho/Keka/greytHR/RazorpayX common denominator); the accrual model
     and all five owner decisions of 2026-11-18 are recorded in the research digest.
