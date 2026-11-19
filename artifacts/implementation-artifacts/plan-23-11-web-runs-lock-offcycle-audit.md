@@ -116,3 +116,66 @@ calendar tests' seeds).
 **Handoff:** the 4-lens review round has NOT run — per the standing gate the story is parked
 uncommitted in the fenzit-web worktree (15 files, all in the file list above). Next session:
 review → triage at source → commit explicit paths → push.
+
+## Review record (2026-11-19, resumed session — SHIPPED as fenzit-web 582b319)
+
+The 4-lens code review ran on the parked worktree diff (four fresh-context agents: BE
+contract & correctness / router idiom-state-a11y / copy & design system / test honesty &
+coverage), each source-verified against `fenzit-be/src/payroll`. All four returned
+PATCH-FIRST; triage accepted 8 patch groups, deferred 1, dismissed 0:
+
+1. **P1, found independently by three lenses — the audit tab keyed its labels and
+   details switch to an action contract the BE does not ship.** The BE stores and
+   returns `payroll.`-prefixed actions raw (`payroll-audit.service` filters
+   `.like('action','payroll.%')` and maps `action: row.action` untouched) and passes
+   `details` through untranslated — snake_case keys (`effective_from`, `changed_fields`,
+   `previous`), numeric amounts on some writers and money-text on others, no `name` on
+   component events. Against the live BE every entry rendered as the raw code with no
+   details line, and the tests passed because their fixtures used the unprefixed shape.
+   Fixed at the panel boundary (strip the prefix once), detailsLine rewritten per action
+   against each service's verified audit call, `money()` made number-tolerant, fixtures
+   rewritten to the wire shape, plus a new details-shapes test.
+2. **P1 — the stale-run reclaim was unreachable**: the hint promised "running the month
+   again reclaims it" while the run form was hidden for any queued/running run. Fixed
+   stronger than proposed: the re-post is the BE's reclaim AND idempotent while a run is
+   genuinely going, so the run form (labelled "Run again") now stays reachable for the
+   whole in-flight state.
+3. **P1 — raw UTC timestamps** sliced out of ISO strings on the run/lock/history cards
+   (a lock receipt rendered 5.5h off for the IST owner); all four now go through the
+   repo's `fmtWhen`.
+4. **P2 (router lens) — the lock refusal rendered behind the open modal backdrop**: the
+   error line moved inside the dialog form (sibling ComponentsPanel idiom).
+5. **P2 (router lens) — lock success unmounted the open dialog**, dropping focus to
+   `<body>` (spec: element removal runs no close steps). The dialog element now survives
+   the card's swap and shows the BE's receipt with a Close button — the native close
+   restores focus.
+6. **P2 — RunSummary type drift**: the FE declared `divisorConvention/cutoffDay/payDate`;
+   the BE's stored summary carries `divisor/cutoff_day/pay_date` (snake, omitted on the
+   zero-employee path) and rides through untranslated. Nothing read them — dropped with
+   a note; the policy copy comes from the month status.
+7. **P2 copy batch** — "membership id" jargon dropped from the owner-facing lede,
+   "Staged" → "Waiting for the run" everywhere, "the executor" → plain stall copy,
+   "Amount to override" → "Which amount", audit month context added to lock/run lines,
+   empty states carry next steps, skip pill "No payable days", audit labels matched to
+   the sibling vocabulary.
+8. **P3 batch** — the lock confirm dialog now lists the month's staged one-off lines
+   before the irreversible POST (and the locked card lists the BE's
+   `stagedOffCycleLines`), fetcher/action typing moved to the real route action,
+   status pills paired to the `-fg` tokens, `saveRow` right-aligned to the 23-10
+   rhythm, kit `/payroll/runs` branch GET-guarded (the fake lied on POST), the
+   clock-brittle fallback test computes from `istToday()`, the dead lock-test fallback
+   removed, and the stale page doc comment fixed.
+
+**Deferred** (ledgered in deferred-work.md): Escape while the override employee-picker is
+open closes the whole dialog too — one-line fix in the shared `Dropdown`, but it deserves
+its own interaction tests rather than riding this commit.
+
+**New coverage**: the 202-queued trigger path, the override dialog (acknowledgment
+gating + wire body + verbatim 422 refusal + saved note), the chosen month's failed run,
+the runs tab's failed-read retry line, prefixed audit fixtures with per-service details
+shapes. Suite 1050/1050; every static gate green.
+
+**Live verification (read-only)**: the runs tab and audit tab rendered against the
+production BE in the owner's tenant — policy facts, honest empty states, the humanized
+audit trail (prefixed actions resolved, snake_case details lines, money, `fmtWhen`
+timestamps) all correct on real data; no writes triggered.
