@@ -2,15 +2,28 @@
 # customize.toml defaults by BMAD structural rules (scalars override,
 # arrays append, menu tables merge by `code`). Not overwritten on
 # BMAD updates; the base customize.toml above the skill is.
+#
+# NOTE: persistent_facts MUST live under [agent] — top-level keys are
+# ignored by the agent block resolver (fixed 2026-11-20; the Impeccable
+# facts had been silently dead at root level before this).
 
+[agent]
 persistent_facts = [
   "The Impeccable design skill is installed in both UI repos at .claude/skills/impeccable/ (SKILL.md, reference/ playbooks, scripts/impeccable engine) — fenzit-web and fenzit-app.",
   "When doing UI/UX design, critique, or polish work inside fenzit-web or fenzit-app, use Impeccable: run .claude/skills/impeccable/scripts/impeccable context once per session, follow the matching reference/<command>.md playbook, and read reference/craft-floor.md before any UI edit.",
   "fenzit-app is Android (PRODUCT.md ## Platform: android) — use Impeccable's native playbooks there (reference/audit.native.md, reference/android.md); the detector, live mode, and edit hooks are web-only and apply to fenzit-web.",
   "PRODUCT.md and DESIGN.md in each repo are the design-truth records; never invent product facts that are not in them, and never plan Hindi copy (owner deferred it, 2026-10-03).",
+  "Stitch MCP (Google Stitch) is available for design exploration and UI redesign work: tools mcp__stitch__* (generate_screen_from_text, edit_screens, generate_variants, get_project, list_screens, list_design_systems, download_file). If the tools are missing or authed to the wrong account, call the endpoint directly with curl: POST https://stitch.googleapis.com/mcp, header 'X-Goog-Api-Key: <key>' (key at ~/.zcode/cli/config.json mcp.servers.stitch.headers.X-Goog-Api-Key or ~/.claude.json mcpServers.stitch.headers), Accept 'application/json, text/event-stream', JSON-RPC tools/call; the server is stateless (no session id needed); responses may be SSE 'data:' lines. Generate into Stitch project 1594154886874615054 (Modern Dashboard Redesign) with design system assets/b909505d051849efb483af6daa75647b ('FieldFlow HR System'); deviceType DESKTOP for web surfaces, MOBILE for fenzit-app surfaces.",
+  "HARD RULE (owner, 2026-11-20): Stitch designs must be grounded in the real fenzit BE/DB — never invented features. Before generating, audit the domain in Supabase (project pnlvreaijzslfymlnoti) and fenzit-be entities; map every design section to real tables/fields; use real-shaped values (EMP-NNN employee codes, JB-2026-NNN job numbers, rupee amounts, real leave types/offices/shift rules); show schema fields that exist but are unfilled as honest empty states with an Add affordance; never depict capabilities that don't exist (e.g. no live GPS tracking, no reporting manager, no emergency contact — none exist today). API changes are acceptable, but the data behind every design element must be present or explicitly planned. After generating, download the screenshot and self-review it for fabricated features before presenting.",
+  "MORE DESIGN RULES (owner, 2026-11-20): (1) Multi-section pages use TABS matching the suite's existing tab pattern (e.g. profile = Master Record | Jobs | Attendance | Leave | Payroll with one active tab rendered) — never stack every section on one tall page. (2) When one design iteration is FINALISED, delete/hide the older screen versions immediately (MCP has no delete: hide via update_project screenInstances hidden=true, updateMask ['screen_instances'], preserving all other instance fields) so the canvas never shows confusing duplicates. (3) Never render duplicate data or duplicate entry points across sections/tabs — each datum and action appears exactly once unless the owner explicitly asks.",
 ]
 
 [[agent.menu]]
 code = "IP"
 description = "Impeccable design pass on a fenzit-web or fenzit-app surface (critique / audit / polish)"
 prompt = "Run an Impeccable design pass on the surface I name, in the repo I name (fenzit-web or fenzit-app): follow that repo's .claude/skills/impeccable/SKILL.md (context loader once, then the matching reference playbook, craft-floor.md before any UI edit), and report findings BMAD-style with severities before changing anything."
+
+[[agent.menu]]
+code = "ST"
+description = "Generate a grounded Stitch design exploration via MCP (web or app surface)"
+prompt = "Create a Stitch design exploration for the surface I name: (1) audit the real BE/DB for that domain (Supabase project pnlvreaijzslfymlnoti + fenzit-be entities) and map every intended design section to real tables/fields, listing gaps; (2) write the Stitch brief from that map — real field names, real-shaped sample values (EMP-NNN / JB-2026-NNN / rupees / real leave types, offices, shift rules), honest empty states for unfilled fields, no invented capabilities; (3) generate via Stitch MCP (mcp__stitch__generate_screen_from_text, or curl to https://stitch.googleapis.com/mcp with X-Goog-Api-Key from ~/.zcode/cli/config.json if tools are unavailable) into project 1594154886874615054 with design system assets/b909505d051849efb483af6daa75647b and the right deviceType; (4) download_file the screenshot, self-review for fabricated features, and iterate with edit_screens until clean; (5) present the design with a section-to-data map and the gap list (API changes needed, if any)."
