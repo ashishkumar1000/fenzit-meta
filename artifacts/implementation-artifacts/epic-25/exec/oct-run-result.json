@@ -1,0 +1,196 @@
+{
+  "id": "908a8fb7-b3e0-43a5-b2ee-685ae2a80221",
+  "month": "2026-10",
+  "status": "completed",
+  "summary": {
+    "month": "2026-10",
+    "skips": [
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Suresh Shetty"
+      },
+      {
+        "detail": "the employment window has no days inside this run",
+        "reason": "empty_window",
+        "employee": "Priya Joshi"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Amit Das"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Vijay Menon"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Anita Pillai"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Rahul Bhat"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Kavita Chauhan"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Deepak Yadav"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Meena Kulkarni"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Arjun Kumar"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Sunita Sharma"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Manoj Reddy"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Pooja Patel"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Sanjay Singh"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Rekha Nair"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Vikram Iyer"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Nisha Rao"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Ajay Gupta"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Swati Verma"
+      },
+      {
+        "detail": "no salary structure is effective for this month",
+        "reason": "not_configured",
+        "employee": "Ravi Naik"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Prakash Bhat"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Lata Chauhan"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Girish Yadav"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Geeta Kulkarni"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Ramesh Kumar"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Suresh Sharma"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Priya Reddy"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Amit Patel"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Vijay Singh"
+      },
+      {
+        "detail": "no attendance enrolment covers this month — enroll the employee to run payroll for them",
+        "reason": "never_enrolled",
+        "employee": "Anita Nair"
+      }
+    ],
+    "divisor": "fixed-26",
+    "offCycle": {
+      "staged": 0,
+      "applied": 0,
+      "orphaned": []
+    },
+    "pay_date": 1,
+    "payslips": 170,
+    "recovery": {
+      "raisedThisRun": "0.00",
+      "outstandingAfter": "0.00",
+      "outstandingBefore": "0.00"
+    },
+    "warnings": [
+      "Vikram Iyer: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Nisha Rao: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Ajay Gupta: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Swati Verma: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Ravi Naik: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Divya Shetty: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Naveen Joshi: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Shalini Das: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Kiran Menon: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Anjali Pillai: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Prakash Bhat: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Lata Chauhan: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Girish Yadav: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Geeta Kulkarni: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Ramesh Kumar: checkout missing (2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19) — paid pending correction",
+      "Nisha Chauhan: no PAN on the employment record"
+    ],
+    "employees": 200,
+    "cutoff_day": 25
+  },
+  "errorMessage": null,
+  "startedAt": "2026-11-20T22:04:55.829+00:00",
+  "finishedAt": "2026-11-20T22:05:08.016107+00:00"
+}
