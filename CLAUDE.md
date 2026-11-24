@@ -9,6 +9,13 @@ Control-plane meta-repo. Two child repos, each with its own git history and remo
 
 - No branches — work only on main in all repos.
 - No commit/push without consent — always ask first, even if tests pass.
+- ASC Submit-for-Review pre-authorized (owner grant 2026-11-24) — inside a DECLARED release cycle (owner explicitly says "ship \<version\>" for a named app; when unsure whether a cycle was declared, ask first), no per-step asks: the release commits/pushes that cycle requires (main→release merge, store tag), App Store Connect (ASC) version setup, and the final "Submit for Review" click. Rails:
+  - TestFlight gate first — ASC submit only after the owner-approved CI `testflight` environment upload has registered the build; a build that skipped the owner's gate click is never submitted.
+  - Setup scope — version record, build attach, What's New from the staged release-notes file, screenshots already captured; anything beyond (new listing copy, compliance/privacy declarations, pricing, territories, new platforms, emails) stays consent-gated.
+  - Release mode — automatic unless the owner names manual or phased for that cycle.
+  - One live submission — never submit while the same app has another submission in review on the same store; canceling or replacing an in-review submission always asks first.
+  - Other stores stay gated — Play Console actions and every CI environment gate (`play-production` included) remain owner-clicked/consent-gated.
+  - Lifecycle — the grant ends at Apple's verdict: after a rejection or any failed/refused submit, report and ask before resubmitting; record each submission (version, date) in `artifacts/implementation-artifacts/sprint-status.yaml`.
 - No commit before BMAD code review — run `/bmad-code-review` before every commit.
 - Plan review before work — never start building on an unreviewed plan. After a story plan (or any implementation plan) is drafted, run an adversarial review of it against the spec/story contract and the shipped code (fresh-context reviewer, findings triaged patch / ask-owner / accept-with-reason), and fold the patches into the plan before the first line of code. Reviews are read-only on the plan; the corrected plan is what gets built.
 - Test timing — implement feature → user confirms it works → write tests → review (never write tests upfront).
