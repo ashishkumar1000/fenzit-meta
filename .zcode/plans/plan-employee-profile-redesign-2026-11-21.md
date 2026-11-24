@@ -177,3 +177,41 @@ own-header shell), employment resource route (open read + save action, reused di
   Record dialog round-trip; deactivate confirm + pill; Assign Job preselect; Payroll deep
   links; employees list regression.
 - Suites: BE jest members/jobs/attendance + FE full bun suite; no e2e baseline drift.
+
+## Code Review
+
+### 2026-11-24 (post-hoc — the review the 21 Nov commits shipped without)
+
+Two-lens BMAD review (edge-case-hunter + verification-gap) over BE `1da8594` (+ jobs `214ee60` spot-check) and FE `7340a05..e2bd99a`; 25 findings triaged: 1 decision-needed (resolved → patch below), 20 patch, 1 defer, 5 rejected. **All 21 patches applied 2026-11-24** — BE gates: jest 3477/3477 (192 suites) + tsc clean; FE gates: bun 1195/1195 (95 files), typecheck, format:check, lint (2 pre-existing warnings), check:styles, design-system. Uncommitted at owner consent gate.
+
+**Severity grades (triage-owned):** 1 high, 14 medium, 6 low.
+
+- [x] [Review][Patch] Deactivated members still accept time-corrections and leave-balance adjustments — `employeeExistsInTenant` filters only `status <> 'removed'`, so the 4 correction write-sites (`corrections.service.ts:159,281,341,401`) and 2 balance sites (`leave-balance.service.ts:380,419`) keep working for parked members, while enrolments and on-behalf leave were given 409 `MEMBERSHIP_STATE` guards in this same commit. **Owner decision 2026-11-24 (per recommendation): refuse both with 409 `MEMBERSHIP_STATE`** — corrections change graded attendance (money) and balances are forward-looking; the reinstate→correct→deactivate loop covers the rare fix-a-parked-member's-record case [corrections.service.ts + leave-balance.service.ts] (medium)
+- [x] [Review][Patch] setActive (deactivate/reinstate txn) ships with zero behavioral coverage — no test for self-403, wrong-state 409, last-admin 409, guarded update, happy round-trip [src/members/members.service.ts:421-522] (HIGH)
+- [x] [Review][Patch] getMember untested — nothing pins 404 on cross-tenant id nor the no-statutory-fields response shape [src/members/members.service.ts:377-404] (medium)
+- [x] [Review][Patch] auth sign-in predicate change (`.neq('removed')` → `.in(['invited','active'])`) unobservable — arg-blind fakes; reverting to the old predicate passes every test [src/auth/auth.service.ts:442,463] (medium)
+- [x] [Review][Patch] GET /attendance/punches zero coverage — ordering, punch-only filter, 404 no-leak, 422 span cap all unpinned [src/attendance/punches.read.ts:57-126] (medium)
+- [x] [Review][Patch] enrolments deactivated guard dead in tests — spec fake returns status-less employee rows, guard branch never executes [src/attendance/enrolments.service.ts:435-441] (medium)
+- [x] [Review][Patch] leave on-behalf deactivated 409 untestable — spec fake hard-wires `{ status: 'active' }`, no override hook [src/attendance/leave.service.ts:197-212] (medium)
+- [x] [Review][Patch] `?technicianId=` filter + scoped stats unverified — no getJobsPage tests; dropping the filter or the stats forwarding fails nothing [src/jobs/jobs.service.ts:1226,1254,1315-1360] (medium)
+- [x] [Review][Patch] jobs technician validation accepts a deactivated employee — `findCompanyMember` default excludes only `removed`; new work can be assigned to someone who cannot sign in [src/jobs/jobs.service.ts:496-510] (medium)
+- [x] [Review][Patch] profile `shouldRevalidate` vetoes the loader on `:userId` change — same tab+month under a different employee renders the previous employee's data under the new URL [src/app/routes.tsx:252-257] (medium)
+- [x] [Review][Patch] shift-rules card shows a future-dated rule as today's — `currentRule` picks the last revision without a `validFrom <= today` filter, diverging from the BE's pick [src/features/admin/components/employee/ProfileAttendancePanel.tsx:160-166] (medium)
+- [x] [Review][Patch] Leave tab silently truncates past page one — table renders `requests.data.data` without reading `hasMore`; ninth-and-later requests invisible under a "Newest first" meta [src/features/admin/components/employee/ProfileLeavePanel.tsx:51-60] (medium)
+- [x] [Review][Patch] shift-rules card labels a failed enrolment fetch "not enrolled" — `assigned` conflates `enrolment.ok === false` with "no enrolment row" [src/features/admin/components/employee/ProfileAttendancePanel.tsx:101-104] (low)
+- [x] [Review][Patch] non-UUID `:userId` renders connection-error instead of the honest not-found state — BE `ParseUUIDPipe` answers 400, loader maps only 404 [src/features/admin/employeeProfileLoaders.ts:130-131] (low)
+- [x] [Review][Patch] employees-page deactivated visibility untested — kit `stats()` lacks `deactivated`, no deactivated fixture; Deactivated chip/filter and MembersTable status gating can regress silently [src/testing/employeesPageKit.tsx:73-90, src/features/admin/components/MembersTable.tsx:222,231] (medium)
+- [x] [Review][Patch] Assign Job `?technician=` preselect chain untested — loader mapping and select defaultValue unpinned; preselect can ship dead [src/features/admin/meCreateJobLoaders.ts:110-113, src/pages/AdminMeNewJobPage.tsx:209] (medium)
+- [x] [Review][Patch] Payroll empty-structures test passes on a lying `200 {}` catch-all stub — never exercises the 404 branch the empty state is built from (the exact trap `e2bd99a` removed elsewhere) [src/pages/AdminEmployeeProfilePage.test.tsx:195] (medium)
+- [x] [Review][Patch] attendance month-nav link hrefs untested — a broken `shiftMonth` silently degrades to current-month [src/features/admin/components/employee/ProfileAttendancePanel.tsx:114,120] (low)
+- [x] [Review][Patch] own-header prefix for the profile route unobserved — greeting-h1 stacking regression would ship uncaught [src/pages/AdminPage.tsx:230-233] (low)
+- [x] [Review][Patch] profile employment-dialog wiring (open/load/round-trip) untested — EPF "Complete master setup" and every "+ Add" can dead-end silently [src/pages/AdminEmployeeProfilePage.tsx:75-79] (medium)
+- [x] [Review][Patch] employees summary tile copy not extended — reads "N active, M invited" while `stats.deactivated` exists; parked members invisible in headline counts [src/pages/AdminEmployeesPage.tsx:71] (low)
+- [x] [Review][Defer] `MemberFact['status']` union stale — type says `'invited'|'active'|'removed'` but raw DB status (now possibly `'deactivated'`) flows in; behavior today correct (only `=== 'active'` checked), widen when job-reports is next touched [src/job-reports/job-report-rules.ts:35] — deferred: latent developer-facing type lie, no behavioral harm today
+
+**Rejected appendix:**
+- [F6 payslip months all-or-nothing] — `low`; deliberate reality call ledgered at plan time (`deferred-work.md`, commit c38a163) with the per-month-degradation recipe recorded.
+- [F7 `?technician=` missing `encodeURIComponent`] — `false`; `member.userId` is a UUID (hex + hyphens), a query metacharacter cannot occur.
+- [F9 "the only place PAN/PF/UAN/bank appear" claim] — rejected; the text lives in this plan doc's Context prose, not code — fixing it means editing the plan under review.
+- [BE-O1 plan-vs-migration discrepancy] — `false`; this plan's step 0 (plan-review P1) explicitly mandates the `memberships_status_check` migration — the verifier quoted the stale Context prose; the migration was applied and verified in prod.
+- [FE-O2 empty employeeCode pill] — `false`; `memberships.employee_code` is trigger-generated for every tenant row, which every profiled member has.
