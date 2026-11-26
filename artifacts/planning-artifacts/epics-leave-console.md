@@ -1,5 +1,9 @@
 # Epic 27 — Leave console: web per the Stitch designs
 
+> **SHIPPED — all four stories done** (BE `d8127c0` 2026-11-24 for 27-1; fenzit-web Types `b7caed5`,
+> Requests `d2c7315`, Calendar `b35ecd1`+`51217dd` 2026-11-24; review round `4d24e1a` 2026-11-25;
+> CI green both repos). Tracker: sprint-status.yaml.
+
 Registered 2026-11-24 (owner direction: check the Stitch Leave designs at project
 470446784646785367, map them to the web console, "first do web and then go for
 mobile", USE BMAD, don't overengineer, "make API simple … if required we can split

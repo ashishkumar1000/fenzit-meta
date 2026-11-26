@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | ready-for-dev (card created 2026-11-24) |
+| Status | done — SHIPPED 2026-11-24 (fenzit-be d8127c0 pushed to main — DTO + read service + repository; no migration) |
 | Size | S (~0.5–1 day) |
 | Layer | BE (fenzit-be) — the epic's only API change, **build first** |
 | Depends on | none |

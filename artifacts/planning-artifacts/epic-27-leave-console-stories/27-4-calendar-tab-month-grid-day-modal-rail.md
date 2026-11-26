@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | ready-for-dev (card created 2026-11-24) |
+| Status | done — SHIPPED 2026-11-24 (fenzit-web b35ecd1 Leave section + 51217dd Upcoming Leaves tab; review patches 4d24e1a; pushed to main) |
 | Size | M–L (~1.5–2 days) — the epic's biggest slice |
 | Layer | Web (fenzit-web) — new tab; consumes 27-1 |
 | Depends on | **27-1 live** (the `from`/`to` params) |

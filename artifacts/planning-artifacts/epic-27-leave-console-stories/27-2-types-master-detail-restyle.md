@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | ready-for-dev (card created 2026-11-24) |
+| Status | done — SHIPPED 2026-11-24 (fenzit-web b7caed5 Types tab to design + f982671 turned-off restyle; review patches 4d24e1a; pushed to main) |
 | Size | M (~1–1.5 days) |
 | Layer | Web (fenzit-web) — restyles the uncommitted pre-design build, **no BE** |
 | Depends on | none (parallelizable with 27-3; state-disjoint) |

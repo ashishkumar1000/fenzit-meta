@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | ready-for-dev (card created 2026-11-24) |
+| Status | done — SHIPPED 2026-11-25 (fenzit-web d2c7315 + review patches 4d24e1a; pushed to main) |
 | Size | M (~1 day) |
 | Layer | Web (fenzit-web) — extends the uncommitted requests build, **no BE** |
 | Depends on | none (parallelizable with 27-2; state-disjoint) |
