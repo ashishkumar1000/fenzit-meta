@@ -22,7 +22,7 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 generated: 09-05-2026 12:00
-last_updated: 11-26-2026  # Tracker reconciliation: Epic 27 leave console (SHIPPED 2026-11-24/25) registered, all 4 cards done; the never-registered Attendance Report epic (shipped 2026-10-03) registered; two stale "implemented" statuses closed (web-seo-fundamentals, app-weeklyoff wizard gate); six shipped 2026-11 direct-request spec-waves registered as done; 25-5 status token conformed to backlog. Epic-25 execution wave stays in-progress (results ledger still growing; recorded FAILs await 25-5 triage); epic-26 backlog is accurate (dev not started). Epic-24's in-progress flips belong to their own session's commit.
+last_updated: 11-26-2026
 project: Fenzo
 project_key: NOKEY
 tracking_system: file-system
@@ -458,7 +458,7 @@ development_status:
   22-7-mobile-employee-and-owner-flows: done  # fenzit-app cb3df30 pushed to main 2026-11-13 (employee create flow + owner approval queue + 16 jest suites); shipped in release app 1.4.4 build 10404; code review done (user-confirmed 2026-11-16)
   22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: done  # fenzit-web; built + Sally UX pass + BMAD review (8 layers, 24 patches applied), committed 599c9b9 and pushed 2026-11-14; owner-session verified live; test cases written (5 suites, 89 tests) + reviewed (4 layers, 15 patch clusters applied) — committed fenzit-web 9ff2163 (fd3ea50 debug cleanup)
 
-  epic-24: backlog  # company reporting hierarchy with manager approvals — contract committed 54bb335 (2026-11-16) at artifacts/specs/spec-company-hierarchy/ (SPEC + approval-routing + stories.yaml + .decision-log.md, decisions D1-D17); zero-RPC epic, backend-first deploy order. Renumbered 2026-11-17 (was epic-23) — payroll moved ahead of it.
+  epic-24: in-progress  # company reporting hierarchy with manager approvals — contract committed 54bb335 (2026-11-16) at artifacts/specs/spec-company-hierarchy/ (SPEC + approval-routing + stories.yaml + .decision-log.md, decisions D1-D17); zero-RPC epic, backend-first deploy order. Renumbered 2026-11-17 (was epic-23) — payroll moved ahead of it.
 
   # Epic 25: Attendance + Payroll QA — owner-commissioned full-product testing sweep
   # (2026-11-20) across web admin + mobile + BE + DB using a 200-employee mock tenant
@@ -472,9 +472,9 @@ development_status:
   25-3-test-case-authoring: done  # 192 cases (44H/44C/44E/60N) in artifacts/planning-artifacts/attendance-payroll-qa-test-plan.md
   25-4-execution-and-results-ledger: in-progress  # one case at a time; document only
   25-5-triage-and-batch-fixes: backlog  # placement analysis first; BMAD review before commits; status conformed 2026-11-26 ('pending' was not in STATUS DEFINITIONS)
-  24-1-backend-hierarchy-data-model-and-manager-assignment: backlog  # memberships.manager_id migration (FK, CHECK, index) + assignment/removal transactions, audit per re-parented member, chain+headcount payload
-  24-2-backend-subtree-scoping-and-permission-scope-dimension: backlog  # recursive-CTE helper + guard scope dimension (role x subtree); leave/jobs/attachments subtree reads
-  24-3-backend-leave-approval-routing-and-notifications: backlog  # resolved-approver walk, fallback set, notifications to resolved set, reassignment notices; journey suite green baseline first
+  24-1-backend-hierarchy-data-model-and-manager-assignment: done  # memberships.manager_id migration (FK, CHECK, index) + assignment/removal transactions, audit per re-parented member, chain+headcount payload
+  24-2-backend-subtree-scoping-and-permission-scope-dimension: done  # recursive-CTE helper + guard scope dimension (role x subtree); leave/jobs/attachments subtree reads
+  24-3-backend-leave-approval-routing-and-notifications: done  # fenzit-be af43023 (2026-11-27): action-time resolved-approver walk (single/fallback/self/unresolved), service-enforced decisions (403/409), submission + set-difference notifications, leave_events.resolved_approvers snapshot; 1988 unit + 34/34 real-DB journey + live HTTP/DB probe; reminders deferred to pg_cron
   24-4-backend-job-approval-without-rpc: backlog  # decide_pending_job RPC -> NestJS transaction, same endpoint contract; job.submitted routes to resolved approver set
   24-5-mobile-manager-surfaces: backlog  # Reports-to picker, Your-team queues, teammates-off glance, notification kinds + taps
   24-6-web-manager-column-and-editing: backlog  # MembersTable Reports-to column, settings/invite dialog fields, re-parenting confirmation
