@@ -22,7 +22,9 @@ only employees see slips (mobile).
 2. Per-employee PDF via the shipped admin POST → presigned download (one-request-per-
    LIST pdf read by payslipId — the 23-8 contract).
 3. Status badges: locked / available / generating (PT429 dedupe surfaces as
-   "generating, try shortly").
+   "generating, try shortly"). **Lock state comes from `GET /payroll/months/:month`
+   fetched by the same loader** (the roster payload has no lock flag — verified
+   2026-11-21); the runs tab's month card remains the lock *action* surface.
 4. Honest empty states (Sally rules): no run that month, all-skipped month, queue
    paused (cross-link 26-14's pause state).
 

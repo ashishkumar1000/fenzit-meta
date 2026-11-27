@@ -4,7 +4,7 @@
 |---|---|
 | Status | ready-for-dev (card created 2026-11-21) |
 | Size | S–M (~2–3 days) |
-| Layer | Web (fenzit-web) — BE ships since 23-9 |
+| Layer | Web (fenzit-web) — BE ships since 23-9; a tiny BE preview-field is a **named follow-up** only if the client estimate proves dishonest |
 | Depends on | none (clears the 23-11 ledgered debt) |
 | Contract | 05 §6 WI-I · 03 §2.9, §5 · sprint-status 23-9 entry · 04 §screens (Additional Salary UI) |
 
@@ -41,10 +41,11 @@ applied lines (never), per-line approvals (no draft/approve stage in V1).
 
 - The 23-11 read-only list becomes the state-aware screen; keep its URL-owns-state +
   intent-keyed action idioms.
-- Cap preview: client-side estimate is dangerous (double-proration class of bug) —
-  either compute from the shipped summary recovery block of the last run, or add a
-  tiny BE preview field if the estimate can't be client-derived honestly. Prefer BE
-  truth; if a field is needed, it's a small additive BE follow-up (allowed, note it).
+- Cap preview: estimated client-side from the shipped run-summary recovery block
+  (outstandingBefore/After + staged lines of the last run) — labelled an estimate in
+  the copy. It must never present itself as the engine's number; if the estimate can't
+  be derived honestly, the BE-truth preview field ships as a named follow-up story
+  (not silently in this card).
 - Copy tone matches the lock/run dialogs (plain-English permanence and consequence
   copy — 23-11 established the pattern).
 
@@ -54,8 +55,10 @@ applied lines (never), per-line approvals (no draft/approve stage in V1).
    lines all reachable; applied lines show immutable state cleanly.
 2. Every BE 422/409 has matching inline copy (contract-pinned web tests — 23-11
    lesson: source-verify each code).
-3. Negative-line flow shows the cap/roll-forward effect before commit (or the BE-
-   truth preview field ships with it).
+3. Negative-line flow shows the cap/roll-forward effect before commit, estimated from
+   the shipped run-summary recovery block (client-side); if the estimate proves
+   dishonest against engine behaviour, the BE-truth preview field ships as a **named
+   follow-up story** — planning stays honest either way.
 4. Staged→applied trace filterable in one view; orphaned staged lines (zero-employee
    months) visible with the re-target remedy.
 5. Suite green; all static gates.

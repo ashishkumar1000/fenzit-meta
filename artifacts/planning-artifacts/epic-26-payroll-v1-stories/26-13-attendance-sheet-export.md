@@ -6,7 +6,7 @@
 | Size | S (~0.5–1 day) |
 | Layer | BE (fenzit-be) + web (fenzit-web) |
 | Depends on | none (reports registry + day-status grid exist) |
-| Contract | 05 §6 quick-win · 03 §10.F ("attendance report exists — infra reusable") · 01 row 53 |
+| Contract | 05 §7 rows (promoted to V1 quick-win, owner 2026-11-21) · 03 §10.F ("attendance report exists — infra reusable") · 01 row 53 |
 
 ## Gap (evidence)
 
@@ -18,15 +18,25 @@ report — the infra is proven reusable (03 §10.F).
 ## Scope
 
 1. Reports-registry entry `attendance_sheet` (CSV first, XLSX if cheap): one row per
-   employee, one column per day of the month (day-status codes: present / absent /
-   half / leave-type / week-off / holiday / unmarked), plus summary columns
-   (payable days, LOP days, unpaid-leave days).
+   employee, one column per day of the month. Day-status cells encode the **12 shared
+   `STATUS_KEYS`** (src/common/day-status/keys.ts: `not_tracked, not_checked_in_yet,
+   in_progress, weekly_off, holiday, worked_on_holiday, leave, half_day_leave,
+   present, half_day, absent, checkout_missing`) — the original card list
+   (present/absent/half/…) didn't match the contract and was corrected in review
+   triage. The leave **type** renders via the leave join (not a status key);
+   `half_day` vs `half_day_leave` render distinctly; days with **no status row**
+   render as `unmarked` (a payroll-side concept — mapped per 26-5's
+   `unmarked_days_as`, and shown as raw "no record" in the cell, labelled in the
+   legend). Plus summary columns (payable days, LOP days, unpaid-leave days).
 2. Same month matrix + day-status source the payroll engine consumes (the shared
    day-status grid) — export == what payroll will see.
 3. LOP-relevant cells flagged (absent / unpaid-leave / half) so the owner can spot
    pay-impacting days at a glance.
 4. Web: export button on the attendance/payroll surface (month picker, queued/ready
-   states via report_requests), payroll.config-gated.
+   states via report_requests). Minting follows 26-6's pinned route decision
+   (payroll-side payroll.config-gated POST that plain-inserts into `report_requests`;
+   status via `report.read`) — the generic `POST /reports` is `report.request`-gated
+   and broader, so it can't carry the payroll.config gate.
 
 ## Out of scope
 

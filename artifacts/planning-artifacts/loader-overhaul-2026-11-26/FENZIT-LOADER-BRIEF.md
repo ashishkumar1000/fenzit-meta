@@ -7,6 +7,10 @@
 > the actual logo PNGs and researching the liquid-fill cliché baseline. Implementation
 > (FenzitMark + FenzitLoader + /logo-preview) is in flight by the BMAD dev agent (Amelia),
 > uncommitted, gated on owner preview.
+> **Correction 2026-11-26 from owner live-preview feedback:** the fill must be a true
+> liquid level — an empty vessel filling with water — with colors anchored to the mark
+> (teal foot first, then cyan bar, then blue hook). A sliding-artwork reveal is rejected;
+> mechanics below updated to fixed artwork + rising silhouette cover.
 
 **Deliverable:** `FenzitLoader` React component + hand-authored SVG, pure CSS keyframes, for `fenzit-web`.
 
@@ -30,12 +34,13 @@ The logo (read from `src/assets/brand/logo-3x.png` / `public/logo.png`, both 360
 SVG layers, all inside one `<svg>`:
 
 1. **Ghost layer (always present):** both ribbon paths filled white, `stroke: #D7DCE3`, `stroke-width: 1`, `vector-effect: non-scaling-stroke` — a faint keyline so the empty mark reads on the light `#F9FAFB` backdrop. This is the "black and white" start state (white mark, ink wordmark below).
-2. **Color layer:** both ribbons with their real gradients, wrapped in `<g class="loader-liquid" clip-path="url(#fz-mark)">`. The rising fill is a single `translateY` on this group: `100%` (fully below the clip → invisible) → `0%` (fully revealed). The clip does all masking; nothing leaks.
-3. **Meniscus:** a thin (3–4 user-unit) white band at 55% opacity pinned to the top edge of the color group, bobbing ±1px on its own 1.8s ease-in-out alternate loop, `scaleX` 1 → 1.02. This is the trembling waterline — deliberately not an animated wave path.
-4. **Bubbles:** 5 circles (r 2–4, hero) as children of the `.loader-liquid` group, so they are clipped by the mark **and** bounded by the liquid level automatically. Each rises locally `translateY(0 → -Npx)` with fade in/out over 1.2s linear, staggered via negative `animation-delay` (−0.15s, −0.45s, −0.7s, −1.0s, −1.3s) and per-bubble `cx` set as CSS custom properties. Deterministic, not random. Bubble spawn points live in the mark's lower basin.
-5. **Reset:** at cycle end the color layer crossfades to 0 (`opacity`, 400ms) while its `translateY` resets — the white ghost is always beneath, so the mark never disappears or blinks. No "drain" animation.
+2. **Color layer (FIXED):** both ribbons with their real gradients, inside `<g clip-path="url(#fz-mark)">`, pinned in final position — **no transform on the artwork**. Colors are position-anchored: the teal foot lives at the bottom, cyan bar mid, blue hook top.
+3. **Cover layer (the rising waterline):** drawn ABOVE the color layer and bubbles — the same silhouette paths, white fill + `#D7DCE3` keyline stroke (identical to the ghost's empty state). The whole cover group animates `translateY 0 → -110%` across the pour window; its rising bottom edge is the liquid level, revealing the fixed artwork bottom-up **in place** — teal foot first, then cyan bar, then blue hook. Above the waterline the mark always shows the white keylined empty state. During the reset window (88.23%→100%) the cover returns to `translateY 0` — invisible, because the color layer has fully faded by then and it slides back over the pure white ghost. The artwork never slides; nothing ever blinks.
+4. **Meniscus:** a thin (3–4 user-unit) white band at 55% opacity pinned to the **cover's bottom edge** (the waterline), bobbing ±1px on its own 1.8s ease-in-out alternate loop, `scaleX` 1 → 1.02, clipped to the silhouette. This is the trembling waterline — deliberately not an animated wave path.
+5. **Bubbles:** 5 circles (r 2–4, hero), drawn between color layer and cover, so they ride in the wet region and are covered by the cover the moment they cross the waterline (pop at the surface). Each rises locally `translateY(0 → -Npx)` with fade in/out over 1.2s linear, staggered via negative `animation-delay` (−0.15s, −0.45s, −0.7s, −1.0s, −1.3s) and per-bubble `cx` set as CSS custom properties. Deterministic, not random. Spawn points live in the mark's lower basin.
+6. **Reset:** the color layer crossfades to 0 (`opacity`, 400ms) while the cover returns to covering position — the white ghost is always beneath, so the mark never disappears. No "drain" animation.
 
-Overflow containment: `overflow: hidden` on the SVG root; all translations confined to ±100%.
+Overflow containment: `overflow: hidden` on the SVG root; all translations confined to ±110%.
 
 ## 4. Timing
 
@@ -76,7 +81,7 @@ One component, `variant` prop:
 ## 7. Acceptance criteria
 
 1. Animation is pure CSS keyframes driven by CSS custom properties — no JS animation library, no `requestAnimationFrame`.
-2. Fill level is a `translateY` on the color group inside a `<clipPath>` of the traced mark silhouette; the revealed artwork is the two-ribbon gradient set sampled from `logo-3x.png`.
+2. The fill is a true liquid level: artwork pinned in final position inside the `<clipPath>` of the traced mark silhouette; a silhouette-shaped cover (white + keyline, identical to the empty state) rises `translateY 0 → -110%` above it, revealing the gradient artwork bottom-up **in place** — teal foot first, then cyan bar, then blue hook. The artwork itself never slides.
 3. Rebuilt silhouette overlays the fenzit-app boot splash white F within visual tolerance (side-by-side check).
 4. Start state reads black-and-white: white keylined mark, ink "Fenzit" wordmark (hero), color layer at 0%.
 5. Cycle runs 3400ms (2000 pour / 600 hold / 400 crossfade / 400 rest), loops seamlessly, and shows no broken frame when observed continuously for 60s+ or interrupted at 0.5s.

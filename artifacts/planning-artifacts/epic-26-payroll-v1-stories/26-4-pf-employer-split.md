@@ -23,8 +23,14 @@ pf-exclusion.service.ts:110-118).
    - `pf_employee` = 12% × min(earned basic, ceiling) (unchanged)
    - `pf_eps` = 8.33% × min(earned basic, ceiling)
    - `pf_epf_remainder` = `pf_employee` − `pf_eps`
-   - employer cost = `pf_employee + pf_eps + pf_epf_remainder` (= employee × 2, but
-     now with the *correct* statutory composition)
+   - **employer PF contribution** = `pf_eps + pf_epf_remainder` (= `pf_employee`,
+     the employer's statutory 12%) — this is what the summary jsonb, the payslip
+     info line, and the 26-6 register column expose; the shipped `pf_employer`
+     column's meaning (12% of basis) **does not change**. The three-column sum
+     (`pf_employee + eps + remainder` = 2×employee) is **total PF remitted
+     (employee + employer)** — surface it only under that explicit label, never as
+     "employer cost" (the original equation mislabelled it — caught in review;
+     a dev following it would emit 24% as employer PF).
 2. Store the three columns on run lines (additive — existing pinned rows untouched).
 3. Run summary jsonb exposes employer PF separately from employee PF.
 4. Payslip print gains an optional employer-PF line, explicitly non-deduction
@@ -44,9 +50,13 @@ the EPS split (scheme certificates etc.).
 - Pure statutory math extension in `statutory.ts` (keep pure, table-driven testable),
   no Frappe reference needed — Frappe core has **no PF math at all** (02 §5: admins
   write formulas); india-payroll semantics used as the spec.
-- Rounding: compute EPS and remainder from unrounded values; remainder absorbs the
-  rounding remainder so `employee = eps + remainder` holds exactly at paise level
-  (borrow #11 remainder-on-last-line rule).
+- Rounding (pinned): compute EPS and remainder from unrounded values at **paise
+  level**; remainder absorbs the rounding remainder so
+  `employee = eps + remainder` holds exactly at paise level (borrow #11
+  remainder-on-last-line rule). EPFO's whole-rupee EPS convention (e.g. EPS
+  ₹1,249.50 → ₹1,250) matters only for ECR filing — note it in the deferred ECR
+  story; do not adopt it here (it would break the internal identity the fixture
+  pins).
 - Ceiling: reuse the dated ceiling resolution (₹15k → ₹25k from 2026-09-17,
   month-start resolved) — same function, no new date logic.
 - Wage tag: only wage-tagged amounts join the PF base (bonus never — existing rule
@@ -55,7 +65,8 @@ the EPS split (scheme certificates etc.).
 ## Acceptance criteria
 
 1. Ceiling binds → `pf_eps + pf_epf_remainder == pf_employee` exactly (paise-exact)
-   and EPS == 8.33% of min(earned basic, ceiling).
+   and EPS == 8.33% of min(earned basic, ceiling). Summary jsonb's employer PF ==
+   `pf_employee` (12%), NOT the three-column sum.
 2. Above-ceiling case: EPS stays 8.33% × ceiling wage; remainder grows with the
    employee share.
 3. Excluded members: all three columns null/zero as today; no employer figure.

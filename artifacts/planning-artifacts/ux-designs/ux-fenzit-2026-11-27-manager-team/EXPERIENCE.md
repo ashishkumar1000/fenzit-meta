@@ -1,7 +1,7 @@
 ---
 title: Fenzit app — manager team experience (Epic 24 story 24-5)
 type: experience-delta
-status: draft
+status: approved
 created: 2026-11-27
 updated: 2026-11-27
 applies_to: "workspace/core/frontend/fenzit-app (technician shell + owner shell) over fenzit-be 24-5a/24-5b"

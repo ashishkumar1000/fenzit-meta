@@ -56,6 +56,21 @@ the preview (overrides already exist via run_overrides).
 - Web: preview results render from the same summary shape the run page already uses
   (no bespoke components); the Commit button stays behind the preview step.
 
+## Pinned decisions (added by review triage 2026-11-21)
+
+1. **Preview audit**: preview writes NO audit rows (it mutates nothing; audit-tagged
+   previews would pollute the append-only trail with noise).
+2. **Gate threshold**: default 3 unmarked days per employee to trigger the
+   block-enqueue gate; tenant-configurable setting. Default gate mode = warn-only.
+3. **Preview validation scope**: preview validates month format + first-payroll-month
+   bound + future-month rejection only (fail fast on garbage input); cut-off and lock
+   checks stay at Commit — preview must preview, not gate-policy.
+4. **Absent-mode × checkout_missing**: `unmarked_days_as: absent` flips only genuinely
+   unmarked days (no day-status row / no attendance facts); `checkout_missing`
+   (tracked check-in, no checkout — currently paid-pending-correction,
+   run-lop.ts:71-74) stays paid-pending-correction in absent-mode. Pin with a test so
+   absent-mode cannot silently start docking tracked days.
+
 ## Acceptance criteria
 
 1. Preview totals == subsequent run totals for identical inputs (determinism test).

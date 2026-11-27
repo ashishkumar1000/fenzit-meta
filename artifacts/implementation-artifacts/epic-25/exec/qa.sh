@@ -17,3 +17,5 @@ api() {
 log() { # log <caseId> <verdict> <evidence>
   echo "| $1 | $2 | $(date '+%H:%M:%S') | $3 |" >> "$LEDGER"
 }
+apib() { api "$@" | sed '$d'; }
+apis() { api "$@" | tail -1; }

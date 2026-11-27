@@ -6,7 +6,7 @@
 | Size | S (~0.5–1 day) |
 | Layer | App (fenzit-app) |
 | Depends on | 26-10 (YTD/breakup fields on the DTO) |
-| Contract | 05 §6 quick-win · 04 §mobile · 03 §6 |
+| Contract | 05 §7 rows (promoted to V1 quick-win, owner 2026-11-21) · 04 §mobile · 03 §6 |
 
 ## Gap (evidence)
 
@@ -22,8 +22,10 @@ YTD hero reading the last slip's `year_to_date` + a FY selector
    latest slip).
 2. FY selector (April–March) filtering the history list + hero (older FYs read from
    that FY's slips).
-3. Payslip detail: grouped earning/deduction sections (respecting 26-2 types via the
-   DTO) — layout follows the existing payslip detail screen.
+3. Payslip detail: earnings vs deductions sections from the DTO's **existing line
+   split** (payslip lines snapshot `{source, amount}` — there is no per-line
+   component type/statutory tag today; per-line statutory grouping would need a 26-10
+   extension and is out of scope here).
 4. Sticky Download PDF action on detail (Frappe ESS pattern; current app already has
    download — make it sticky per the pattern if not already).
 5. Honest empty states: months without slips, first-job employees, mid-year joiner

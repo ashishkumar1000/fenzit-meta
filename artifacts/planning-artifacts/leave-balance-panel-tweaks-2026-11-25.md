@@ -101,3 +101,37 @@ balance context).
    panel tests for the breakdown line + Turned Off chip — grep page tests for every old
    string first), then `/bmad-code-review`, triage, then ask to commit (BE first, FE
    second).
+
+## Code Review
+
+### 2026-11-25
+
+**Code review complete.** 0 decision-needed, 9 patch (applied), 3 defer, 4 rejected.
+Lenses: blind-hunter + verification-gap + intent-alignment reported; edge-case-hunter
+returned an empty result → failed layer (round not fully covered by all four).
+Verification-gap found no verification gap; it also ran both full suites clean
+(BE 192 suites / 3531 passed, web 1289 passed / 0 fail) before this round's patches.
+
+Patches (applied under the owner's "yes proceed"; suites re-run green after):
+- [x] [Review][Patch] FE fixture: casual off row carries accrued 4 — a shape the disabled gate forbids [AdminLeavePage.test.tsx:519]
+- [x] [Review][Patch] Panel day counts never singularize ("1 days used/remaining") — three sites [LeaveRequestsTab.tsx:532/557/570]
+- [x] [Review][Patch] Service spec pins consumed 0 while claiming "consumed stays visible" [leave-balance.service.spec.ts:234]
+- [x] [Review][Patch] No composition test: disabled × prior-FY through deriveTypeBalance [leave-balance.math.spec.ts]
+- [x] [Review][Patch] Disabled gate ternary copy-pasted 3× → extracted accruedFor [leave-balance.math.ts, leave-balance.service.ts]
+- [x] [Review][Patch] Comment anchors cite rotting line numbers → name LEAVE_TYPE_DISABLED [leave-balance.service.ts:234]
+- [x] [Review][Patch] Disabled-rule rationale restated ~5× → inlines trimmed to pointers
+- [x] [Review][Patch] .allowTagOff re-declares the whole .allowTag pill → composes: allowTag [LeaveRequestsTab.module.css:551]
+
+Defer:
+- [x] [Review][Defer] Mode-null/'none' accrual fall-through unpinned in the math specs [leave-balance.math.spec.ts] — deferred: pre-existing (the old case's title over-claimed; it only ever tested enabled:false); caller filtering (readBalancesFor excludes mode-none and remnants) guards the fall-through by design.
+- [x] [Review][Defer] Over-consumed block clamps remaining to 0 — the overdraw stays silent (used caps at gross) [LeaveRequestsTab.tsx:526/541-542] — deferred: pre-existing display contract; surfacing negative remaining is an owner design decision.
+- [x] [Review][Defer] .allowOff fade class binding never asserted [LeaveRequestsTab.tsx:553] — deferred: the bun test stub resolves CSS-module keys to undefined (className renders "undefined undefined" in tests), so RTL class asserts are impossible in this suite; the "Turned Off" chip remains the verified semantic signal.
+
+Rejected appendix:
+- [Review][False] Defense-gate test name implies refusal — false: the name says "accrues nothing" and the comment says callers refuse first; both refusals are tested (leave.service.spec.ts:419, leave-read.service.spec.ts:891).
+- [Review][False] Caller-refusal property untested — false: both caller refusals have named 23-13 tests (same cites).
+- [Review][Reject-low] Prior-FY × disabled through assertBalanceForApply untested — the path is unreachable by construction (both callers refuse disabled types first); a test would pin dead behavior; the walk itself is tested directly.
+- [Review][Reject] Collapsed off-line does not fade like off blocks — the collapsed treatment (chip + used-days, no fade) was specced in this plan's P2 amendment and owner-previewed live before "yes proceed"; changing it edits the approved plan.
+
+Post-patch suite state: leave-balance math+service 58/58, leave.service + leave-read
+70/70, AdminLeavePage 37/37, check:styles + biome clean, tsc clean on touched files.

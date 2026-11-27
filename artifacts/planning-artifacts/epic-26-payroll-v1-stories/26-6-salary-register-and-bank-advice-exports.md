@@ -22,8 +22,11 @@ hand slips to employees) is uncovered; the run computes correctly and then stops
    days, LOP days, employer PF (26-4 split), FY YTD earnings + FY YTD TDS columns.
 2. **Bank Advice** (CSV + printable summary): employee, bank a/c, IFSC, rounded net,
    run reference; one row per non-skipped employee with bank details.
-3. Both flow through the existing `report_requests` → R2 presign pipeline (queue,
-   ready stamp, per-request keys — the payslip PDF pattern, 03 §2.10).
+3. Both mint through the `report_requests` → R2 presign pipeline via **dedicated
+   payroll.config-gated payroll POST routes that plain-insert into `report_requests`**
+   (the 23-8 payroll-side insert — the generic `POST /reports` is `report.request`-
+   gated and deliberately broader, so it cannot satisfy the payroll.config gate);
+   status polling reuses `GET /reports/:id` (`report.read`).
 4. Web: exports section on the payroll surface (month picker, queued/ready states,
    download) — reuses report_requests states; payroll.config-gated.
 5. Missing-bank-details employees appear in a warnings block on the advice, not as
@@ -45,9 +48,12 @@ core (02 App.B) — CSV is the right V1 shape.
 - **Totals integrity rule** (borrow #11): compute per-employee net from unrounded
   lines, round once per employee — the register's net column sum must equal the run
   summary net **exactly** (rounding-remainder never drifts across 150 rows).
-- YTD columns: SUM of run lines across the FY per employee (26-1's openings included);
-  the two-number discipline (borrow #1) makes FY sums trivial — full-cycle vs prorated
-  amounts stay distinct.
+- YTD columns sourced from `payroll_payslips` snapshots (respects snapshot
+  immutability): FY YTD earnings = Σ gross over the FY's snapshots for the employee;
+  FY YTD TDS = Σ tds over snapshots **+** the 26-1 `tax_deducted_till_date` opening.
+  26-1's openings are **tax-basis** figures — they never mix into the earnings column.
+  Months before the tenant's first payroll count only if the owner seeds an opening
+  field (future decision, not this card).
 - Large tenants: fetch batches per employee in the worker (the leave-list N+1 lesson:
   batch, don't page per row — a11564c incident).
 - Register column layout is derived from the components present that month (not a
@@ -55,8 +61,9 @@ core (02 App.B) — CSV is the right V1 shape.
 
 ## Acceptance criteria
 
-1. Register net column-sum == run summary net exactly (pinned test, incl. a
-   rounding-sensitive fixture case).
+1. Register net column-sum == Σ `payroll_payslips.net_wages` for the month exactly
+   (the run summary jsonb carries no money totals — verified 2026-11-21; the pinned
+   test includes a rounding-sensitive fixture case).
 2. Bank advice rows == non-skipped employees with bank details; missing-details
    employees listed in the warnings block with plain-English copy.
 3. Tenant isolation proven (cross-tenant probe test, the 23-9 pattern).
@@ -64,7 +71,8 @@ core (02 App.B) — CSV is the right V1 shape.
    for the same month (spot-pinned legs).
 5. Large-tenant path queued via report_requests (no synchronous megaresponse);
    PT429→429 pattern preserved.
-6. payroll.config-gated on all routes; employee /me unaffected.
+6. Minting routes payroll.config-gated (payroll-side plain insert per 23-8); status
+   via `report.read`; employee /me unaffected.
 
 ## Test anchors
 

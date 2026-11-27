@@ -72,5 +72,5 @@ The owner opens the localhost preview: a hard load of `/admin` shows the Pour lo
 ## Assumptions
 
 - Boot/auth (and shell re-initialization) are the only full-page loader moments; all in-app navigation uses content-region skeletons. The owner's "full page loader" reads as those moments, not every navigation — overridable at review.
-- The 3px line loader is kept as a demoted secondary cue rather than deleted — overridable at review.
+- OVERRIDDEN by owner 2026-11-26: the 3px line loader is removed entirely, replaced by a full-screen transparent loading overlay (hero Pour, background transparent — no scrim, no blur, pointer-events none so the shell stays interactive) that fires after 300ms of any navigation or in-flight fetcher activity with a 500ms min-display — visible from any scroll position.
 - The toast layer is hand-rolled and minimal: polite status announcements, assertive errors, small stack cap.

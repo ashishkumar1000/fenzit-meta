@@ -6,7 +6,7 @@
 | Size | S (~1 day) |
 | Layer | BE (fenzit-be) + web (fenzit-web, extends 26-9's sheet) |
 | Depends on | 26-9 for the UI surface (BE can land first against the API) |
-| Contract | 05 §6 quick-win · 03 §2.9 · 02 §4.3 |
+| Contract | 05 §7 rows (promoted to V1 quick-win, owner 2026-11-21) · 03 §2.9 · 02 §4.3 |
 
 ## Gap (evidence)
 
@@ -39,12 +39,19 @@ auto-arrears).
 
 ## Technical approach
 
-- The absorption walk keys by `(line, month)` — extend the existing exact-captured-id
-  flip to a per-(line, month) captured set in the write tx (the 23-9 F3 flip-race
-  pattern generalizes).
+- **Representation pinned (review triage 2026-11-21): expand-at-staging** — staging a
+  recurring line creates **one `payroll_off_cycle_lines` row per covered month** (the
+  shipped single-`month` / single-`status` schema is untouched, so the exact-captured-
+  id flip, re-target, orphan listing, idempotent POST, and the 409/422 matrix all keep
+  working per-row, and the engine's `.eq('month', month)` read needs no change). The
+  staged list groups the clones under one logical line; re-target mid-window re-targets
+  the **unapplied** clones; cancel = delete unapplied clones. No per-(line, month)
+  child table in V1.
 - Validation: `to_month >= from_month`, `to_month` within the allowed month matrix
   (future months allowed to the same bound as single lines), locked months in the
-  window → 422 listing them (never partially stage).
+  window → **409 `PAYROLL_MONTH_LOCKED`** listing them (matches the shipped
+  ConflictException — the original 422 was a review-caught contract error; never
+  partially stage).
 - Cap interplay unchanged: negative recurring lines flow through the same 50% cap +
   roll-forward per month — no batching across months (recovery math stays monthly).
 - Acknowledgment captured once at staging (covers all months) — matches the existing
@@ -56,8 +63,8 @@ auto-arrears).
    each (journey leg with an N=3 window incl. a leaver month ending early).
 2. Cancel stops future months only — already-applied rows intact (journey leg).
 3. Re-run of a covered month is idempotent (no duplicate absorption).
-4. `to_month` in a locked month → 422 with the month named; window ending at a leaver's
-   exit month stops cleanly (no post-exit absorption).
+4. `to_month` in a locked month → 409 `PAYROLL_MONTH_LOCKED` with the month named;
+   window ending at a leaver's exit month stops cleanly (no post-exit absorption).
 5. Summary recovery block reports per-line outstanding incl. remaining months.
 
 ## Test anchors

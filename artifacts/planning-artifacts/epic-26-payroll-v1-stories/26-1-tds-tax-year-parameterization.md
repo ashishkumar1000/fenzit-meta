@@ -29,9 +29,22 @@ mid-year joiner openings (03 §10.B: estimator only).
 4. Move the FY 2026-27 constants into seed data (migration seeds the row for every
    tenant) and rewrite `statutory.ts` to read from the resolved row. Pure refactor —
    math unchanged.
-5. Optional openings: accept `taxable_earnings_till_date` + `tax_deducted_till_date`
-   on the salary-structure config (nullable) and subtract them in the projection —
-   for tenants onboarded mid-FY (borrow #4).
+5. Optional openings: accept `taxable_earnings_till_date` +
+   `tax_deducted_till_date` and subtract them in the projection — for tenants
+   onboarded mid-FY (borrow #4). **Storage pinned (review triage 2026-11-21):
+   FY-keyed per member** — a small row `(id, tenant_id, membership_id, fy,
+   taxable_earnings_till_date, tax_deducted_till_date)` mirroring Frappe's SSA layer
+   (salary_structure_assignment.py:222-238 warns on missing openings). **Never store
+   on `salary_structures` revisions** — structures are per-employee dated rows and a
+   mid-FY revision would silently drop the openings → prior earnings vanish from the
+   projection → under-deduction for exactly the population this serves. Identity:
+   annual projection = openings.taxable_earnings_till_date + Σ current-FY Fenzit
+   months' taxable; TDS spread = annual − openings.tax_deducted_till_date − Σ
+   current-FY TDS.
+6. **`tdsConfigView` (statutory.ts:106–124) renders the resolved tax-year row** (the
+   month-resolution helper reused) — it currently hardcodes `taxYear: 'FY 2026-27'`
+   plus the constants for the admin UI; without this the web surface would advertise
+   stale numbers in April 2027 while runs use the table (caught in review).
 
 ## Out of scope
 
@@ -43,12 +56,15 @@ surcharge engine beyond a nullable bands field (all deferred with triggers, 05 �
 - Keep `statutory.ts` pure: pass the resolved tax-year row in; no DB reads inside the
   math (testable table-driven).
 - Slab walk stays in Fenzit's existing implementation (rebate + marginal relief
-  already correct, 03 §2.6); only the data source changes.
-- Validate slab rows at save/read: monotonic, non-overlapping, and authored
-  **inclusive-endpoint style** — `to_amount` of slab n = `from_amount` of slab n+1 − 1
-  (0–400000, 400001–800000…). Reject `400000–800000` style tables: Frappe's engine
-  adds `+1` per slab and a misauthored table double-counts the boundary rupee
-  (gotcha 02-§8.1, income_tax_slab.py:80-85).
+  already correct, 03 §2.6); only the data source changes. **jsonb shape pinned**
+  (review triage 2026-11-21): store slabs in the walk's own shape —
+  `{upto: exclusiveUpper | null, rate}` (exclusive upper bound, implicit lower =
+  previous `upto`; matches `TdsSlab` at statutory.ts:73–93). The validator checks:
+  strictly-increasing `upto`, first slab starts at 0, and adjacent bands neither gap
+  nor overlap the boundary rupee — the Frappe gotcha (02-§8.1, income_tax_slab.py:80-85
+  adds `+1` per band) translates to: authoring `to = next_from − 1` inclusive pairs
+  maps to `upto = to_amount + 1`; pin a boundary-rupee unit test (income 4,00,000 vs
+  4,00,001).
 - Openings subtract once (never double-taxed — Frappe pins this,
   test_salary_slip.py:2468 `test_opening_balances_excluded_from_tax_calculation`).
 

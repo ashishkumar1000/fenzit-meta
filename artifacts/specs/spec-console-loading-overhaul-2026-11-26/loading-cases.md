@@ -20,7 +20,7 @@ Spec-authored companion of SPEC.md. Holds the case classification (which situati
 | Case | Pattern |
 |---|---|
 | Boot / auth resolve (`/admin*` HydrateFallback + layout `adminLoader`) | **FULL-PAGE FenzitLoader (hero)** on a light blurred pane; replaces the plain "Checking your access…" text |
-| Route navigation (shell → content) | Persistent shell stays interactive; **content-region skeleton** matching the target page archetype; line loader demoted to secondary cue |
+| Route navigation (shell → content) | Persistent shell stays interactive; **content-region skeleton** matching the target page archetype; **full-screen transparent LoadingOverlay** (hero Pour, pointer-events none, 300ms delay / 500ms min-display, also covers in-flight fetchers) replaces the line loader — visible from any scroll position |
 | In-page region reload (tab switch, month change, filter refetch) | **Region-scoped skeleton** (300ms delay); never the whole page |
 | Refresh of already-visible data | **Stale-while-revalidate**: keep old rows + subtle updating cue ("— Updating…"), no skeleton |
 | Button mutation (< ~2s) | Existing pending button (disabled + Spinner + label swap) + `aria-busy`; dialogs lock Cancel/overlay while pending |
@@ -32,7 +32,7 @@ Spec-authored companion of SPEC.md. Holds the case classification (which situati
 | Surface | Today | Target |
 |---|---|---|
 | Boot `/admin*` | Plain text "Checking your access…" (`AdminPage.tsx:42`) | Full-page Pour loader + light blur |
-| Route nav, all `/admin/*` | 3px line only (`AdminPage.tsx:248`); nothing on own-header pages when idle | Content-region skeletons per archetype; line loader stays as secondary cue |
+| Route nav, all `/admin/*` | 3px line only (`AdminPage.tsx:248`); nothing on own-header pages when idle | Content-region skeletons per archetype; line loader REMOVED — replaced by the full-screen transparent LoadingOverlay (owner override 2026-11-26) |
 | Jobs list | `TableSkeleton` rows=6 (`AdminJobsPage.tsx:493`) | Keep; rebuild on new primitives |
 | Employees / Customers | `TableSkeleton` + "— Updating…" | Keep; rebuild on new primitives |
 | Leave (3 tabs) | Line only (`AdminLeavePage.tsx:28`) | Region skeleton on tab/page change |
@@ -65,3 +65,16 @@ Spec-authored companion of SPEC.md. Holds the case classification (which situati
 - Errors: `role="alert"`, focus moves to the error; errors never auto-dismiss.
 - `prefers-reduced-motion`: shimmer stops (static sunken blocks remain visible), Pour loader → fully-filled mark + opacity pulse.
 - Blur pane: mostly opaque; blur is decoration, never the legibility mechanism (WCAG 1.4.3).
+
+## 6. As-built (2026-11-26, fenzit-web 465e5d2)
+
+Shipped in full via CAP-1..CAP-9. Deltas from the matrix above, as shipped:
+
+- **Boot** is a ROOT fallback (`AdminBootFallback`, eager bundle), not the route-level one — the route-level fallback never mounts (the lazy chunk it waits on is the whole initial load). It guards exactly `/admin` and `/admin/…`.
+- **Route navigation** overlay does NOT cover fetcher-driven loads (owner override): in-flight mutations show their own button busy states; the overlay covers navigation/loader loads only.
+- **The line loader is gone everywhere** — nav loads show the transparent Pour overlay + an archetype skeleton (dashboard / table / detail / calendar); region reloads swap a `SkeletonSlot` shaped like the region.
+- **Identity check** ships as `identityCache` (30s TTL, token-keyed, in-flight sharing; invalidated on login/logout/401). The 30s default is exported and pinned by test.
+- **Payroll run outcomes** ship as `payrollRunWatcher` (singleton poller on the existing runs list; 5s→60s backoff, ~15.5min budget; toasts terminal runs once and revalidates the mounted payroll page).
+- **Toast layer** ships as `toastStore` + `ToastHost`: module emitter, success TTL 5s, errors never auto-dismiss, cap 4 (oldest non-error yields; only an all-alert stack yields an alert). Sign-in clears stale session-ended toasts. The stack is pointer-events-none; only toasts take clicks.
+- **§5 cluster rule as-built**: the shared `SkeletonCluster` piece was dropped (zero usages); the page or shell hosts the `role="status"` announcement around the slot and skeleton blocks stay `aria-hidden`. The reduced-motion Pour branch (fully-filled static mark) also covers webviews with no `matchMedia`.
+- **`backdrop-filter` carries `-webkit-backdrop-filter`** everywhere it is used (the loader pane, the holidays modals, the upload scrim).

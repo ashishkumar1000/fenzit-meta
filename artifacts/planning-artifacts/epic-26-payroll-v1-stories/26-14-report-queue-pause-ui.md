@@ -6,7 +6,7 @@
 | Size | S (~0.5 day) |
 | Layer | Web (fenzit-web) — **no BE changes** |
 | Depends on | none (API ships since 23-8) |
-| Contract | 05 §6 quick-win · sprint-status 23-8 entry ("admin-panel pause UI = future FE story") · 03 §5 |
+| Contract | owner-approved quick-win (2026-11-21, promoted from the 23-8 ledger) · sprint-status 23-8 entry ("admin-panel pause UI = future FE story") · 03 §5 |
 
 ## Gap (evidence)
 

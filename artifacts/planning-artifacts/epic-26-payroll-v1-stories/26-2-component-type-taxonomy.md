@@ -45,8 +45,13 @@ employer-contribution *table* on payslips (26-4 stores columns, not a third pare
   prorated component's abbr — dependents inherit prorated bases instead (borrow #2).
   Pin with a test: SA = BS × 0.5 must prorate exactly once (02 §7.6 (4),
   test_salary_slip.py:808 semantics).
-- TDS remains `statutory_tag = 'tds'`, computed last (gotcha 02-§8.8 ordering) —
-  becomes load-bearing once `exempted_from_income_tax` exists.
+- TDS remains `statutory_tag = 'tds'`, computed last (gotcha 02-§8.8 ordering).
+  **Wiring point pinned** (review triage 2026-11-21): the run engine's
+  `tdsProjection` input assembly gains a deductions-before-tax input and the TDS
+  line moves after head/recovery lines (today heads are appended after TDS —
+  payroll-run-engine.service.ts:1129-1151); canonical fixture unaffected (no
+  exempted components exist today, so the new input is empty until 26-3/26-4
+  statutory tags populate it).
 
 ## Acceptance criteria
 

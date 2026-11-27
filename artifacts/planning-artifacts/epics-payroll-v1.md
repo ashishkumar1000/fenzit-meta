@@ -15,7 +15,8 @@ for every story below is the benchmark report set — read before building:
 Close the verified gaps between Fenzit payroll and the India-SMB payroll must-have
 bar (Frappe-validated), without regressing the engine properties where Fenzit is
 already ahead. Fourteen stories (9 must-haves + 5 owner-approved quick-win polish,
-2026-11-21), ≈23–31 agent-days. Deployment order: BE stories 1–7 first (fenzit-be
+2026-11-21), ≈24–32 agent-days (26-7 re-sized M after review: no email transport
+exists today). Deployment order: BE stories 1–7 first (fenzit-be
 deploys first), web-only 8/9/14 parallelizable anytime, polish 10–13 as marked.
 
 ## Protect these — do NOT "catch up" to Frappe (05 §4)
@@ -36,44 +37,51 @@ test anchors, Frappe references, risks. **Read the card before building**; the
 bullets below are the index.
 
 - **26-1-backend-tds-tax-year-parameterization** (S–M, no deps — build first)
-  FY 2026-27 constants (slabs, rebate, standard deduction, marginal-relief, surcharge
-  bands) out of code (statutory.ts:132–176, engine:167–168) into a `payroll_tax_years`
-  table keyed (tenant_id, fy_start, fy_end); month resolution picks the covering row;
-  refuse to run months without one (fail loudly, never extrapolate). Acceptance:
+  FY 2026-27 constants (slabs at statutory.ts:85–93, standard deduction :96, rebate
+  threshold :99, cess :100 — applied in `annualTax` :132–176; no surcharge exists in
+  code, `surcharge_bands` is a nullable forward-compat field; engine FY hardcode at
+  :167–168) into a `payroll_tax_years` table keyed (tenant_id, fy_start, fy_end);
+  month resolution picks the covering row; refuse to run months without one (fail
+  loudly, never extrapolate); `tdsConfigView` renders the resolved row. Acceptance:
   seeded 2026-27 rows reproduce canonical fixture bit-for-bit; synthetic 2027-28 row
-  picked up for April 2027; missing-row run fails with plain-English reason; optional
-  mid-year joiner openings (taxable_earnings_till_date / tax_deducted_till_date)
-  accepted on config and subtracted. Borrow #4 (mid-year openings) + gotcha 02-§8.1
-  (inclusive slab endpoints). Test anchors: 02 §7.6 (5) tax self-correction, (7) recurring
-  additions; add the 2027-04 boundary.
+  picked up for April 2027; missing-row run fails with plain-English reason; openings
+  stored FY-keyed per member (never on structure revisions) and subtracted once.
+  Borrow #4 + gotcha 02-§8.1 (slab boundary-rupee rule; jsonb shape = the walk's
+  exclusive-`upto` form). Test anchors: 02 §7.6 (6) tax self-correction, (7) recurring
+  additions, (5) keeps holding; add the 2027-04 boundary.
 
 - **26-2-backend-component-type-taxonomy** (M, no deps — foundation for 3/4/6)
   One unified component model with `type` enum (earning | deduction |
   employer_contribution), statutory tag (pf | pt | tds | esi | lwf | null), and
   `prorates_with_payable_days` boolean; migrate existing earning components +
-  deduction heads; keep exactly-one-basic rule; add `exempted_from_income_tax` for
-  forward-compat. Acceptance: all existing runs re-render identically post-migration;
+  deduction heads; keep exactly-one-basic rule; add `exempted_from_income_tax` —
+  wired now (excluded from the taxable base, deducted before TDS per gotcha 02-§8.8),
+  not just forward-compat. Acceptance: all existing runs re-render identically post-migration;
   register (26-6) can group by type; PT (26-3) and PF split (26-4) tag without new
   tables. Flags subset only — no statistical/flexible/accrual flags (02 §7.2).
 
 - **26-3-backend-professional-tax-state-engine** (M, needs 26-2)
-  `payroll_pt_state_rules` (state, effective_from, monthly_slabs jsonb,
-  half_yearly_amount, february_amount, max_monthly_cap); month-start resolution like
-  the PF ceiling; employee PT state auto-selected from office state with explicit
-  per-employee override; deduction tagged `pt`. Acceptance: Maharashtra Feb-doubling +
-  ₹200–₹2500 cap correct; Karnataka >₹25k-gross-only rule testable; employee without a
-  state rule → skip reason "PT not configured for state X"; half-yearly states
-  supported. Table-driven per-state tests before code; boundary-at-gross-threshold case.
+  `payroll_pt_state_rules` (tenant-scoped: id, tenant_id, state, effective_from,
+  monthly_slabs jsonb, half_yearly_amount, february_amount, max_annual_cap);
+  month-start resolution like the PF ceiling; employee PT state auto-selected from
+  office state with explicit per-employee override; deduction tagged `pt`.
+  Acceptance: Maharashtra ₹200/month + **February ₹300** (replacement — NOT a
+  doubling; ₹2,500 is the statutory ANNUAL cap, Art. 276(2), max monthly ₹300);
+  Karnataka >₹25k-gross-only rule testable; employee without a state rule → skip
+  reason "PT not configured for state X"; half-yearly states (Kerala; MP is the
+  gross-minus-PF basis case) supported. Table-driven per-state tests before code;
+  boundary-at-gross-threshold case.
 
 - **26-4-backend-pf-employer-split** (S–M, needs 26-2)
   Compute EPS (8.33% of min(earned basic, ceiling)) + EPF remainder (12% − EPS) per
-  member per run; store employee/EPS/remainder on run lines; employer cost = sum;
-  FIX the mirror-of-employee bug (statutory.ts:52–55 — "v1: no EPS split" recorded the
-  employer as a copy of the employee figure). Acceptance: ceiling binds → EPS +
-  remainder = 12% of ceiling-wage exactly; excluded members unchanged; summary jsonb
-  exposes employer PF separately; optional employer-PF line on the payslip print
-  (non-deduction). ECR export is explicitly deferred (V1.x, trigger: first 10+ PF
-  member tenant asks to file).
+  member per run; store employee/EPS/remainder on run lines; **employer PF
+  contribution = EPS + remainder (= the employee figure, 12%)** — the three-column
+  sum is total PF remitted, never labelled "employer cost"; FIX the mirror-of-employee
+  bug (statutory.ts:52–55 — "v1: no EPS split" recorded the employer as a copy of the
+  employee figure). Acceptance: ceiling binds → EPS + remainder = 12% of ceiling-wage
+  exactly; excluded members unchanged; summary jsonb exposes employer PF (12%);
+  optional employer-PF line on the payslip print (non-deduction). ECR export is
+  explicitly deferred (V1.x, trigger: first 10+ PF member tenant asks to file).
 
 - **26-5-backend-and-web-run-preview-plus-unmarked-day-semantics** (M, after 2/3/4 for
   richer warnings)
@@ -96,19 +104,24 @@ bullets below are the index.
   Salary Register (month × employee grid: component columns grouped by type, gross,
   deductions, net, payable days, LOP days, employer PF; XLSX/CSV) and Bank Advice
   (employee, bank a/c, IFSC, rounded net, run reference; CSV + printable summary).
-  FY YTD earnings/TDS columns per employee (needs 26-1's two-number discipline).
-  Acceptance: register column-sum of net == run summary net exactly (rounding-remainder
-  rule, borrow #11); bank advice rows == non-skipped employees with bank details,
-  missing-details employees in a warnings block; payroll.config-gated; streaming/queued
-  for large tenants.
+  FY YTD earnings/TDS columns per employee (YTD = Σ payslip-snapshot sums; TDS column
+  adds the 26-1 tax-deducted-till-date opening — openings never mix into earnings).
+  Acceptance: register column-sum of net == Σ payroll_payslips.net_wages for the month
+  exactly (rounding-remainder rule, borrow #11); bank advice rows == non-skipped
+  employees with bank details, missing-details employees in a warnings block; minting
+  via dedicated payroll.config-gated payroll routes (23-8 plain-insert pattern);
+  streaming/queued for large tenants.
 
-- **26-7-backend-payslip-email-delivery** (S–M)
+- **26-7-backend-payslip-email-delivery** (M — includes a minimal outbound-email
+  transport; the notifications module is an in-app inbox only, no send path exists —
+  review-verified 2026-11-21)
   On run completion OR lock — pick ONE layer (invariant: one email per member per run;
-  Frappe doubles without its via_payroll_entry flag, 02 §8.12) — enqueue notification
-  emails with gross/net/period + presigned PDF link; tenant setting
-  `payslip_email: off | on_completion` (off by default); missing email → skip reason in
-  run summary, never an error; no PHI in logs. Re-run semantics decided + pinned
-  (regenerate link vs corrected re-send).
+  Frappe doubles without its via_payroll_entry flag, 02 §8.12) — send emails with
+  gross/net/period + PDF **attachment** (shipped presign TTL is 600 s; emailed links
+  die in 10 minutes with no re-issue path for staff without the app); tenant setting
+  `payslip_email: off | on_completion` (off by default); missing email → skip reason
+  in run summary via post-commit update, never an error; no PHI in logs. Re-run:
+  re-send only when the member's payslip snapshot changed.
 
 - **26-8-web-admin-payslip-viewer** (S, web-only — any time; BE ships already)
   Console panel on the UNUSED API from 23-8 (GET /payroll/payslips admin month roster +
@@ -139,11 +152,14 @@ bullets below are the index.
   done_checkpoint: device pass.
 
 - **26-12-backend-and-web-recurring-off-cycle-amounts** (S, extends 26-9 + the 23-9 API)
-  `to_date` + monthly repetition on staged lines; engine picks the line for each
-  covered month (Frappe AS `is_recurring` window semantics — recurring match = window
-  overlap with the pay period, 02 §4.3). Acceptance: staged line applies N months;
-  cancel stops future months without touching already-applied ones; 50%-cap and
-  recovery roll-forward interplay unchanged; re-run of a covered month is idempotent.
+  `from_month`/`to_month` recurrence on staged lines — pinned representation:
+  **expand-at-staging** into one off-cycle row per covered month (shipped single-month
+  schema untouched; flip/re-target/orphan/idempotency keep working per-row) (Frappe AS
+  `is_recurring` window semantics — recurring match = window overlap with the pay
+  period, 02 §4.3). Acceptance: staged line applies N months; cancel stops future
+  months without touching already-applied ones; locked month in the window → 409
+  PAYROLL_MONTH_LOCKED; 50%-cap and recovery roll-forward interplay unchanged; re-run
+  of a covered month is idempotent.
 
 - **26-13-backend-and-web-attendance-sheet-export** (S, independent — any time)
   Monthly attendance sheet CSV/XLSX from the existing day-status grid via the reports
