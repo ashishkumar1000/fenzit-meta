@@ -7,7 +7,7 @@ commits:
   backend: '379b88f'
   web: 'c270b68'
   app: 'def4600'
-migration: '20261127000005_owner_default_manager.sql — NOT YET APPLIED'
+migration: '20261127000005_owner_default_manager.sql — APPLIED to Fenzit-dev and Fenzit-Be (2026-11-27)'
 route: 'full'
 route_source: 'owner decision'
 review: 'pending'
@@ -25,7 +25,9 @@ context:
 
 **Decision (owner, 2026-11-27):** every non-admin member always has a manager. Whenever the pointer is missing for any reason, it becomes the **tenant owner**. The owner accepted the two costs: approvals for those people notify the owner only, and the Reports-to column stops distinguishing "never set" from "set to the owner".
 
-**Rule:** the default is `tenants.owner_id` while that membership is active and enabled; otherwise the earliest active admin (an owner can be deactivated or removed once another admin exists). Null only for an ownerless company, which the last-admin rule makes unreachable. Admins never hold a pointer — they sit at the top.
+**Rule:** the default is `tenants.created_by` (the company creator) while that membership is active and enabled; otherwise the earliest active admin (a creator can be deactivated or removed once another admin exists). Null only for a company with no active admin, which the last-admin rule makes unreachable. Admins never hold a pointer — they sit at the top.
+
+**Schema note:** the roles restructure replaced `tenants.owner_id` with `tenants.created_by`. The first deploy of the helper named the old column; applying the backfill to the dev database first caught it (42703), and the fix shipped as `6cd735f`.
 
 ## Boundaries
 
@@ -51,8 +53,8 @@ context:
 
 ## Still to do
 
-1. **Apply the migration** (`20261127000005_owner_default_manager.sql`) to the QA and production databases — the code is deployed but existing nulls stay null until it runs.
-2. **Re-verify on the QA tenant** after the backfill: every employee should read the owner, and a deactivation should move the team.
+1. **Done:** the backfill ran on both projects via `apply_migration` (`owner_default_manager`). Dev: 24 → 0 unassigned. Production: 364 → 0 unassigned; 0 self-pointers, 0 pointers to disabled users, 0 pointers outside the company. In PayrollQA Works 196 of 202 members now sit under the creator.
+2. **Re-verify on the QA tenant** after the Render deploy of `6cd735f`: every employee should read the owner, and a deactivation should move the team.
 
 ## Open question for the owner
 
