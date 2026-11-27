@@ -56,6 +56,28 @@ context:
 1. **Done:** the backfill ran on both projects via `apply_migration` (`owner_default_manager`). Dev: 24 → 0 unassigned. Production: 364 → 0 unassigned; 0 self-pointers, 0 pointers to disabled users, 0 pointers outside the company. In PayrollQA Works 196 of 202 members now sit under the creator.
 2. **Re-verify on the QA tenant** after the Render deploy of `6cd735f`: every employee should read the owner, and a deactivation should move the team.
 
+## Live verification (2026-11-27, after the backfill and the `6cd735f` deploy)
+
+Read-only query against both projects, plus a reversible write pass on the QA company:
+
+| Check | `Fenzit-dev` | `Fenzit-Be` |
+|---|---|---|
+| Live members | 34 | 470 |
+| Unassigned non-admins | 0 | 0 |
+| Self-pointers | 0 | 0 |
+| Pointers outside the company | 0 | 0 |
+| Pointers to an inactive member | 0 | 0 |
+| Pointers to a disabled user | 0 | 0 |
+
+QA company (`PayrollQA Works`): 201 non-admins, **0 unassigned**, 196 under the creator, the other 5 with an explicit manager; the creator is an active admin. `GET /api/v1/members` as the owner returns the chain for every row.
+
+Write pass on two employees, fully restored afterwards:
+
+1. Clear Vijay Menon (EMP-036) → `200`, manager became the creator — this is the call that would have 500'd on the old column.
+2. Assign Vijay to Anita Pillai (EMP-037) → chain read `Anita Pillai → PQA Owner Ashok Rao`.
+3. Deactivate Anita → Vijay moved to **the creator** (Anita's own manager), not left dangling.
+4. Reinstate Anita → active again; Vijay restored to the creator.
+
 ## Open question for the owner
 
 An explicit **clear** now re-assigns the owner rather than unassigning. If a "really no manager" escape hatch is ever wanted (e.g. a restructure in progress), it is a one-line change in `setManager` — say so and it becomes a small follow-up.
