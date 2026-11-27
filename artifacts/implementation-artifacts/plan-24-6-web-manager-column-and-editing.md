@@ -241,5 +241,132 @@ Deferred, recorded here: the block does not show the member's own role though th
 
 ### Design exploration (Stitch, 2026-11-27)
 
-A colourful restyle of the Edit Profile popup was generated in the Epic 24 project (`129662491942565583`, Field Utility System) and is saved under `artifacts/implementation-artifacts/design-24-6/` (Job / Personal / Statutory IDs / Bank states). Sections are grounded in the real 15 employment fields and real-shaped values; no invented capability. This is an exploration for the owner's decision, not shipped code.
+A colourful restyle of the Edit Profile popup was generated in the Epic 24 project (`129662491942565583`, Field Utility System) and is saved under `artifacts/implementation-artifacts/design-24-6/` (Job / Personal / Statutory IDs / Bank states). Sections are grounded in the real 15 employment fields and real-shaped values; no invented capability. The owner asked Sally to review it before implementation; the review and the shipped version are below.
 
+### Design implementation (2026-11-27, after Sally's review)
+
+Sally's critique (dual-agent: independent design read + code/token evidence) scored the mockups **15/40** and rejected the four-hue rail. The full report is saved beside the mockups as `design-review-2026-11-27.md`; the measured reasons: only two of the four active fills are tokens, there is no violet family in either repo, the green Bank tab collides with the product's "done" meaning, white on `#06956F` is 3.79:1 and the idle amber is 3.07:1. `DESIGN_SYSTEM.md` already says a chip's active state is a soft tint, never a solid fill.
+
+The owner chose **one accent with a soft-tint active tab** (the P0 fix) and the full **P0+P1+P2** set. The four groups, the tinted panel and the pinned footer survived; the rainbow did not.
+
+**What shipped**
+
+- `EmploymentForm.tsx` — the four sections as a real tablist (`role=tab`, `aria-selected`, `aria-controls`, roving tabindex, Left/Right/Home/End, one panel labelled by the active tab). A section with unsaved edits carries its count; the footer carries the total.
+- The form opens on the section the clicked link points at: the Master Record banner opens the section of its first missing field, and each "+ Add" opens its own field's section.
+- Save is disabled until a field differs, with the reason in the footer; the footer states the destructive half of the tri-state ("Emptying a field clears it"); Cancel and Esc ask before dropping edits, and a backdrop click is held while edits are pending (the pinned Cancel opens the prompt); the footer actions are 44px.
+- Header trimmed to the title and the person's name. No avatar, designation, department or status pill: the host already shows them, status is not editable here, and the two editable fields would go stale while typing.
+- `dialogRail` in the shared chrome stops the box scrolling as a whole; the shell's grid keeps the header, rail and footer fixed and scrolls only the body. A modifier, not a change to `.dialog`, because twenty other dialogs still rely on that scroll.
+- One accent: active tab `primary-soft` + `primary` border + `primary` label; inactive tabs `surface-sunken`. Icons carry the section identity (Briefcase, UserRound, IdCard, Landmark); the counts are tinted chips, not solid primary.
+- At 360px the rail wraps to two rows, the fields go one column, the footer note takes its own line and the actions stay 44px. Verified in a 360×820 iframe against the live QA tenant; the dialog's own `scrollWidth` equals its `clientWidth`.
+
+**Employment contract (build-time)**
+
+The owner's rule: the FE should be a dumb layer. The field list and constraints now come from the BE DTO, not a second local list.
+
+- fenzit-be `src/members/dto/update-employment.dto.ts` carries `maxLength`, `pattern` and `format: date` in the Swagger metadata, next to the validators (the limits live in one `MAX` object so they cannot disagree).
+- `bun run contract:employment` (fenzit-be, `scripts/export-employment-schema.ts`) builds a minimal Nest app — no DB, no server — and writes `contracts/employment.schema.json`.
+- The snapshot is copied to `fenzit-web/contracts/` and `bun run sync:employment-contract` generates `src/features/admin/employmentContract.generated.ts`. The form's max lengths and date controls read the generated rules; the four sections, labels and hints stay FE presentation. `bun run build` runs `check:employment-contract`, so a stale generated file fails the build.
+- A test pins that every generated field appears in exactly one section; a compile-time assertion pins the generated field union to `EmploymentView`.
+
+**Verification:** web 1442 tests / 122 files, tsc, eslint, prettier, styles and the full build green; BE 3747 tests / 198 suites and typecheck green. Live visual pass on the QA tenant at 1256px and 360px: all four sections, the dirty count, the discard prompt, the disabled Save with its reason, and the 44px footer.
+
+**Deviations:** the mockup's header close X is dropped — the footer Cancel is pinned and always in view, and a second close path would need its own dirty guard. The statutory section was later renamed "Govt IDs" by the owner (see the follow-up). "Senior Technician" is real QA data, not sample copy; the phrase is also a pre-existing BE fixture value, so it is not a terminology breach.
+
+**Follow-up: floating labels, review fixes and the Govt IDs rename (2026-11-27)**
+
+Sally's second review (29/40) rejected the first floating-label pass: the patch painted a grey tab inside every white field, the focus ring was cut above the label, the label competed with the value, and the joining-date payroll consequence had been removed with the hints. The owner chose to keep the outlined style and fix it rather than revert.
+
+- `TextInput` keeps the floating variant opt-in (15 uses, all in this form; the other call sites stay stacked). The label is still a real `<label htmlFor>`.
+- The patch is two surfaces in one box: the panel colour above the border and the input fill below it, with a 1px opaque band over the border itself. The grey tab inside the field is gone; the border is cut cleanly.
+- Label: 12px, medium, muted (`#4B5563`, 6.87:1 on the sunken panel), left edge aligned with the field's text. The panel gains one spacing step of top padding for the overhang.
+- Focus: the ring runs on the border (`outline-offset: 0`) so it reads as one perimeter interrupted at the notch, not a second ring passing behind the label. An invalid field that also has focus keeps the red ring instead of red-border-plus-blue-ring, and its floating label turns red. The inline error and footer reason use the same sentence, and the disabled Save's `aria-describedby` points at the footer reason.
+- Consequences: clearing a joining date that had a value shows "This employee will be left out of salary runs." under the field. The "Unique in the company" line was deliberately not restored (owner call), so a duplicate employee code still surfaces only as the BE's refusal after Save.
+- "Statutory IDs" is renamed "Govt IDs" in the tab rail and every section-aware link; the internal key stays `statutory`.
+- The variant is documented as a local exception in the component CSS and the form's CSS contract note, not in the generated design-system guide (that lives in `fenzit-app`).
+- Verification: web 1444 tests / 122 files, tsc, eslint, prettier and styles green. Live pass on the QA tenant at desktop and 360px: the default Job section fits without body scroll; clearing the joining date adds its one-line warning and the body scrolls; the error, focus and disabled-Save states were checked in the browser.
+
+**Follow-up: Impeccable audit of the employee profile page (2026-11-27)**
+
+Sally ran the Impeccable **audit** playbook over the profile shell, header, five tabs and entry points (Edit Profile internals excluded — audited separately). Verdict: fail on content integrity, pass on system coherence; **14/20** (A11y 3, Performance 4, Theming 4, Responsive 1, Integrity 2), with **1 P0, 3 P1, 7 P2, 4 P3**. The owner approved the full recommendation set; every finding is fixed below.
+
+- **P0 — mobile Attendance clipped.** The shell's `.main` is now `grid-template-columns: minmax(0, 1fr)` with `min-width: 0`, and the attendance `.stack` carries `min-width: 0`. The table scrolls inside its card instead of widening the page. Measured at 360/390/768: `documentElement.scrollWidth === innerWidth`; the only internal scroller is the table wrapper (647px in a 294/324/736px card).
+- **P1 — "Joined" was the account-creation date.** The header now reads **"Added 20 Nov 2026"** (`member.createdAt`, honest), and the master record gained **Joining Date** and **Designation** rows from the employment record — no extra fetch, so the "each tab fetches only its own section" contract holds. Read-only dates in the grid (DOB, joining date) render through `fmtDay`.
+- **P1 — header clipped at 360.** `.pageHead` is one column by default and two from 560px; actions stack under the identity on phones (measured actions right edge 344px in a 344px box at 360).
+- **P1 — no skip link.** The console shell gains a focus-visible **"Skip to content"** link targeting `#console-content`; the shell `<main>` is focusable (`tabIndex={-1}`).
+- **P2 — duplicate title entry / invisible designation.** "+ Add Job Title" is removed; **Edit Profile** is the single editor entry, and Designation now shows in the master grid with an honest `+ Add` when empty.
+- **P2 — Salary dead end.** **Manage salary** renders in both the empty and filled structure states (secondary in the filled one), deep-linked to this employee.
+- **P2 — late promise without a grade.** Attendance rows now flag **"Late N min"** next to the check-in when it crosses the `startTime + lateCutoffMinutes` threshold of **the rule that covered that day** (revision-aware, warning-toned text, not colour alone), so the Work Timings card's promise is applied by the history. The card's meta is also reworded to "The rules this employee's attendance is measured against." — it no longer promises a full-day/half-day grade the table does not show.
+- **P2 — four date formats / tab naming.** Read-only dates use one format; the first tab is renamed **"Profile"** (it holds PAN/PF/UAN/bank), while the card stays "Employee Details".
+- **P2 — touch targets.** Tabs, month links, master `+ Add` and the reporting "Change" control are ≥44px (`var(--touch-min)`); `Button` gained an optional `className` for the local hit-area rule.
+- **P2 — phone nav strip.** The sidebar nav wraps on phones instead of hiding later links in a horizontal scroll (reset to `nowrap` at ≥960px).
+- **P3 — polish.** Jobs chips use **"In Progress" / "Done"**; each tab has a visually hidden H2 so the outline is H1 → H2 → H3; the browser title is `"<name> · <tab> · Fenzit"` via a new `useDocumentTitle` hook with cleanup; the Table empty state is no longer italic; annual leave reads "N days added every year."; month chevrons are `aria-hidden`.
+- **P3 — table semantics.** `DataTable`'s first cell is a `<th scope="row">` (rebased on `.td`), so each row is named by its own key.
+- **Verification:** web 1448 tests / 122 files, tsc, eslint, prettier, styles green. Live QA tenant at 768/400/390/360 (same-origin fixed-width frames): page `scrollWidth === innerWidth` on every tab checked; header stacks below 560 with actions inside the gutter; nav wraps with no horizontal overflow; tabs and month links 44px; skip link present; title reads "Vijay Menon · Attendance · Fenzit"; the 09:40 check-in against 09:00 + 15 shows "Late 25 min".
+
+**Follow-up: console chrome, Help & Support, and the second Impeccable audit (2026-11-27)**
+
+The owner asked for the two Stitch sidebar states and a Help page, then for the audit's second round to be applied. What shipped:
+
+- **Two rail states.** The shell remembers 280px expanded or 72px collapsed under `fenzit.console.sidebar`; the labels stay in the accessibility tree (clipped, with `title`), and the `pageRail` class reclaims the width on every console page. Below 960px the rail is untouched — the phone bar is the same 69px whichever state was saved.
+- **Phone nav behind one labelled Menu control.** The ten-section strip no longer wraps over every page: a 44px `aria-expanded` toggle opens a stacked panel (cluster captions, 46px rows, the user chip and Log Out inside). Escape closes it from anywhere in the shell and returns focus to the toggle; any navigation — including a query-only tab or month change — closes it, keyed on `location.key`, because closing in the anchor's click handler detached it before the browser followed the link.
+- **Settings while the screen does not exist.** The row is a `role="link"` with `aria-disabled`, a visible "Coming soon" note (hidden in the icon rail), and `tabIndex={0}` so keyboard users can reach the reason they are being refused.
+- **Help & Support page** (`/admin/help`, all three roles, grouped under Preferences): two contact cards, six FAQs in the product's own vocabulary, and a closing block that says what to include rather than repeating the contact cards. The topic count derives from the list; the salary question points at **Manage salary** (the Salary tab is read-only); the contact cards carry a visually hidden H2 so heading navigation reaches the page's primary action.
+- **Profile tab follows the crop.** Four groups of tiles with icon labels and coloured caption dots, statutory values at 14px/600 against 12px labels, a copy control on each of the five identifiers (with a selection-copy fallback), and **Copy identifiers** in the card header — one toast that replaces the previous one rather than stacking.
+- **Collapsed active state.** The rolled-up rail marks the current section with the expanded rail's tinted 40×40 square instead of the design's corner dot, which collided with the leave badge; the leave count keeps its numeral on the icon corner. A deliberate deviation from the Stitch screen.
+- **Salary card.** Manage salary sits in the card header in both the empty and filled states; clearing a joining date warns only when there was one; the load-failure lines say to reload instead of pointing at a menu that does not exist; the date density rule follows the pointer, not just the viewport.
+- **Verification:** web 1469 tests / 123 files, tsc, eslint (0 errors), prettier, CSS-module pairing and the full build green. Live QA tenant at 360/390/768/959/960/1280: 69px phone bar, no horizontal scroll, the rail threshold at 960, the Settings note in both states, 44px copy controls on touch, and one toast per copy.
+
+## Code Review
+
+### 2026-11-27 (second review — console chrome, Help, profile tiles)
+
+**Code review complete.** 0 `decision-needed`, 21 `patch` (13 code, 8 tests; all applied), 1 `defer`, 30 rejected. Four thorough lenses (blind-hunter, edge-case-hunter, verification-gap, intent-alignment) over the uncommitted web set (45 files, +2831/−308, HEAD→worktree).
+
+- [x] [Review][Patch] The phone menu closes on any navigation, query-only changes included — the effect keyed on `location.pathname`, so a tab or month link left the panel open over the page it opened [src/pages/AdminPage.tsx]
+- [x] [Review][Patch] Escape closes the phone menu from anywhere in the shell — the handler sat on `<aside>`, so focus in the content region could not close it [src/pages/AdminPage.tsx]
+- [x] [Review][Patch] The disabled Settings row is reachable by keyboard — `role="link"` on a span is not focusable without `tabIndex`, so the "Coming soon" reason was unreachable [src/pages/AdminPage.tsx]
+- [x] [Review][Patch] The salary FAQ points at Manage salary — the answer told the reader to add components on the read-only Salary tab [src/pages/AdminHelpPage.tsx]
+- [x] [Review][Patch] The contact cards carry a heading — heading navigation skipped the page's primary action [src/pages/AdminHelpPage.tsx + .module.css]
+- [x] [Review][Patch] The topic count pluralises ("1 topic") [src/pages/AdminHelpPage.tsx]
+- [x] [Review][Patch] A copy is announced once — the tile's `aria-label` flipped to "<field> copied" while the toast said the same, so screen readers heard it twice; the tile keeps its name and the toast speaks [src/features/admin/components/employee/MasterRecordPanel.tsx]
+- [x] [Review][Patch] "Copy identifiers" names what the control copies — "Copy all details" copied only the five identifiers, and the toast said "Employee details copied." [MasterRecordPanel.tsx]
+- [x] [Review][Patch] The selection-copy fallback removes its temporary field when `execCommand` throws — the cleanup was not in a `finally` [MasterRecordPanel.tsx]
+- [x] [Review][Patch] A punch taken at another office is not graded with the assigned office's late rule — only that office's revisions are in hand, so a transferred employee's older punches would have borrowed a rule that never applied [src/features/admin/components/employee/ProfileAttendancePanel.tsx]
+- [x] [Review][Patch] A line with no usable amount no longer reads "— per month" [ProfilePayrollPanel.tsx]
+- [x] [Review][Patch] The salary card's date density follows the pointer, like every other dense control — it densified on viewport width alone [ProfilePayrollPanel.module.css]
+- [x] [Review][Patch] `/admin/help` joins the client-only title map [src/app/pageMeta.ts]
+- [x] [Review][Patch] Tuple of tests for the gaps the lenses proved: the `/admin/help` route inside the shell (one h1, no greeting); every catalogue field rendering in the grouped grid; a null joining date staying quiet; the rail mounting from remembered storage; the menu closing on a navigation; no total from a partially uncomputable structure; the selection-copy success path; the document title restored on leaving the record [src/pages/AdminPage.test.tsx, AdminEmployeeProfilePage.test.tsx, AdminEmployeesPage.employment.test.tsx]
+- [x] [Review][Defer] The client's "Late N min" duplicates the backend's late math (`ProfileAttendancePanel.tsx` `lateBy` vs `computeLateMinutes`) — deferred: the punch wire carries no `lateMinutes`, so removing the copy needs a BE wire change; both sides use the tenant-local clock and the rule covering the day today. Owner: next time the punches payload or the day-status engine is touched, send `lateMinutes`/`isLate` and delete the FE copy.
+
+**Rejected (30):**
+
+- `false` — "Salary tab / Payroll tab" naming drift: user-visible copy is consistent ("Salary" is the tab, the section and the FAQ's word); "Payroll" is the sidebar group caption and the standalone page.
+- `false` — `ruleOn` returning the last covering revision: `toOfficeDetailResponse` sorts by `validFrom` before mapping, the documented "last = current" contract.
+- `false` — non-IST offsets misgrading: `toTenantOffsetIso` writes the tenant offset, so the clock digits are tenant-local; the rule's `startTime` is tenant-local too.
+- `false` — overnight shifts misgrading: the office DTO requires end after start, same day, so no overnight rule exists.
+- `false` — "Added" showing `createdAt` while `joinDate` is on the page: the prior audit's deliberate P1 fix, recorded above.
+- `false` — clearing a code blocks Save but clearing a joining date only warns: the code is required by the BE, the date is optional.
+- `false` — the two deleted EmploymentForm hints: the uniqueness line was dropped by owner call (recorded above); the payroll consequence now appears when the destructive edit is made.
+- `false` — Log Out behind the Menu on phones: the panel contains the chip and Log Out by design; the closed bar deliberately carries no second log-out.
+- `false` — copy-all omitting non-identifier fields: the control's set is the five identifiers by design; its name and toast now say so.
+- `false` — three "active" signals: the avatar dot is conditional and decorative, the badge is the status, and the rail chip belongs to a different surface.
+- `false` — "Excludes mandatory employer PF and gratuity": structure lines are earning components; employer PF/gratuity are outside them.
+- `false` — annual figure rounding / `fmtMoney(String(number))`: the monthly total is 2dp-rounded before ×12 and the formatter rounds to 2dp, so no visible drift.
+- `false` — empty-string `amount` counted as zero: the wire sends 2dp text or null; `""` is not a shape the API produces.
+- `false` — the `DataTable empty` prop on Payslips: `empty` is required by the shared table contract; the branch above owns the message.
+- `false` — `white-space: nowrap` on Button: the cited "Confirm Deactivation" is a plain `.confirmDanger` button outside `Button`, and no Button label in the repo overflows its container.
+- `false` — `ReportingBlock` `flex-wrap: nowrap` clipping Change: `.facts` has `min-width: 0` and `.value` `overflow-wrap: anywhere`, so the name wraps and the control stays; no horizontal scroll at 360.
+- `false` — floating label with a prefix: no call site combines `variant="floating"` with `prefix`.
+- `false` — clipboard stubs not restored in tests: each copy test sets its own stub and no later test in the file copies.
+- `false` — `useDocumentTitle` vs the layout `<title>`: the hook runs after render on purpose (the record's own name wins), and its restore path is now pinned.
+- `low` — module-level `copyToastId` and the per-tile timer with no unmount cleanup: no user-visible effect; a cleanup effect is more machinery than the risk.
+- `low` — Help CSS repeating the profile page's crumb/title styles: developer duplication only; extracting a shared crumb is a separate refactor.
+- `low` — "/admin labels as Console for members": the console's index is theirs too; the crumb word matches the sidebar.
+- `low` — blank names handled four ways: the contexts differ (h1, crumb, title, chip) and a whitespace-only name is not a reachable input.
+- `low` — chips say "Done" while the row badge says "Completed": the chip wording was the prior audit's P3; the row badge carries the precise status.
+- `low` — group captions ("Tax identifiers" holding PF/UAN): the owner's crop supplies those captions; renaming them is a design call.
+- `low` — `ReportsValue` parsing " (Owner)" off the string: styling only; a copy change would drop the quiet mark, not data.
+- `low` — `<details open={index === 0}>` mixed with the browser toggle: the prop never changes across re-renders, so a reader's collapse sticks; no default-open prop exists in React.
+- `low` — the Help entry living in six maps: `sectionsFor` is pinned per role and `sectionGroupsFor` for the owner; a missing glyph or blurb falls back rather than breaks.
+- `low` — the phone menu as a disclosure without scroll lock / click-outside: it closes on Escape, the toggle and any navigation; a modal treatment would misstate what it is.
+- `low` — sales number under "Call us" and the one-working-day promise: the contact config carries one line and the copy comes from the approved screen; a support-line decision is the owner's.
