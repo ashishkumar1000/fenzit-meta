@@ -476,7 +476,8 @@ development_status:
   24-2-backend-subtree-scoping-and-permission-scope-dimension: done  # recursive-CTE helper + guard scope dimension (role x subtree); leave/jobs/attachments subtree reads
   24-3-backend-leave-approval-routing-and-notifications: done  # fenzit-be af43023 (2026-11-27): action-time resolved-approver walk (single/fallback/self/unresolved), service-enforced decisions (403/409), submission + set-difference notifications, leave_events.resolved_approvers snapshot; 1988 unit + 34/34 real-DB journey + live HTTP/DB probe; reminders deferred to pg_cron
   24-4-backend-job-approval-without-rpc: done  # job decision moved off the RPC to a NestJS transaction (shared tenant lock, FOR UPDATE, guarded update, one activity row); job.submitted routes to the resolved set; reassignment notices + activity_logs.resolved_approvers snapshot; 2158 unit + 45/45 live HTTP/DB probe; 3-lens review folded (push payload, owner-only report/queue split, live-tree admin)
-  24-5-mobile-manager-surfaces: backlog  # Reports-to picker, Your-team queues, teammates-off glance, notification kinds + taps
+  24-5a-backend-manager-signals: done  # fenzit-be 03ef0c6 (2026-11-27): GET /users/me carries team {managerId, managerName, chain, directReports, headcount} for every role (CAP-5 'no reports, no UI' gate without the owner-only /members); leave + job list/detail rows carry decision {canDecide, reason: not_pending|higher_manager|unresolved} from the same walk the decide POST runs; 2237 unit + 24/24 live HTTP
+  24-5-mobile-manager-surfaces: backlog  # Reports-to picker, Your-team queues, teammates-off glance, notification kinds + taps — consumes 24-5a's team block and per-row decision
   24-6-web-manager-column-and-editing: backlog  # MembersTable Reports-to column, settings/invite dialog fields, re-parenting confirmation
   24-7-backend-retire-decide-pending-job-rpc-gated: backlog  # gated on story 4 live in both frontend releases; separate migration
 
