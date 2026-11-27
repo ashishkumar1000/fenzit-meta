@@ -2,7 +2,7 @@
 title: 'Job approval without RPC (24-4)'
 type: 'feature'
 created: '2026-11-27'
-status: 'approved'
+status: 'done'
 baseline_commit: 'af43023'
 review_loop_iteration: 2
 context:

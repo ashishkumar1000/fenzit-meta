@@ -458,7 +458,7 @@ development_status:
   22-7-mobile-employee-and-owner-flows: done  # fenzit-app cb3df30 pushed to main 2026-11-13 (employee create flow + owner approval queue + 16 jest suites); shipped in release app 1.4.4 build 10404; code review done (user-confirmed 2026-11-16)
   22-8-web-owner-and-employee-reports-dashboards-settings-approval-queue: done  # fenzit-web; built + Sally UX pass + BMAD review (8 layers, 24 patches applied), committed 599c9b9 and pushed 2026-11-14; owner-session verified live; test cases written (5 suites, 89 tests) + reviewed (4 layers, 15 patch clusters applied) — committed fenzit-web 9ff2163 (fd3ea50 debug cleanup)
 
-  epic-24: in-progress  # company reporting hierarchy with manager approvals — contract committed 54bb335 (2026-11-16) at artifacts/specs/spec-company-hierarchy/ (SPEC + approval-routing + stories.yaml + .decision-log.md, decisions D1-D17); zero-RPC epic, backend-first deploy order. Renumbered 2026-11-17 (was epic-23) — payroll moved ahead of it.
+  epic-24: in-progress  # company reporting hierarchy with manager approvals — contract committed 54bb335 (2026-11-16) at artifacts/specs/spec-company-hierarchy/ (SPEC + approval-routing + stories.yaml + .decision-log.md, decisions D1-D17); zero-RPC epic, backend-first deploy order. Renumbered 2026-11-17 (was epic-23) — payroll moved ahead of it. Backend 24-1..24-4 done and pushed to origin/main (3523452, 9619cca, af43023, df3add6, 2026-11-27); 24-5 (mobile) and 24-6 (web) unstarted, 24-7 gated on 24-4 shipping in both frontend releases.
 
   # Epic 25: Attendance + Payroll QA — owner-commissioned full-product testing sweep
   # (2026-11-20) across web admin + mobile + BE + DB using a 200-employee mock tenant

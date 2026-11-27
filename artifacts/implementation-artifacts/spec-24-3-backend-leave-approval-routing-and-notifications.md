@@ -2,7 +2,7 @@
 title: 'Leave approval routing and notifications (24-3)'
 type: 'feature'
 created: '2026-11-27'
-status: 'approved'
+status: 'done'
 baseline_commit: '9619cca'
 review_loop_iteration: 1
 context:
