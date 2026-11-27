@@ -174,3 +174,4 @@ Verdict: 12 patched, 9 accepted-with-reason, 4 refuted. Two lenses independently
 
 **Manual checks:**
 - On the live API as a manager: `/users/me` shows the reports; `?teamOnly=true` narrows; a report's balances answer 200.
+  - Deployed from `011afc2` (Render autodeploy on main) and observed on `fenzit-be-1.onrender.com` as the 24-4 probe manager (`8202260000`, tenant `aec45692`): `GET /users/me` → `team.headcount 1`, `team.members [{ userId: 286724bc…, name: 'Probe employee 4', employeeCode: 'EMP-005', status: 'active', avatarUrl: null }]`; `GET /jobs?teamOnly=true&scope=all` → the report's jobs only (`technicianId` 286724bc…); `GET /attendance/leave/286724bc…/balances` → 200 with the derived rows; a foreign uuid → 404 `RESOURCE_NOT_FOUND`; `GET /attendance/me/leave/balances` → 200.
