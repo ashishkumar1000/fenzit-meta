@@ -67,7 +67,7 @@ Because lint runs without type information, the ESLint config uses the untyped `
 
 ## 3. Why this architecture
 
-- **Prerendered pages, not a runtime server.** The site is mostly signed-in app screens behind a login, so only the public marketing pages (`/`, `/features`) need to be crawlable. `bun run build` prerenders both to static HTML and rewrites each page's head for its own URL (title, description, canonical, Open Graph, Twitter — `scripts/prerender.ts` + `src/app/pageMeta.ts`). `/login`, `/admin` and the 404 shell ship `noindex`; the build also writes `dist/sitemap.xml`. Workers static assets serve the files, `html_handling: "drop-trailing-slash"` keeps the no-slash form canonical, and `not_found_handling: "404-page"` returns a real 404 for unknown paths.
+- **Prerendered pages, not a runtime server.** The site is mostly signed-in app screens behind a login, so only the public marketing pages (the home page and the use-case pages listed in `src/app/pageMeta.ts`) need to be crawlable. `bun run build` prerenders them to static HTML and rewrites each page's head for its own URL (title, description, canonical, Open Graph, Twitter — `scripts/prerender.ts` + `src/app/pageMeta.ts`). It also inlines the entry stylesheet into each page's `<head>` so the first paint waits for no render-blocking request (`scripts/lib/entry-css.ts`); the client-only shells keep the shared, cached `<link>`. `/login`, `/admin` and the 404 shell ship `noindex`; the build also writes `dist/sitemap.xml`. Workers static assets serve the files, `html_handling: "drop-trailing-slash"` keeps the no-slash form canonical, and `not_found_handling: "404-page"` returns a real 404 for unknown paths.
 - **React Router library mode.** Cloudflare's React Router guide says: for an SPA, "start with the React template and use React Router as a library." Framework mode adds a server runtime we do not need.
 - **Plain Vite, no Cloudflare Vite plugin.** Cloudflare says SPA mode is not supported with its Vite plugin. We use `vite build` into `dist/`, and `wrangler.jsonc` points at it.
 - **Direct API calls to `fenzit-be`.** The browser calls `VITE_API_BASE_URL` directly. This needs CORS on the BE (§12). The alternative is a same-origin proxy through the fenzit.com Worker. **Decide** (§12).
@@ -280,7 +280,7 @@ Performance budget (initial, **Decide** the numbers): landing page JS under 150 
 - Never log tokens, OTPs, phone numbers, or full error bodies from the BE. Log the `error_code` and the correlation ID.
 - Escape user-provided text. Do not use `dangerouslySetInnerHTML`. If it becomes unavoidable, sanitise first and get review.
 - External links that open a new tab use `rel="noopener noreferrer"`.
-- Add a Content-Security-Policy header through the Worker when the first signed-in screen ships. **Decide** the policy. Google Fonts and the inline JSON-LD in `index.html` must be allowed explicitly.
+- Add a Content-Security-Policy header through the Worker when the first signed-in screen ships. **Decide** the policy. Google Fonts, the inline JSON-LD in `index.html`, and the entry stylesheet inlined into each prerendered page (`scripts/lib/entry-css.ts`) must be allowed explicitly. Every prerendered page carries the same CSS, so one build-time hash covers all of them.
 - Dependencies: pin exact versions, commit `bun.lock`, and use `bun install --frozen-lockfile` in CI (already set).
 
 ---
