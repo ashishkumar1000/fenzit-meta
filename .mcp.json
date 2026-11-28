@@ -14,6 +14,14 @@
     "cloudflare-api": {
       "type": "http",
       "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": "${STITCH_API_KEY}"
+      }
     }
   }
 }
